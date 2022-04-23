@@ -1,0 +1,25 @@
+{
+    "name": "chaintrix-game-mechanics",
+    "version": "1.0.12",
+    "description": "",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "/dist"
+    ],
+    "dependencies": {
+        "typescript": "^4.6.3"
+    },
+    "devDependencies": {},
+    "scripts": {
+        "build": "tsc",
+        "prepare": "npm run build",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "compilerOptions": {
+        "rootDir": "src"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}

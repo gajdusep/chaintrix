@@ -1,0 +1,15 @@
+[features]
+seeds = false
+[programs.localnet]
+chaintrix_solana = "2Gv4zT6tX8jhkECtsDiSdmUaNxFkZSnrLerS1AzK7uxs"
+
+[registry]
+url = "https://anchor.projectserum.com"
+
+[provider]
+cluster = "localnet"
+url = "http://127.0.0.1:8899"
+wallet = "./id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
