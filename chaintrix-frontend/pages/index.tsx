@@ -16,9 +16,9 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
-        <GameBoard />
+        {/* <GameBoard /> */}
         {/* <SocketTesting /> */}
-        {/* <SolanaAndSocket /> */}
+        <SolanaAndSocket />
         {/* <SmartContractTesting /> */}
 
       </main>

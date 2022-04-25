@@ -13,8 +13,8 @@ const getChunks = (buf: Buffer, maxBytes) => {
     for (let i = 0; i < partialResult.length; i++) {
         const element = partialResult[i];
         result.push(Buffer.from(element))
-        console.log('------------------')
-        console.log(element)
+        // console.log('------------------')
+        // console.log(element)
     }
     return result
 }

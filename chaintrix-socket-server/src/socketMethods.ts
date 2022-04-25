@@ -5,6 +5,7 @@ import { Connection, PublicKey } from '@solana/web3.js';
 import { Player, RoomGame } from "./types";
 import { IDL, ChaintrixSolana } from './types/chaintrix_solana';
 import { randomBytes } from "crypto";
+import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "./Constants";
 
 const NUMBER_OF_PLAYERS = 2
 
@@ -19,27 +20,21 @@ const getGameRoomID = (socket: Socket): string | null => {
     return answer;
 }
 
+// TODO: check if the betPDA was really done by playerAddress...
+// load the account and check the data
 export const joinRoomOrCreate = async (sio: Server, socket: Socket,
     freeRooms: Array<string>, roomObjects: RoomObjects, players: { [socketID: string]: Player },
-    betPDA: string
+    betPDA: string, playerAddress: string
 ) => {
     let roomID = "blbost";
     const roomsList = Array.from(socket.rooms)
     console.log(roomsList);
     console.log(`betPDA: '${betPDA}';`)
 
-    const solanaURL = 'http://127.0.0.1:8899'
-    const connection = new Connection('http://127.0.0.1:8899')
-    // const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
-
-    // anchor.setProvider(anchor.AnchorProvider.env());
-    const provider = anchor.AnchorProvider.local(solanaURL);
-    const program = new Program(IDL, "2Gv4zT6tX8jhkECtsDiSdmUaNxFkZSnrLerS1AzK7uxs", provider);
+    const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
+    const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
+    const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
     const localWallet = anchor.Wallet.local();
-    // anchor.setProvider(provider);
-    // const program = anchor.workspace.ChaintrixSolana as Program<ChaintrixSolana>;
-    // const provider = program.provider;
-
 
     const pubKey = new PublicKey(betPDA)
     const balance = await connection.getBalance(pubKey);
@@ -53,14 +48,14 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
         roomID = (Math.floor(Math.random() * 100000)).toString();
         console.log(`${socket.id} created, roomID: ${roomID}`);
         freeRooms.push(roomID);
-        players[socket.id] = { betPDA: betPDA, socketID: socket.id, clicks: 0 }
+        players[socket.id] = { betPDA: betPDA, socketID: socket.id, clicks: 0, playerAddress: playerAddress }
         socket.join(roomID);
     } else {
         roomID = freeRooms[0];
         let clients = sio.sockets.adapter.rooms.get(roomID);
         const player0: Player = players[Array.from(clients)[0]];
         delete players[clients[0]];
-        const player1: Player = { socketID: socket.id, betPDA: betPDA, clicks: 0 };
+        const player1: Player = { socketID: socket.id, betPDA: betPDA, clicks: 0, playerAddress: playerAddress };
         console.log(`${socket.id} wants to join, roomID: ${roomID}`);
         socket.join(roomID);
 
@@ -83,6 +78,7 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
                 .rpc({ commitment: 'confirmed' })
         } catch (e) {
             console.log(e);
+            // TODO: return or retry but don't continue
         }
 
         const playersInRoom = [player0, player1];
@@ -91,9 +87,11 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
         console.log(`clients list: ${JSON.stringify(playersInRoom)}`)
         roomObjects[roomID] = {
             players: playersInRoom,
-            playerNPlaying: 0
+            playerNPlaying: 0,
+            solanaAcceptedBetAccount: acceptedBetsPDA.toBase58()
         }
         freeRooms.shift();
+
 
         // TODO: call smart contract: accept bets
     }
@@ -101,7 +99,9 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
     socket.emit("joinedOrCreated", { 'roomID': roomID })
 }
 
-export const playersTurn = (sio: Server, socket: Socket, roomObjects: RoomObjects) => {
+// TODO: if these methods are async, will it make any problems? 
+// TODO: keep some variables that will be changed (e.g. game closed etc, if the game is already closed, don't do anything)
+export const playersTurn = async (sio: Server, socket: Socket, roomObjects: RoomObjects) => {
     const roomGameID = getGameRoomID(socket);
 
     const room = roomObjects[roomGameID]
@@ -114,6 +114,35 @@ export const playersTurn = (sio: Server, socket: Socket, roomObjects: RoomObject
 
     // the finishing condition (artificial rn)
     if (room.players[room.playerNPlaying].clicks > 2) {
+        const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
+        const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
+        const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
+        const localWallet = anchor.Wallet.local();
+
+        const seed = randomBytes(32);
+        const treasuryWallet = anchor.web3.Keypair.fromSeed(Buffer.from(Array(32).fill(0)));
+        console.log(`treasury: ${treasuryWallet.publicKey.toBase58()}`)
+        const [closedGamePDA, closedGamePDABump] = await anchor.web3.PublicKey.findProgramAddress(
+            [Buffer.from("closed"), seed],
+            program.programId
+        );
+        // TODO: add some checks if the room objects is alright
+        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, 1)
+            .accounts({
+                acceptedBetsAccount: room.solanaAcceptedBetAccount,
+                player0: room.players[0].playerAddress,
+                player1: room.players[1].playerAddress,
+                server: localWallet.publicKey,
+                gameClosedAccount: closedGamePDA,
+                treasury: treasuryWallet.publicKey,
+                systemProgram: anchor.web3.SystemProgram.programId,
+            })
+            .signers([])
+            .rpc({ commitment: 'confirmed' })
+
+        console.log(`gameSuccesfullyFinished`)
+        sio.to(roomGameID).emit("gameSuccesfullyFinished")
+        return
         // TODO call a smart contract finish game
     }
 

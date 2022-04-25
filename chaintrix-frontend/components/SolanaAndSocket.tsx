@@ -7,6 +7,7 @@ import * as anchor from "@project-serum/anchor";
 import { Program, Provider } from "@project-serum/anchor";
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { IDL } from "../types/chaintrix_solana";
+import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
 
 type SolanaAndSocketProps = {
 }
@@ -17,11 +18,11 @@ const SolanaAndSocket = (
     // SOCKET STUFF
     const [response, setResponse] = useState("");
     const [gameState, setGameState] = useState("");
-    const ENDPOINT = "http://127.0.0.1:4001";
+    // const ENDPOINT = ;
     const [socket, setSocket] = useState<null | Socket>(null);
 
     useEffect((): any => {
-        const socketClient = socketIOClient(ENDPOINT);
+        const socketClient = socketIOClient(LOCALHOST_SOCKET_ENDPOINT);
         socketClient.on("FromAPI", data => {
             setResponse(data);
         });
@@ -33,6 +34,9 @@ const SolanaAndSocket = (
         });
         socketClient.on("playerPlayed", data => {
             setGameState(data)
+        });
+        socketClient.on("gameSuccesfullyFinished", data => {
+            setGameState('game was succesfully finished')
         });
 
         setSocket(socketClient)
@@ -72,7 +76,7 @@ const SolanaAndSocket = (
         console.log(`pda account: ${pdaAccount}`);
         setResponse(`${betAccountPDA.toBase58()} with balance: ${await connection.getBalance(betAccountPDA)}`);
 
-        socket.emit('wantsToPlay', betAccountPDA);
+        socket.emit('wantsToPlay', betAccountPDA, wallet.publicKey);
     }
 
     const playYourRound = () => {
@@ -86,11 +90,11 @@ const SolanaAndSocket = (
     console.log(wallet.publicKey?.toBase58())
     const anchorWallet = useAnchorWallet();
     console.log(anchorWallet?.publicKey.toBase58())
-    const connection = new Connection('http://127.0.0.1:8899')
+    const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
     if (!wallet || !anchorWallet) return <WalletMultiButton />;
     const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
     // const program = new Program(IDL, "92yF4jyrw62mWmUW7pvXa6XuaNx7ZCmshpwsK1gdgsrv", provider);
-    const program = new Program(IDL, "2Gv4zT6tX8jhkECtsDiSdmUaNxFkZSnrLerS1AzK7uxs", provider);
+    const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
 
     return (
         <div className="box" style={{

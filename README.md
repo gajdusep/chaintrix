@@ -10,3 +10,7 @@ Solana private key:
 `chaintrix-socket-server` - `id.json`
 
 `chaintrix-solana` - `id.json`
+
+Hedera private keys:
+
+`chaintrix-hedera` - `.env`

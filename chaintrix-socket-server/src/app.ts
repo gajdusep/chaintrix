@@ -24,8 +24,12 @@ io.on("connection", (socket) => {
     console.log("New client connected");
 
     // Host Events
-    socket.on('wantsToPlay', (betPDA) => { joinRoomOrCreate(io, socket, freeRooms, roomObjects, players, betPDA) });
-    socket.on('playersTurn', () => { playersTurn(io, socket, roomObjects) })
+    socket.on('wantsToPlay', (betPDA, playerAddress) => {
+        joinRoomOrCreate(io, socket, freeRooms, roomObjects, players, betPDA, playerAddress)
+    });
+    socket.on('playersTurn', () => {
+        playersTurn(io, socket, roomObjects)
+    });
 
     // if (interval) {
     //     clearInterval(interval);
