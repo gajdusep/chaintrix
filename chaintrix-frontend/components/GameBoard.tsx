@@ -6,12 +6,18 @@ import styles from '../components/Hexagons.module.css'
 import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 'react-draggable'; // The default
 import { useEffect, useState } from 'react';
 import GameTileSpace from './GameTileSpace'
-import { CARDS } from 'chaintrix-game-mechanics';
+// import { CARDS } from 'chaintrix-game-mechanics';
+// import {
+//     Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
+//     getHexPositions, calculatePlayersTilesPositions, Coords,
+//     CardNullable, Card, HexPosition
+// } from 'chaintrix-game-mechanics';
 import {
     Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
     getHexPositions, calculatePlayersTilesPositions, Coords,
     CardNullable, Card, HexPosition
-} from 'chaintrix-game-mechanics';
+} from '../../chaintrix-game-mechanics/dist/index.js';
+
 import React from 'react'
 
 const getRandomCard = (): Card => {
@@ -20,7 +26,6 @@ const getRandomCard = (): Card => {
 
     const someCard: Card = {
         cardID: someCardID,
-        pattern: CARDS[someCardID],
         orientation: 0,
     }
     return someCard;
@@ -121,14 +126,18 @@ const GameBoard = (
                     return;
                 }
                 const isValid = board.checkValidity(playersTiles[index], hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
-                console.log(`checked validity: ${isValid}`)
+                // console.log(`checked validity: ${isValid}`)
 
                 if (!isValid) return;
 
                 // setControlledPosition({ x: element.y - sizes.middle, y: element.x - sizes.middle })
                 // setTileHovered(hexPositions[i].ijPosition)
                 board.addCardToBoard(playersTiles[index], hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
+
                 playersTiles[index] = getRandomCard()
+
+                console.log(`what what what: ${JSON.stringify(board.getObligatoryPlayersCards(playersTiles))}`)
+
                 setPlayersTiles(playersTiles.map(el => Object.assign(el)))
 
                 // TODO: size
@@ -149,16 +158,26 @@ const GameBoard = (
         <div
             id='draggableContainer'
             ref={containerRef}
-            style={{ height: `${sizes.boardHeight}px`, width: `${sizes.boardWidth}px`, position: 'absolute', backgroundColor: 'white' }}>
+            style={{
+                height: `${sizes.boardHeight}px`,
+                width: `${sizes.boardWidth}px`,
+                position: 'relative',
+                backgroundColor: 'white'
+            }}>
             {board && board.boardCards.map((object, i) => {
                 return object.map((object2, j) => {
                     return <div key={`${i}-${j}`} className={styles.hex}
                         draggable='false'
                         style={{ top: getTilePosition(i, j, board.parity, sizes).x, left: getTilePosition(i, j, board.parity, sizes).y }}>
+                        <img className='dont-drag-image'
+                            draggable='false'
+                            src={`/emptyTiles/Tile_obligatory_border.svg`} width={sizes.svgWidth} height={sizes.svgHeight}
+                            style={{ position: 'absolute' }} />
                         <GameTileSpace card={object2} width={sizes.svgWidth} height={sizes.svgHeight}
                             highlighted={isHighlighted(i, j)}
                             boardFieldType={board.boardFieldsTypes[i][j]}
                         />
+                        {/* <p style={{ zIndex: 1000, position: 'absolute', left: `10px`, color: 'white' }}>Another div - obligatory svg</p> */}
                     </div>
                 })
             })}

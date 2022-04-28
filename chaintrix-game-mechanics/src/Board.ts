@@ -1,4 +1,5 @@
 import { Card, CardNullable, Coords } from "./CustomTypes";
+import { CARDS } from "./Constants";
 
 export enum BoardFieldType {
     CARD = 'Card',
@@ -7,7 +8,6 @@ export enum BoardFieldType {
     GUARDED = 'Guarded',
     FREE = 'Free'
 }
-
 
 export const mod = (n: number, m: number): number => {
     return ((n % m) + m) % m;
@@ -39,8 +39,7 @@ export class Board {
         return arrayToReturn;
     }
 
-
-    getTileNeighbors = (i: number, j: number): Array<Coords | null> => {
+    getTileNeighborsCoords = (i: number, j: number): Array<Coords | null> => {
         const turnParity = (n: number): number => {
             return (n + 1) % 2
         }
@@ -65,7 +64,7 @@ export class Board {
         return neighbors
     }
 
-    calculateCardTileNeighbors = (neighbors: Array<Coords | null>): number => {
+    getNumberOfTileNeighbors = (neighbors: Array<Coords | null>): number => {
         let numberOfCardNeighbors = 0
         for (let coordIndex = 0; coordIndex < neighbors.length; coordIndex++) {
             const coord = neighbors[coordIndex];
@@ -96,8 +95,8 @@ export class Board {
             for (let j = 0; j < this.width; j++) {
                 if (this.boardCards[i][j] != null) continue;
 
-                const tileNeighbors = this.getTileNeighbors(i, j);
-                const numberOfCardNeighbors = this.calculateCardTileNeighbors(tileNeighbors)
+                const tileNeighbors = this.getTileNeighborsCoords(i, j);
+                const numberOfCardNeighbors = this.getNumberOfTileNeighbors(tileNeighbors)
 
                 if (numberOfCardNeighbors == 0) {
                     this.boardFieldsTypes[i][j] = BoardFieldType.UNREACHABLE;
@@ -120,8 +119,8 @@ export class Board {
             for (let j = 0; j < this.width; j++) {
                 if (this.boardCards[i][j] != null) continue;
 
-                const tileNeighbors = this.getTileNeighbors(i, j);
-                const numberOfCardNeighbors = this.calculateCardTileNeighbors(tileNeighbors)
+                const tileNeighbors = this.getTileNeighborsCoords(i, j);
+                const numberOfCardNeighbors = this.getNumberOfTileNeighbors(tileNeighbors)
 
                 if (numberOfCardNeighbors < 3) continue;
 
@@ -209,7 +208,7 @@ export class Board {
             const currentOffset = mod((2 + nIndex), 6)
             const neighborCardOffset = mod((currentOffset + 3 - neighbor.orientation), 6)
 
-            const neighborColor = neighbor.pattern[neighborCardOffset]
+            const neighborColor = CARDS[neighbor.cardID][neighborCardOffset]
             if (neighborColor in colors) {
                 colors[neighborColor] += 1;
             }
@@ -221,7 +220,7 @@ export class Board {
     }
 
     checkValidity = (card: Card, posX: number, posY: number, shouldCheckThreeOfColor: boolean = true) => {
-        const tileNeighbors = this.getTileNeighbors(posX, posY)
+        const tileNeighbors = this.getTileNeighborsCoords(posX, posY)
 
         // for all neighbors check if the colors fit
         for (let nIndex = 0; nIndex < tileNeighbors.length; nIndex++) {
@@ -236,7 +235,7 @@ export class Board {
             const testedCardOffset = mod((currentOffset - card.orientation), 6)
             const neighborCardOffset = mod((currentOffset + 3 - neighbor.orientation), 6)
             // console.log(`${testedCardOffset} -- ${neighborCardOffset}, ${card.pattern[testedCardOffset]} -- ${neighbor.pattern[neighborCardOffset]}`)
-            if (card.pattern[testedCardOffset] != neighbor.pattern[neighborCardOffset]) {
+            if (CARDS[card.cardID][testedCardOffset] != CARDS[neighbor.cardID][neighborCardOffset]) {
                 return false;
             }
         }
@@ -252,9 +251,9 @@ export class Board {
 
             const currentOffset = mod((2 + nIndex), 6)
             const testedCardOffset = mod((currentOffset - card.orientation), 6)
-            const collorToCheck = card.pattern[testedCardOffset]
+            const collorToCheck = CARDS[card.cardID][testedCardOffset]
 
-            const neighborsNeighbors = this.getTileNeighbors(neighborCoords.x, neighborCoords.y)
+            const neighborsNeighbors = this.getTileNeighborsCoords(neighborCoords.x, neighborCoords.y)
             const colorsOfNeighbors = this.getColorsOfNeighbors(neighborsNeighbors)
             if (colorsOfNeighbors[collorToCheck] > 1) return false;
         }
@@ -307,11 +306,42 @@ export class Board {
         this.calculateBoardFieldsTypes();
     }
 
-    choseObligatoryPlayersCards = (playersCards: Array<Card>): Array<number> => {
-        // TODO: for every obligatory position and for card:
-        // check if the card can be placed into the obligatory position 
-        // and return indeces (?)
+    getAllObligatoryPositionsCoords = (): Array<Coords> => {
+        const coords = []
+        for (let i = 0; i < this.height; i++) {
+            for (let j = 0; j < this.width; j++) {
+                if (this.boardFieldsTypes[i][j] == BoardFieldType.OBLIGATORY) {
+                    coords.push({ x: i, y: j })
+                }
+            }
+        }
+        return coords;
+    }
 
-        return []
+    getRotatedCard = (card: Card, rotation: number): Card => {
+        return {
+            cardID: card.cardID,
+            orientation: mod(rotation, 6)
+        }
+    }
+
+    getObligatoryPlayersCards = (playerCards: Array<Card>): Array<Array<Coords>> => {
+        const result: Array<Array<Coords>> = Array.from(Array(6), () => new Array())
+        const obligatoryPositions = this.getAllObligatoryPositionsCoords();
+        for (let i = 0; i < playerCards.length; i++) {
+            const playerCard = playerCards[i];
+            for (let j = 0; j < obligatoryPositions.length; j++) {
+                const obligatoryPositionCoord = obligatoryPositions[j];
+                for (let rotIndex = 0; rotIndex < 6; rotIndex++) {
+                    const rotatedCard = this.getRotatedCard(playerCard, rotIndex);
+                    if (this.checkValidity(rotatedCard, obligatoryPositionCoord.x, obligatoryPositionCoord.y)) {
+                        result[i].push(obligatoryPositionCoord)
+                        break;
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 }
