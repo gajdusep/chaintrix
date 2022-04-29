@@ -1,8 +1,9 @@
 
 
-import { Board } from "./Board";
+import { Board, getNewBoard, checkValidity, addCardToBoard } from "./Board";
 import { Card, Coords } from "./CustomTypes";
 import { COLORS, CARDS } from "./Constants";
+import { getRandomCard } from "./methods";
 
 export type PlayerState = {
     color: string,
@@ -15,29 +16,18 @@ export enum MovePhase {
     THIRD_PHASE_OBLIGATORY
 }
 
-const getRandomCard = (): Card => {
-    const someCardID = (Math.floor(Math.random() * (6 - 1 + 1)) + 1).toString();
-    // const someCardID = "4"
-
-    const someCard: Card = {
-        cardID: someCardID,
-        orientation: 0,
-    }
-    console.log(`wait what: ${JSON.stringify(someCard)}`)
-    return someCard;
-}
-
-// TODO: array of players?
-export class GameState {
+export interface GameState {
     playersStates: Array<PlayerState>
     moves: Array<string>
     startingPlayer: number
     currentlyMoving: number
     unusedCards: Array<string>
     board: Board
+}
 
-    constructor() {
-        this.playersStates = [
+export const getNewGameState = (): GameState => {
+    return {
+        playersStates: [
             {
                 color: "R",
                 cards: [getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard()]
@@ -46,29 +36,28 @@ export class GameState {
                 color: "B",
                 cards: [getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard()]
             }
-        ]
-        this.startingPlayer = 0
-        this.currentlyMoving = this.startingPlayer
-        this.moves = []
-        this.unusedCards = []
-        this.board = new Board()
+        ],
+        startingPlayer: 0,
+        currentlyMoving: 0,
+        moves: [],
+        unusedCards: [],
+        board: getNewBoard()
     }
+}
 
-    move = (playerNumber: number, cardIndex: number, coordsToPlaceTheCard: Coords): boolean => {
-        if (playerNumber != this.currentlyMoving) return false;
-        const card = this.playersStates[playerNumber].cards[cardIndex]
-        if (!this.board.checkValidity(card, coordsToPlaceTheCard.x, coordsToPlaceTheCard.y)) return false;
-        this.board.addCardToBoard(card, coordsToPlaceTheCard.x, coordsToPlaceTheCard.y)
+export const move = (gameState: GameState, playerNumber: number, cardIndex: number, coordsToPlaceTheCard: Coords): boolean => {
+    if (playerNumber != gameState.currentlyMoving) return false;
+    const card = gameState.playersStates[playerNumber].cards[cardIndex]
+    if (!checkValidity(gameState.board, card, coordsToPlaceTheCard.x, coordsToPlaceTheCard.y)) return false;
+    gameState.board = addCardToBoard(gameState.board, card, coordsToPlaceTheCard.x, coordsToPlaceTheCard.y)
 
-        const min = 0
-        const max = this.unusedCards.length - 1
-        const newCardIndex = Math.floor(Math.random() * (max - min + 1)) + min;
-        this.playersStates[this.currentlyMoving].cards[cardIndex] = {
-            cardID: this.unusedCards[newCardIndex],
-            orientation: 0
-        }
-        this.unusedCards.splice(newCardIndex, 1)
-
+    const min = 0
+    const max = gameState.unusedCards.length - 1
+    const newCardIndex = Math.floor(Math.random() * (max - min + 1)) + min;
+    gameState.playersStates[gameState.currentlyMoving].cards[cardIndex] = {
+        cardID: gameState.unusedCards[newCardIndex],
+        orientation: 0
     }
-
+    gameState.unusedCards.splice(newCardIndex, 1)
+    return true;
 }

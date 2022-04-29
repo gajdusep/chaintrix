@@ -15,9 +15,12 @@ import GameTileSpace from './GameTileSpace'
 import {
     Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
     getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition
+    CardNullable, Card, HexPosition, GameState,
+    checkValidity, addCardToBoard,
+    getBoardHeight, getBoardWidth, getObligatoryPlayersCards
 } from '../../chaintrix-game-mechanics/dist/index.js';
-
+import { selectGameState, addCardToBoardAction, replaceGivenCardWithNewOne } from '../store/gameStateSlice';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 
 const getRandomCard = (): Card => {
@@ -32,6 +35,7 @@ const getRandomCard = (): Card => {
 }
 
 type GameBoardProps = {
+    // gameState: GameState
 }
 
 const initialWidth = 500
@@ -39,10 +43,15 @@ const initialHeight = 600
 const GameBoard = (
     props: GameBoardProps
 ) => {
+    const gameState = useAppSelector(selectGameState);
+    const dispatch = useAppDispatch();
+
     const [tileHovered, setTileHovered] = useState<Coords | null>(null);
-    const [board, setBoard] = useState<Board>(() => { return new Board() })
-    const [sizes, setSizes] = useState<Sizes>(() => calculateSizes(board.width, board.height, initialWidth, initialHeight))
-    const [hexPositions, setHexPositions] = useState<Array<HexPosition>>(() => getHexPositions(board, sizes))
+    // const [board, setBoard] = useState<Board>(() => { return new Board() })
+    const [sizes, setSizes] = useState<Sizes>(() => calculateSizes(
+        getBoardWidth(gameState.board), getBoardHeight(gameState.board), initialWidth, initialHeight)
+    )
+    const [hexPositions, setHexPositions] = useState<Array<HexPosition>>(() => getHexPositions(gameState.board, sizes))
     const [playersTiles, setPlayersTiles] = useState<Array<Card>>([]);
     const [playerTilesMoving, setPlayerTilesMoving] = React.useState(Array(6).fill(false));
     const nodeRef = React.useRef(null);
@@ -50,26 +59,32 @@ const GameBoard = (
     const containerRef = React.useRef(null)
 
     const [controlledPositions, setControlledPositions] = useState<Array<Coords>>(() => calculatePlayersTilesPositions(sizes));
+    const PLAYER_INDEX = 0
 
     useEffect(() => {
         // const freshBoard = new Board()
         // setBoard(freshBoard)
         // setHexPositions(getHexPositions(board, sizes));
 
-        const newTiles = []
-        for (let i = 0; i < 6; i++) {
-            newTiles.push(getRandomCard())
-        }
-        setPlayersTiles(newTiles)
-        console.log(newTiles)
+        // const newTiles = []
+        // for (let i = 0; i < 6; i++) {
+        //     newTiles.push(getRandomCard())
+        // }
+        setPlayersTiles(gameState.playersStates[PLAYER_INDEX].cards)
+        // console.log(newTiles)
     }, [])
 
     useEffect(() => {
         console.log(`sizes changed?: ${JSON.stringify(sizes)}`)
-        if (!board) return;
-        setHexPositions(getHexPositions(board, sizes))
+        // if (!gameState.board) return;
+        setHexPositions(getHexPositions(gameState.board, sizes))
         setControlledPositions(calculatePlayersTilesPositions(sizes));
     }, [sizes])
+
+    useEffect(() => {
+        console.log(`game state changed?: ${JSON.stringify(sizes)}`)
+        setPlayersTiles(gameState.playersStates[PLAYER_INDEX].cards.map(el => Object.assign(el)))
+    }, [gameState])
 
     const translateDraggableData = (data: DraggableData): Coords => {
         return {
@@ -79,7 +94,7 @@ const GameBoard = (
     }
 
     const eventLogger = (e: DraggableEvent, data: DraggableData, index: number) => {
-        if (!board) return;
+        // if (!board) return;
         playerTilesMoving[index] = true;
         // setControlledPosition({ x: data.x, y: data.y })
         const translatedData = translateDraggableData(data)
@@ -89,7 +104,7 @@ const GameBoard = (
             const x = translatedData.x
             const y = translatedData.y
             if (Math.abs(x - element.x) < sizes.maxDist && Math.abs(y - element.y) < sizes.maxDist) {
-                const tileFieldType = board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
+                const tileFieldType = gameState.board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
                 if (tileFieldType == BoardFieldType.GUARDED ||
                     tileFieldType == BoardFieldType.UNREACHABLE ||
                     tileFieldType == BoardFieldType.CARD) {
@@ -106,9 +121,9 @@ const GameBoard = (
         console.log('stopped????')
         const translatedData = translateDraggableData(data)
         if (!playerTilesMoving[index]) {
-            playersTiles[index].orientation = (playersTiles[index].orientation + 1) % 6
-            console.log(`clicked, ${playersTiles[index].orientation}`)
-            setPlayersTiles(playersTiles.map(el => Object.assign(el)))
+            gameState.playersStates[PLAYER_INDEX].cards[index].orientation = (gameState.playersStates[PLAYER_INDEX].cards[index].orientation + 1) % 6
+            console.log(`clicked, ${gameState.playersStates[PLAYER_INDEX].cards[index].orientation}`)
+            setPlayersTiles(gameState.playersStates[PLAYER_INDEX].cards.map(el => Object.assign(el)))
             return;
         }
 
@@ -118,31 +133,37 @@ const GameBoard = (
             const x = translatedData.x
             const y = translatedData.y
             if (Math.abs(x - element.x) < sizes.maxDist && Math.abs(y - element.y) < sizes.maxDist) {
-                if (!board) return;
-                const tileFieldType = board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
+                // if (!board) return;
+                const tileFieldType = gameState.board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
                 if (tileFieldType == BoardFieldType.GUARDED ||
                     tileFieldType == BoardFieldType.UNREACHABLE ||
                     tileFieldType == BoardFieldType.CARD) {
                     return;
                 }
-                const isValid = board.checkValidity(playersTiles[index], hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
+                const isValid = checkValidity(gameState.board, gameState.playersStates[PLAYER_INDEX].cards[index], hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
                 // console.log(`checked validity: ${isValid}`)
 
                 if (!isValid) return;
 
                 // setControlledPosition({ x: element.y - sizes.middle, y: element.x - sizes.middle })
                 // setTileHovered(hexPositions[i].ijPosition)
-                board.addCardToBoard(playersTiles[index], hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
+                // const newBoard = addCardToBoard(gameState.board, gameState.playersStates[PLAYER_INDEX].cards[index], hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
+                dispatch(addCardToBoardAction({ card: gameState.playersStates[PLAYER_INDEX].cards[index], x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
+                dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: PLAYER_INDEX, cardIndex: index }))
+                // gameState.playersStates[PLAYER_INDEX].cards[index] = getRandomCard()
+                setPlayersTiles(gameState.playersStates[PLAYER_INDEX].cards)
+                // playersTiles[index] = getRandomCard()
 
-                playersTiles[index] = getRandomCard()
+                const newBoard = gameState.board;
+                console.log(`what what what: ${JSON.stringify(getObligatoryPlayersCards(newBoard, gameState.playersStates[PLAYER_INDEX].cards))}`)
 
-                console.log(`what what what: ${JSON.stringify(board.getObligatoryPlayersCards(playersTiles))}`)
-
-                setPlayersTiles(playersTiles.map(el => Object.assign(el)))
+                // setPlayersTiles(playersTiles.map(el => Object.assign(el)))
 
                 // TODO: size
-                setSizes(calculateSizes(board.width, board.height, initialWidth, initialHeight))
-                console.log(`board: ${board.width}, ${board.height}`)
+                const newHeight = getBoardHeight(newBoard)
+                const newWidth = getBoardWidth(newBoard)
+                setSizes(calculateSizes(newWidth, newHeight, initialWidth, initialHeight))
+                console.log(`board: ${newWidth}, ${newHeight}`)
                 // setBoard(board);
                 return;
             }
@@ -164,18 +185,18 @@ const GameBoard = (
                 position: 'relative',
                 backgroundColor: 'white'
             }}>
-            {board && board.boardCards.map((object, i) => {
+            {gameState.board && gameState.board.boardCards.map((object, i) => {
                 return object.map((object2, j) => {
                     return <div key={`${i}-${j}`} className={styles.hex}
                         draggable='false'
-                        style={{ top: getTilePosition(i, j, board.parity, sizes).x, left: getTilePosition(i, j, board.parity, sizes).y }}>
+                        style={{ top: getTilePosition(i, j, gameState.board.parity, sizes).x, left: getTilePosition(i, j, gameState.board.parity, sizes).y }}>
                         <img className='dont-drag-image'
                             draggable='false'
                             src={`/emptyTiles/Tile_obligatory_border.svg`} width={sizes.svgWidth} height={sizes.svgHeight}
                             style={{ position: 'absolute' }} />
                         <GameTileSpace card={object2} width={sizes.svgWidth} height={sizes.svgHeight}
                             highlighted={isHighlighted(i, j)}
-                            boardFieldType={board.boardFieldsTypes[i][j]}
+                            boardFieldType={gameState.board.boardFieldsTypes[i][j]}
                         />
                         {/* <p style={{ zIndex: 1000, position: 'absolute', left: `10px`, color: 'white' }}>Another div - obligatory svg</p> */}
                     </div>
@@ -188,6 +209,7 @@ const GameBoard = (
                 flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
             }}>
             </div>
+            {/* {gameState.playersStates[PLAYER_INDEX].cards.map((element, index) => { */}
             {playersTiles.map((element, index) => {
                 return <Draggable
                     key={index}

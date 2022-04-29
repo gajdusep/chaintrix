@@ -9,6 +9,8 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter
 } from '@solana/wallet-adapter-wallets';
+import { Provider } from 'react-redux';
+import { store } from '../store/store';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
 
@@ -24,15 +26,19 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
     []
   );
 
-  return <ConnectionProvider endpoint={endpoint}>
-    <WalletProvider wallets={wallets} autoConnect={false}>
+  return (
+    <Provider store={store}>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect={false}>
 
-      <WalletModalProvider>
-        {typeof window === 'undefined' ? null : <Component {...pageProps} />}
-        {/* <Component  {...pageProps} /> */}
-      </WalletModalProvider>
-    </WalletProvider>
-  </ConnectionProvider>;
+          <WalletModalProvider>
+            {typeof window === 'undefined' ? null : <Component {...pageProps} />}
+            {/* <Component  {...pageProps} /> */}
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </Provider>
+  );
 }
 
 export default MyApp

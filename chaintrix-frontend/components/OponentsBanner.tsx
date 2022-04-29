@@ -29,6 +29,8 @@ const initialHeight = 600
 const OponentsBanner = (
     props: OponentsBannerProps
 ) => {
+    return <div></div>
+
     console.log(props.game.playersStates[0].cards)
 
     const [tileHovered, setTileHovered] = useState<Coords | null>(null);

@@ -8,13 +8,11 @@ import SocketTesting from '../components/SocketTesting';
 import SolanaAndSocket from '../components/SolanaAndSocket';
 import { useState } from 'react';
 // import { GameState } from 'chaintrix-game-mechanics';
-import { GameState } from '../../chaintrix-game-mechanics/dist';
+import { GameState, getNewGameState } from '../../chaintrix-game-mechanics/dist';
+import ReduxTesting from '../components/ReduxTesting';
 
 const Home: NextPage = () => {
-  const [gameState, setGameState] = useState<GameState>(new GameState());
-  const newGameState = new GameState();
-  console.log(JSON.stringify(newGameState.playersStates))
-
+  const [gameState, setGameState] = useState<GameState>(getNewGameState());
   return (
     <div className={styles.container}>
       <Head>
@@ -24,6 +22,7 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
+        {/* <ReduxTesting /> */}
         <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
           <div>
             <GameBoard />

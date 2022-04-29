@@ -21,3 +21,11 @@ export type HexPosition = {
     xyPosition: Coords,
     ijPosition: Coords
 }
+
+export enum BoardFieldType {
+    CARD = 'Card',
+    UNREACHABLE = 'Unreachable',
+    OBLIGATORY = 'Obligatory',
+    GUARDED = 'Guarded',
+    FREE = 'Free'
+}
