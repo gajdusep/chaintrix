@@ -28,7 +28,7 @@ const Home: NextPage = () => {
             <GameBoard />
           </div>
           <div>
-            <OponentsBanner game={gameState} />
+            <OponentsBanner />
           </div>
         </div>
         {/* <SocketTesting /> */}

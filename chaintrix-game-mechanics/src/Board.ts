@@ -80,8 +80,8 @@ export const calculateBoardFieldsTypes = (board: Board): BoardFieldType2DArray =
     const guardedCondition = (iGuard: number, jGuard: number): boolean => {
         return iGuard >= 0 && iGuard < height &&
             jGuard >= 0 && jGuard < width &&
-            board.boardFieldsTypes[iGuard][jGuard] != BoardFieldType.CARD &&
-            board.boardFieldsTypes[iGuard][jGuard] != BoardFieldType.UNREACHABLE
+            boardFieldsTypes[iGuard][jGuard] != BoardFieldType.CARD &&
+            boardFieldsTypes[iGuard][jGuard] != BoardFieldType.UNREACHABLE
     }
     // find all obligatory and guarded
     for (let i = 0; i < height; i++) {
@@ -256,15 +256,18 @@ export const checkValidity = (board: Board, card: Card, posX: number, posY: numb
 
 export const addCardToBoard = (board: Board, card: CardNullable, posX: number, posY: number): Board => {
     // TODO: check if out of bounds
-    const newBoard: Board = { ...board };
+    // const newBoard: Board = { ...board };
+    // TODO: CHECK IF THE PLAYER CAN REALLY PLAY THAT CARD (is in his cards)
 
     let addTop: boolean = false;
     let addLeft: boolean = false;
     let addBottom: boolean = false;
     let addRight: boolean = false;
 
-    const height = getBoardHeight(newBoard)
-    const width = getBoardWidth(newBoard)
+    // const height = getBoardHeight(newBoard)
+    // const width = getBoardWidth(newBoard)
+    const height = getBoardHeight(board)
+    const width = getBoardWidth(board)
 
     if (posX == 0) addTop = true;
     if (posX == height - 1) addBottom = true;
@@ -274,7 +277,7 @@ export const addCardToBoard = (board: Board, card: CardNullable, posX: number, p
     console.log(`pose: ${JSON.stringify(card)}`)
     console.log(`pose2: ${JSON.stringify(board.boardCards[posX][posY])}`)
     console.log(`pose3: ${JSON.stringify(board.boardCards)}`)
-    newBoard.boardCards[posX][posY] = card
+    board.boardCards[posX][posY] = card
 
 
     // return;
@@ -304,7 +307,8 @@ export const addCardToBoard = (board: Board, card: CardNullable, posX: number, p
     }
 
     const newBoardFieldTypes = calculateBoardFieldsTypes(board)
-    return addNewBoardFieldTypesToBoard(newBoard, newBoardFieldTypes)
+    const boardResult = addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
+    return boardResult
 }
 
 export const getAllObligatoryPositionsCoords = (board: Board): Array<Coords> => {
