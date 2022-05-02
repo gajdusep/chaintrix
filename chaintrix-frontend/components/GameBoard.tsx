@@ -16,7 +16,7 @@ import {
 // } from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes, addCardToBoardAction, replaceGivenCardWithNewOne, selectPlayersCardsView,
-    rotateCardInCardView, updateCardView
+    rotateCardInCardView, updateCardView, updateStateAfterMove
 } from '../store/gameStateSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
@@ -53,7 +53,6 @@ const GameBoard = (
     const blbostRef = React.useRef(null);
     const containerRef = React.useRef(null)
     const [controlledPositions, setControlledPositions] = useState<Array<Coords>>(() => calculatePlayersTilesPositions(sizes));
-    const PLAYER_INDEX = 0
 
     useEffect(() => {
         setHexPositions(getHexPositions(gameState.board, sizes))
@@ -117,7 +116,8 @@ const GameBoard = (
                 // setControlledPosition({ x: element.y - sizes.middle, y: element.x - sizes.middle })
                 // setTileHovered(hexPositions[i].ijPosition)                
                 dispatch(addCardToBoardAction({ card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
-                dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: PLAYER_INDEX, cardIndex: index }))
+                dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: gameState.currentlyMovingPlayer, cardIndex: index }))
+                dispatch(updateStateAfterMove())
                 dispatch(updateCardView())
             }
         }

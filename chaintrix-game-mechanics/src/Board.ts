@@ -274,9 +274,9 @@ export const addCardToBoard = (board: Board, card: CardNullable, posX: number, p
     if (posY == 0) addLeft = true;
     if (posY == width - 1) addRight = true;
 
-    console.log(`pose: ${JSON.stringify(card)}`)
-    console.log(`pose2: ${JSON.stringify(board.boardCards[posX][posY])}`)
-    console.log(`pose3: ${JSON.stringify(board.boardCards)}`)
+    // console.log(`pose: ${JSON.stringify(card)}`)
+    // console.log(`pose2: ${JSON.stringify(board.boardCards[posX][posY])}`)
+    // console.log(`pose3: ${JSON.stringify(board.boardCards)}`)
     board.boardCards[posX][posY] = card
 
 
@@ -341,6 +341,14 @@ export const getObligatoryPlayersCards = (board: Board, playerCards: Array<Card>
             }
         }
     }
-
+    // console.log(JSON.stringify(result))
     return result;
+}
+
+export const getNumberOfObligatoryCards = (obligatoryCards: Array<Array<Coords>>): number => {
+    let obligatoryCardsNo = 0
+    for (let i = 0; i < obligatoryCards.length; i++) {
+        if (obligatoryCards[i].length > 0) obligatoryCardsNo += 1;
+    }
+    return obligatoryCardsNo;
 }

@@ -6,7 +6,8 @@ import {
     getHexPositions, calculatePlayersTilesPositions, Coords,
     CardNullable, Card, HexPosition, GameState,
     checkValidity, getNewGameState,
-    getBoardHeight, getBoardWidth, addCardToBoard, mod
+    getBoardHeight, getBoardWidth, addCardToBoard, mod,
+    getStateAfterMove
 } from '../../chaintrix-game-mechanics/dist/index.js';
 
 export interface GameStateState {
@@ -21,7 +22,7 @@ const INITIAL_HEIGHT = 600
 const newGameState = getNewGameState()
 const initialState: GameStateState = {
     gameState: newGameState,
-    playersCardsView: newGameState.playersStates[0].cards,
+    playersCardsView: newGameState.playersStates[newGameState.currentlyMovingPlayer].cards,
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
 };
 
@@ -39,9 +40,12 @@ export const gameStateSlice = createSlice({
         replaceGivenCardWithNewOne: (state, action: PayloadAction<{ card: Card, playerIndex: number, cardIndex: number }>) => {
             state.gameState.playersStates[action.payload.playerIndex].cards[action.payload.cardIndex] = action.payload.card
         },
+        updateStateAfterMove: (state) => {
+            state.gameState = getStateAfterMove(state.gameState)
+        },
         updateCardView: (state) => {
             const newCardView = []
-            const cards = state.gameState.playersStates[0].cards
+            const cards = state.gameState.playersStates[state.gameState.currentlyMovingPlayer].cards
             for (let i = 0; i < cards.length; i++) {
                 if (state.playersCardsView[i].cardID == cards[i].cardID) {
                     newCardView.push(state.playersCardsView[i])
@@ -62,7 +66,8 @@ export const {
     addCardToBoardAction,
     replaceGivenCardWithNewOne,
     rotateCardInCardView,
-    updateCardView
+    updateCardView,
+    updateStateAfterMove
 } = gameStateSlice.actions;
 
 // The function below is called a selector and allows us to select a value from

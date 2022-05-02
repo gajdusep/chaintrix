@@ -6,7 +6,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import {
     Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
     getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition, GameState
+    CardNullable, Card, HexPosition, GameState, mod
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
@@ -35,8 +35,9 @@ const OponentsBanner = () => {
                 alignItems: 'centers'
 
             }}>
-            <p>COLOR: {gameState.playersStates[gameState.currentlyMoving].color}</p>
-            {gameState.playersStates[gameState.currentlyMoving].cards.map((element, index) => {
+            <p>COLOR: {gameState.playersStates[mod(gameState.currentlyMovingPlayer + 1, 2)].color}</p>
+            <p>Game state: player {gameState.currentlyMovingPlayer}: phase {gameState.currentlyMovingPhase}</p>
+            {gameState.playersStates[mod(gameState.currentlyMovingPlayer + 1, 2)].cards.map((element, index) => {
                 return (
                     <div style={{
                         zIndex: 10000000,
