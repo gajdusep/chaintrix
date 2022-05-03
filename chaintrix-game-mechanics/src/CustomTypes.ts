@@ -15,6 +15,12 @@ export type Card = {
     orientation: number
 }
 
+export type MoveInfo = {
+    card: Card,
+    x: number,
+    y: number
+}
+
 export type CardNullable = null | Card;
 
 export type HexPosition = {

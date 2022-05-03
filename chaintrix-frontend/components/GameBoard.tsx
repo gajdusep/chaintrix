@@ -116,6 +116,7 @@ const GameBoard = (
                 // setControlledPosition({ x: element.y - sizes.middle, y: element.x - sizes.middle })
                 // setTileHovered(hexPositions[i].ijPosition)                
                 dispatch(addCardToBoardAction({ card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
+                // TODO: the new card will be sent from the socket servers
                 dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: gameState.currentlyMovingPlayer, cardIndex: index }))
                 dispatch(updateStateAfterMove())
                 dispatch(updateCardView())

@@ -29,23 +29,52 @@ export interface GameState {
     board: Board
 }
 
+export const getInitialCardIds = (): Array<string> => {
+    const initialCards = []
+    for (let i = 1; i <= 56; i++) {
+        initialCards.push(i.toString())
+    }
+    return initialCards;
+}
+
+export const getRandomUnusedCardAndAlterArray = (cardIds: Array<string>): Card => {
+    const i = (Math.random() * cardIds.length) | 0
+    return {
+        cardID: cardIds.splice(i, 1)[0],
+        orientation: 0
+    }
+}
+
+export const get6Cards = (unusedCards: Array<string>): Array<Card> => {
+    const cards: Array<Card> = []
+    for (let index = 0; index < 6; index++) {
+        const card = getRandomUnusedCardAndAlterArray(unusedCards)
+        cards.push(card)
+    }
+    return cards;
+}
+
 export const getNewGameState = (): GameState => {
+    const initialCards = getInitialCardIds()
+    const player0Cards = get6Cards(initialCards)
+    const player1Cards = get6Cards(initialCards)
+    console.log(`after initialization: ${initialCards.length}, pl0: ${JSON.stringify(player0Cards)}`)
     return {
         playersStates: [
             {
                 color: "R",
-                cards: [getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard()]
+                cards: player0Cards
             },
             {
                 color: "B",
-                cards: [getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard(), getRandomCard()]
+                cards: player1Cards
             }
         ],
         startingPlayer: 0,
         currentlyMovingPhase: MovePhase.SECOND_PHASE_FREE_MOVE,
         currentlyMovingPlayer: 0,
         moves: [],
-        unusedCards: [],
+        unusedCards: initialCards,
         board: getNewBoard()
     }
 }

@@ -1,13 +1,50 @@
+import {
+    GameState
+} from "../../chaintrix-game-mechanics/dist"
+// } from 'chaintrix-game-mechanics';
 
-export type RoomGame = {
+export enum BlockchainType {
+    SOLANA,
+    HEDERA,
+    NO_BLOCKCHAIN
+}
+
+export type GameRoom = {
     players: Array<Player>,
-    playerNPlaying: number,
-    solanaAcceptedBetAccount: string
+    blockchainType: BlockchainType,
+    gameState: GameState,
+    acceptedBetInfo: AcceptedBetInfo
 }
 
-export type Player = {
-    playerAddress: string,
+interface GenericPlayer {
     socketID: string,
-    betPDA: string,
-    clicks: number
 }
+
+export interface SolanaPlayer extends GenericPlayer {
+    address: string,
+    betPDA: string,
+}
+
+export interface HederaPlayer extends GenericPlayer {
+    address: string
+}
+
+export interface NoBlockchainPlayer extends GenericPlayer {
+
+}
+
+export type Player = SolanaPlayer | HederaPlayer | NoBlockchainPlayer;
+
+export interface GenericAcceptedBetInfo {
+
+}
+
+export interface SolanaAcceptedBetInfo extends GenericAcceptedBetInfo {
+    acceptedBetAccount: string
+}
+
+export interface HederaAcceptedBetInfo extends GenericAcceptedBetInfo {
+
+}
+
+export type AcceptedBetInfo = SolanaAcceptedBetInfo | HederaAcceptedBetInfo;

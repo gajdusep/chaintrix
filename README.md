@@ -14,3 +14,19 @@ Solana private key:
 Hedera private keys:
 
 `chaintrix-hedera` - `.env`
+
+## Architecture
+
+What does a server check?
+
+- validity of the move
+- 
+
+What information must be broadcasted from the socket to the room?
+
+- after move info contains:
+    - playerID, card (cardID, orientation)
+    - newCard
+    - newPhase and currently playing player
+
+- time remaining

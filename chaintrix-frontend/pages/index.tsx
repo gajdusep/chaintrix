@@ -23,16 +23,16 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         {/* <ReduxTesting /> */}
-        <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
+        {/* <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
           <div>
             <GameBoard />
           </div>
           <div>
             <OponentsBanner />
           </div>
-        </div>
+        </div> */}
         {/* <SocketTesting /> */}
-        {/* <SolanaAndSocket /> */}
+        <SolanaAndSocket />
         {/* <SmartContractTesting /> */}
 
       </main>

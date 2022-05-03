@@ -7,7 +7,7 @@ import {
     CardNullable, Card, HexPosition, GameState,
     checkValidity, getNewGameState,
     getBoardHeight, getBoardWidth, addCardToBoard, mod,
-    getStateAfterMove
+    getStateAfterMove, getRandomUnusedCardAndAlterArray
 } from '../../chaintrix-game-mechanics/dist/index.js';
 
 export interface GameStateState {
@@ -38,7 +38,11 @@ export const gameStateSlice = createSlice({
             state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT)
         },
         replaceGivenCardWithNewOne: (state, action: PayloadAction<{ card: Card, playerIndex: number, cardIndex: number }>) => {
-            state.gameState.playersStates[action.payload.playerIndex].cards[action.payload.cardIndex] = action.payload.card
+            // state.gameState.playersStates[action.payload.playerIndex].cards[action.payload.cardIndex] = action.payload.card
+            console.log(`before altering: ${state.gameState.unusedCards.length}`)
+            const newCard = getRandomUnusedCardAndAlterArray(state.gameState.unusedCards)
+            state.gameState.playersStates[action.payload.playerIndex].cards[action.payload.cardIndex] = newCard
+            console.log(`after altering: ${state.gameState.unusedCards.length}`)
         },
         updateStateAfterMove: (state) => {
             state.gameState = getStateAfterMove(state.gameState)

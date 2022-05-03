@@ -1,10 +1,11 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { MoveInfo } from "../../chaintrix-game-mechanics/dist";
 import {
     joinRoomOrCreate,
     playersTurn
-} from './socketMethods'
+} from './SocketMethods'
 import { Player } from "./types";
 
 require('dotenv').config()
@@ -27,8 +28,8 @@ io.on("connection", (socket) => {
     socket.on('wantsToPlay', (betPDA, playerAddress) => {
         joinRoomOrCreate(io, socket, freeRooms, roomObjects, players, betPDA, playerAddress)
     });
-    socket.on('playersTurn', () => {
-        playersTurn(io, socket, roomObjects)
+    socket.on('playersTurn', (moveInfo: MoveInfo) => {
+        playersTurn(io, socket, roomObjects, moveInfo)
     });
 
     // if (interval) {

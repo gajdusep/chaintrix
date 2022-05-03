@@ -8,6 +8,7 @@ import { Program, Provider } from "@project-serum/anchor";
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { IDL } from "../types/chaintrix_solana";
 import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
+import { GameState, MoveInfo } from '../../chaintrix-game-mechanics/dist';
 
 type SolanaAndSocketProps = {
 }
@@ -17,7 +18,9 @@ const SolanaAndSocket = (
 ) => {
     // SOCKET STUFF
     const [response, setResponse] = useState("");
-    const [gameState, setGameState] = useState("");
+    // const [gameState, setGameState] = useState("");
+    const [socketText, setsocketText] = useState("");
+    const [gameState, setGameState] = useState<GameState>();
     // const ENDPOINT = ;
     const [socket, setSocket] = useState<null | Socket>(null);
 
@@ -29,14 +32,15 @@ const SolanaAndSocket = (
         socketClient.on("joinedOrCreated", data => {
             // setResponse(JSON.stringify(data));
         });
-        socketClient.on("gameStarted", data => {
-            setGameState('game was started')
+        socketClient.on("gameStarted", (newGameState: GameState) => {
+            setGameState(newGameState)
+            setsocketText(`game was started ${JSON.stringify(newGameState.playersStates)}`)
         });
         socketClient.on("playerPlayed", data => {
-            setGameState(data)
+            setsocketText(data)
         });
         socketClient.on("gameSuccesfullyFinished", data => {
-            setGameState('game was succesfully finished')
+            setsocketText('game was succesfully finished')
         });
 
         setSocket(socketClient)
@@ -81,8 +85,14 @@ const SolanaAndSocket = (
 
     const playYourRound = () => {
         if (!socket) return;
+        if (!gameState) return;
 
-        socket.emit('playersTurn');
+        const moveInfo: MoveInfo = {
+            card: gameState.playersStates[gameState.currentlyMovingPlayer].cards[0],
+            x: 1,
+            y: 1
+        }
+        socket.emit('playersTurn', moveInfo);
     }
 
     // SOLANA STUFF
@@ -105,7 +115,7 @@ const SolanaAndSocket = (
             {/* <p>It's <time dateTime={response}>{response}</time></p> */}
             <button onClick={joinRoomClick}>Join room or create a new one</button>
             <p>response: {response}</p>
-            <p>game state: {gameState}</p>
+            <p>game state: {socketText}</p>
             <button onClick={playYourRound}>Play your round</button>
         </div>
 
