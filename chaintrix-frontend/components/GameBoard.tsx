@@ -11,13 +11,18 @@ import {
     getHexPositions, calculatePlayersTilesPositions, Coords,
     CardNullable, Card, HexPosition, GameState,
     checkValidity, addCardToBoard,
-    getBoardHeight, getBoardWidth, getObligatoryPlayersCards
+    getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
+    PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
+    GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes, addCardToBoardAction, replaceGivenCardWithNewOne, selectPlayersCardsView,
-    rotateCardInCardView, updateCardView, updateStateAfterMove
+    rotateCardInCardView, updateCardView, updateStateAfterMove, setGameState,
+    onPlayerPlayedSocketEvent,
+    addCardToBoardSocket
 } from '../store/gameStateSlice';
+import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 
@@ -44,6 +49,7 @@ const GameBoard = (
     const gameState = useAppSelector(selectGameState);
     const sizes = useAppSelector(selectSizes);
     const playersCardsView = useAppSelector(selectPlayersCardsView);
+    const socketClient = useAppSelector(selectSocketClient);
     const dispatch = useAppDispatch();
 
     const [tileHovered, setTileHovered] = useState<Coords | null>(null);
@@ -58,6 +64,25 @@ const GameBoard = (
         setHexPositions(getHexPositions(gameState.board, sizes))
         setControlledPositions(calculatePlayersTilesPositions(sizes));
     }, [sizes])
+
+    useEffect((): any => {
+        console.log(`setting onevents`)
+        dispatch(setOnEvent({
+            event: GAME_STARTED, func: (payload: GameState) => {
+                console.log(`whyyyyy ${payload}, ${JSON.stringify(payload)}`)
+
+                dispatch(setGameState({ gameState: payload }))
+            }
+        }));
+        dispatch(setOnEvent({
+            event: PLAYER_PLAYED, func: (payload: PlayerPlayedPayload) => {
+                console.log(`player played!!!: ${JSON.stringify(payload)}`)
+                dispatch(onPlayerPlayedSocketEvent(payload))
+            }
+        }))
+        console.log(`finished onevents`)
+        socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
+    }, []);
 
     const translateDraggableData = (data: DraggableData): Coords => {
         return {
@@ -115,11 +140,14 @@ const GameBoard = (
 
                 // setControlledPosition({ x: element.y - sizes.middle, y: element.x - sizes.middle })
                 // setTileHovered(hexPositions[i].ijPosition)                
-                dispatch(addCardToBoardAction({ card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
                 // TODO: the new card will be sent from the socket servers
-                dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: gameState.currentlyMovingPlayer, cardIndex: index }))
-                dispatch(updateStateAfterMove())
-                dispatch(updateCardView())
+
+                dispatch(addCardToBoardSocket({ socketClient: socketClient, card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
+                /* old ways: */
+                // dispatch(addCardToBoardAction({ card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
+                // dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: gameState.currentlyMovingPlayer, cardIndex: index }))
+                // dispatch(updateStateAfterMove())
+                // dispatch(updateCardView())
             }
         }
     };

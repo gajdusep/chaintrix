@@ -7,8 +7,12 @@ import {
     CardNullable, Card, HexPosition, GameState,
     checkValidity, getNewGameState,
     getBoardHeight, getBoardWidth, addCardToBoard, mod,
-    getStateAfterMove, getRandomUnusedCardAndAlterArray
+    getStateAfterMove, getRandomUnusedCardAndAlterArray,
+    updateGameStateAfterUnusedCardSelected,
+    PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
+    PlayerPlayedPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
+import { Socket } from 'socket.io-client';
 
 export interface GameStateState {
     gameState: GameState,
@@ -20,19 +24,67 @@ const INITIAL_WIDTH = 500
 const INITIAL_HEIGHT = 600
 
 const newGameState = getNewGameState()
+// const initialState: GameStateState = {
+//     gameState: newGameState,
+//     playersCardsView: newGameState.playersStates[newGameState.currentlyMovingPlayer].cards,
+//     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+// };
 const initialState: GameStateState = {
     gameState: newGameState,
-    playersCardsView: newGameState.playersStates[newGameState.currentlyMovingPlayer].cards,
+    playersCardsView: [],
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
-};
+}
 
 export const gameStateSlice = createSlice({
     name: 'gameState',
     initialState,
     // The `reducers` field lets us define reducers and generate associated actions
     reducers: {
+        setGameState: (state, action: PayloadAction<{ gameState: GameState }>) => {
+            console.log(`hhhhhhhhhhhhhhhhhhhhhhhhhhh ${JSON.stringify(action.payload.gameState)}`)
+            const gameState = action.payload.gameState;
+            state.gameState = gameState;
+            state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
+            state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+        },
         addCardToBoardAction: (state, action: PayloadAction<{ card: Card, x: number, y: number }>) => {
             // TODO: add sizes to the state! - in here, change the sizes based on the new board
+            const newBoard = addCardToBoard(state.gameState.board, action.payload.card, action.payload.x, action.payload.y)
+            state.gameState.board = newBoard
+            state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT)
+        },
+        onPlayerPlayedSocketEvent: (state, action: PayloadAction<PlayerPlayedPayload>) => {
+            console.log(`in game state slice: ${JSON.stringify(action.payload)}`)
+
+            if (!isCardInBoard(state.gameState.board, action.payload.playedCard.cardID)) {
+                state.gameState.board = addCardToBoard(state.gameState.board, action.payload.playedCard, action.payload.x, action.payload.y)
+                state.sizes = calculateSizes(getBoardWidth(state.gameState.board), getBoardHeight(state.gameState.board), INITIAL_WIDTH, INITIAL_HEIGHT)
+            }
+
+            state.gameState = updateGameStateAfterUnusedCardSelected(state.gameState, action.payload.playedCard.cardID, action.payload.newCardID)
+
+            state.gameState = getStateAfterMove(state.gameState)
+            // update Card View
+            const newCardView = []
+            const cards = state.gameState.playersStates[state.gameState.currentlyMovingPlayer].cards
+            for (let i = 0; i < cards.length; i++) {
+                if (state.playersCardsView[i].cardID == cards[i].cardID) {
+                    newCardView.push(state.playersCardsView[i])
+                }
+                else {
+                    newCardView.push(cards[i])
+                }
+            }
+            state.playersCardsView = newCardView
+        },
+        addCardToBoardSocket: (state, action: PayloadAction<{ socketClient: Socket, card: Card, x: number, y: number }>) => {
+            const playerPlaysPayload: PlayerPlaysPayload = {
+                playerID: state.gameState.currentlyMovingPlayer,
+                card: action.payload.card,
+                x: action.payload.x,
+                y: action.payload.y
+            }
+            action.payload.socketClient.emit(PLAYER_PLAYS, playerPlaysPayload)
             const newBoard = addCardToBoard(state.gameState.board, action.payload.card, action.payload.x, action.payload.y)
             state.gameState.board = newBoard
             state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT)
@@ -71,7 +123,10 @@ export const {
     replaceGivenCardWithNewOne,
     rotateCardInCardView,
     updateCardView,
-    updateStateAfterMove
+    updateStateAfterMove,
+    setGameState,
+    onPlayerPlayedSocketEvent,
+    addCardToBoardSocket
 } = gameStateSlice.actions;
 
 // The function below is called a selector and allows us to select a value from

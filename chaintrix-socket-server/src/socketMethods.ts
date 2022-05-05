@@ -13,12 +13,15 @@ import {
     checkValidity, addCardToBoard,
     getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
     getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
-    getStateAfterMove
+    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload,
+    PLAYER_PLAYED, PlayerPlayedPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, closeGameSolana } from "./SolanaMethods";
 // } from 'chaintrix-game-mechanics';
 
 const NUMBER_OF_PLAYERS = 2
+
+// TODO: roomID: should be strictly unique, not from 1 to 10000
 
 type RoomObjects = { [key: string]: GameRoom }
 
@@ -101,11 +104,77 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
 
         // TODO: call smart contract: accept bets
     }
-
     socket.emit("joinedOrCreated", { 'roomID': roomID })
 }
 
-export const playerMove = (room: GameRoom, moveInfo: MoveInfo): Card => {
+export const joinOrCreateRoomNoBlockchain = async (sio: Server, socket: Socket,
+    freeRooms: Array<string>, roomObjects: RoomObjects, players: { [socketID: string]: Player }
+) => {
+    let roomID = "blbost";
+    const roomsList = Array.from(socket.rooms)
+    console.log(roomsList);
+
+    // automatically in a room with socket id and moreover in a game room
+    if (socket.rooms.size >= 2) {
+        roomID = `already in a room ${getGameRoomID(socket)}`;
+    } else if (!freeRooms || !freeRooms.length) {
+        // const room = uuid(); // TODO: the room id should be strictly unique!
+        roomID = (Math.floor(Math.random() * 100000)).toString();
+        console.log(`no blockchain: ${socket.id} created, roomID: ${roomID}`);
+        freeRooms.push(roomID);
+        const player0: NoBlockchainPlayer = {
+            socketID: socket.id
+        }
+        players[socket.id] = player0
+        socket.join(roomID);
+    } else {
+        roomID = freeRooms[0];
+        let clients = sio.sockets.adapter.rooms.get(roomID);
+        const player0: NoBlockchainPlayer = players[Array.from(clients)[0]] as NoBlockchainPlayer;
+        delete players[clients[0]];
+        const player1: NoBlockchainPlayer = {
+            socketID: socket.id
+        };
+        console.log(`no blockchain:  ${socket.id} wants to join, roomID: ${roomID}`);
+        socket.join(roomID);
+
+        const playersInRoom = [player0, player1];
+
+        console.log(`clients list: ${JSON.stringify(playersInRoom)}`)
+        const newGameState = getNewGameState()
+        roomObjects[roomID] = {
+            players: playersInRoom,
+            gameState: newGameState,
+            blockchainType: BlockchainType.NO_BLOCKCHAIN
+        }
+        freeRooms.shift();
+
+        sio.to(roomID).emit(GAME_STARTED, newGameState)
+        console.log(`NEW GAME STATE: ${JSON.stringify(newGameState)}`)
+    }
+    // socket.emit("joinedOrCreated", { 'roomID': roomID })
+}
+
+export const playerPlaysNoBlockchain = async (
+    sio: Server, socket: Socket, roomObjects: RoomObjects,
+    payload: PlayerPlaysPayload
+) => {
+    console.log(`NO_BC: payload: ${JSON.stringify(payload)}`)
+    const gameRoomID = getGameRoomID(socket);
+    const room = roomObjects[gameRoomID]
+
+    const newCard = playerMove(room, payload)
+    const responsePayload: PlayerPlayedPayload = {
+        newCardID: newCard.cardID,
+        playedCard: payload.card,
+        x: payload.x,
+        y: payload.y
+    }
+    sio.to(gameRoomID).emit(PLAYER_PLAYED, responsePayload)
+
+}
+
+export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): Card => {
     // TODO: check:
     // - is the card in currently playing players cards
     // - is the card valid in the position
@@ -116,6 +185,7 @@ export const playerMove = (room: GameRoom, moveInfo: MoveInfo): Card => {
         // TODO: return error
         throw Error()
     }
+
     const newBoard = addCardToBoard(room.gameState.board, moveInfo.card, moveInfo.x, moveInfo.y)
     room.gameState.board = newBoard
     const newCard = getRandomUnusedCardAndAlterArray(room.gameState.unusedCards)
@@ -136,7 +206,7 @@ export const playersTurn = async (sio: Server, socket: Socket, roomObjects: Room
     // TODO: better error handling here
     if (!room) return;
 
-    playerMove(room, moveInfo)
+    // playerMove(room, moveInfo)
 
     // the finishing condition (artificial rn)
     if (room.gameState.unusedCards.length < 50) {

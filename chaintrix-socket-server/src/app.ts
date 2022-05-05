@@ -1,10 +1,16 @@
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { MoveInfo } from "../../chaintrix-game-mechanics/dist";
+import {
+    MoveInfo,
+    PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_PLAYS,
+    PlayerPlaysPayload
+
+} from "../../chaintrix-game-mechanics/dist";
 import {
     joinRoomOrCreate,
-    playersTurn
+    playersTurn, joinOrCreateRoomNoBlockchain,
+    playerPlaysNoBlockchain
 } from './SocketMethods'
 import { Player } from "./types";
 
@@ -31,6 +37,15 @@ io.on("connection", (socket) => {
     socket.on('playersTurn', (moveInfo: MoveInfo) => {
         playersTurn(io, socket, roomObjects, moveInfo)
     });
+    socket.on(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, () => {
+        joinOrCreateRoomNoBlockchain(io, socket, freeRooms, roomObjects, players)
+    });
+    socket.on(PLAYER_PLAYS, (payload: PlayerPlaysPayload) => {
+        playerPlaysNoBlockchain(io, socket, roomObjects, payload)
+    });
+
+
+
 
     // if (interval) {
     //     clearInterval(interval);

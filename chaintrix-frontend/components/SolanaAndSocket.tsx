@@ -9,6 +9,10 @@ import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { IDL } from "../types/chaintrix_solana";
 import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
 import { GameState, MoveInfo } from '../../chaintrix-game-mechanics/dist';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import {
+    selectSocketClient, setOnEvent
+} from '../store/socketSlice';
 
 type SolanaAndSocketProps = {
 }
@@ -22,36 +26,43 @@ const SolanaAndSocket = (
     const [socketText, setsocketText] = useState("");
     const [gameState, setGameState] = useState<GameState>();
     // const ENDPOINT = ;
-    const [socket, setSocket] = useState<null | Socket>(null);
+    // const [socket, setSocket] = useState<null | Socket>(null);
+    const socketClient = useAppSelector(selectSocketClient);
+    const dispatch = useAppDispatch();
 
     useEffect((): any => {
-        const socketClient = socketIOClient(LOCALHOST_SOCKET_ENDPOINT);
-        socketClient.on("FromAPI", data => {
-            setResponse(data);
-        });
-        socketClient.on("joinedOrCreated", data => {
-            // setResponse(JSON.stringify(data));
-        });
-        socketClient.on("gameStarted", (newGameState: GameState) => {
-            setGameState(newGameState)
-            setsocketText(`game was started ${JSON.stringify(newGameState.playersStates)}`)
-        });
-        socketClient.on("playerPlayed", data => {
-            setsocketText(data)
-        });
-        socketClient.on("gameSuccesfullyFinished", data => {
-            setsocketText('game was succesfully finished')
-        });
-
-        setSocket(socketClient)
-
-        return () => socketClient.disconnect();
+        dispatch(setOnEvent({
+            event: 'FromAPI', func: (data) => {
+                setResponse(data);
+            }
+        }))
+        dispatch(setOnEvent({
+            event: 'joinedOrCreated', func: (data) => {
+                // setResponse(JSON.stringify(data));
+            }
+        }))
+        dispatch(setOnEvent({
+            event: 'gameStarted', func: (newGameState: GameState) => {
+                setGameState(newGameState)
+                setsocketText(`game was started ${JSON.stringify(newGameState.playersStates)}`)
+            }
+        }))
+        dispatch(setOnEvent({
+            event: 'playerPlayed', func: (data) => {
+                setsocketText(data)
+            }
+        }))
+        dispatch(setOnEvent({
+            event: 'gameSuccesfullyFinished', func: data => {
+                setsocketText('game was succesfully finished')
+            }
+        }))
     }, []);
 
     // TODO: try catch
     const joinRoomClick = async () => {
         // TODO: error text
-        if (!socket) return;
+        if (!socketClient) return;
         // TODO: error text
         if (!wallet || !wallet.publicKey) return;
 
@@ -80,11 +91,11 @@ const SolanaAndSocket = (
         console.log(`pda account: ${pdaAccount}`);
         setResponse(`${betAccountPDA.toBase58()} with balance: ${await connection.getBalance(betAccountPDA)}`);
 
-        socket.emit('wantsToPlay', betAccountPDA, wallet.publicKey);
+        socketClient.emit('wantsToPlay', betAccountPDA, wallet.publicKey);
     }
 
     const playYourRound = () => {
-        if (!socket) return;
+        if (!socketClient) return;
         if (!gameState) return;
 
         const moveInfo: MoveInfo = {
@@ -92,7 +103,7 @@ const SolanaAndSocket = (
             x: 1,
             y: 1
         }
-        socket.emit('playersTurn', moveInfo);
+        socketClient.emit('playersTurn', moveInfo);
     }
 
     // SOLANA STUFF

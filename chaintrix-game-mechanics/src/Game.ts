@@ -45,6 +45,29 @@ export const getRandomUnusedCardAndAlterArray = (cardIds: Array<string>): Card =
     }
 }
 
+export const updateGameStateAfterUnusedCardSelected = (
+    gameState: GameState, playedCardID: string, newCardID: string
+): GameState => {
+    const pl0Index = gameState.playersStates[0].cards.findIndex((value) => value.cardID == playedCardID)
+    const pl1Index = gameState.playersStates[1].cards.findIndex((value) => value.cardID == playedCardID)
+    const unusedCardsIndex = gameState.unusedCards.findIndex((value) => value == newCardID)
+    const newCard: Card = { cardID: newCardID, orientation: 0 }
+
+    if (pl0Index == -1 && pl1Index == -1) {
+        // TODO: throw errror
+        return gameState;
+    }
+
+    if (pl0Index != -1) {
+        gameState.playersStates[0].cards[pl0Index] = newCard
+    }
+    else {
+        gameState.playersStates[1].cards[pl1Index] = newCard
+    }
+    gameState.unusedCards.splice(unusedCardsIndex, 1)
+    return gameState;
+}
+
 export const get6Cards = (unusedCards: Array<string>): Array<Card> => {
     const cards: Array<Card> = []
     for (let index = 0; index < 6; index++) {

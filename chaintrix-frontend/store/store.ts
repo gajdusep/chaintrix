@@ -1,11 +1,17 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import counterReducer from './counterSlice';
 import gameStateSlice from './gameStateSlice';
+import socketSlice from './socketSlice';
+
 
 export const store = configureStore({
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+        serializableCheck: false
+    }),
     reducer: {
         counter: counterReducer,
-        gameStateSlice: gameStateSlice
+        gameStateSlice: gameStateSlice,
+        socketSlice: socketSlice
     },
 });
 

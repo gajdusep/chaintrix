@@ -157,6 +157,15 @@ export const calculateBoardFieldsTypes = (board: Board): BoardFieldType2DArray =
 }
 
 
+export const isCardInBoard = (board: Board, cardID: string): boolean => {
+    for (let i = 0; i < getBoardHeight(board); i++) {
+        for (let j = 0; j < getBoardWidth(board); j++) {
+            if (board.boardCards[i][j] && board.boardCards[i][j].cardID == cardID) return true;
+        }
+    }
+    return false;
+}
+
 export const getTileNeighborsCoords = (board: Board, i: number, j: number): Array<Coords | null> => {
     const neighbors: Array<Coords | null> = []
     const par = mod(i + board.parity, 2)
