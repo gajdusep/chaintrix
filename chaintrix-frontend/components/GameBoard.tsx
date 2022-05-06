@@ -1,8 +1,4 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
 import styles from '../components/Hexagons.module.css'
-
 import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 'react-draggable'; // The default
 import { useEffect, useState } from 'react';
 import GameTileSpace from './GameTileSpace'
@@ -27,26 +23,7 @@ import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 
-const getRandomCard = (): Card => {
-    const someCardID = (Math.floor(Math.random() * (6 - 1 + 1)) + 1).toString();
-    // const someCardID = "4"
-
-    const someCard: Card = {
-        cardID: someCardID,
-        orientation: 0,
-    }
-    return someCard;
-}
-
-type GameBoardProps = {
-    // gameState: GameState
-}
-
-const initialWidth = 500
-const initialHeight = 600
-const GameBoard = (
-    props: GameBoardProps
-) => {
+const GameBoard = () => {
     const gameState = useAppSelector(selectGameState);
     const sizes = useAppSelector(selectSizes);
     const playersCardsView = useAppSelector(selectPlayersCardsView);
@@ -57,8 +34,6 @@ const GameBoard = (
     const [tileHovered, setTileHovered] = useState<Coords | null>(null);
     const [hexPositions, setHexPositions] = useState<Array<HexPosition>>(() => getHexPositions(gameState.board, sizes))
     const [playerTilesMoving, setPlayerTilesMoving] = React.useState(Array(6).fill(false));
-    const nodeRef = React.useRef(null);
-    const blbostRef = React.useRef(null);
     const containerRef = React.useRef(null)
     const [controlledPositions, setControlledPositions] = useState<Array<Coords>>(() => calculatePlayersTilesPositions(sizes));
 
@@ -66,30 +41,6 @@ const GameBoard = (
         setHexPositions(getHexPositions(gameState.board, sizes))
         setControlledPositions(calculatePlayersTilesPositions(sizes));
     }, [sizes])
-
-    useEffect((): any => {
-        console.log(`setting onevents`)
-        dispatch(setOnEvent({
-            event: GAME_STARTED, func: (payload: GameState) => {
-                console.log(`whyyyyy ${payload}, ${JSON.stringify(payload)}`)
-
-                dispatch(setGameState({ gameState: payload }))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: PLAYER_PLAYED, func: (payload: PlayerPlayedPayload) => {
-                console.log(`player played!!!: ${JSON.stringify(payload)}`)
-                dispatch(onPlayerPlayedSocketEvent(payload))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: GAME_STARTED_PLAYER_ID, func: (payload: GameStartedPlayerIDPayload) => {
-                dispatch(setPlayerID(payload))
-            }
-        }));
-        console.log(`finished onevents`)
-        socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
-    }, []);
 
     const translateDraggableData = (data: DraggableData): Coords => {
         return {
@@ -145,16 +96,7 @@ const GameBoard = (
                 const isValid = checkValidity(gameState.board, cardToAdd, hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
                 if (!isValid) return;
 
-                // setControlledPosition({ x: element.y - sizes.middle, y: element.x - sizes.middle })
-                // setTileHovered(hexPositions[i].ijPosition)                
-                // TODO: the new card will be sent from the socket servers
-
                 dispatch(addCardToBoardSocket({ socketClient: socketClient, card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
-                /* old ways: */
-                // dispatch(addCardToBoardAction({ card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
-                // dispatch(replaceGivenCardWithNewOne({ card: getRandomCard(), playerIndex: gameState.currentlyMovingPlayer, cardIndex: index }))
-                // dispatch(updateStateAfterMove())
-                // dispatch(updateCardView())
             }
         }
     };

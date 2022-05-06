@@ -19,7 +19,8 @@ export interface ClientGameState {
     playerID: number,
     gameState: GameState,
     playersCardsView: Array<Card>,
-    sizes: Sizes
+    sizes: Sizes,
+    gameRunning: boolean
 }
 
 const INITIAL_WIDTH = 500
@@ -35,7 +36,8 @@ const initialState: ClientGameState = {
     playerID: -1,
     gameState: newGameState,
     playersCardsView: [],
-    sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+    sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT),
+    gameRunning: false
 }
 
 const getNewCardView = (state: ClientGameState): Array<Card> => {
@@ -67,6 +69,7 @@ export const gameStateSlice = createSlice({
             state.gameState = gameState;
             state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
             state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+            state.gameRunning = true;
         },
         setPlayerID: (state, action: PayloadAction<GameStartedPlayerIDPayload>) => {
             state.playerID = action.payload.playerID
@@ -156,5 +159,6 @@ export const selectPlayerID = (state: RootState) => {
 }
 export const selectSizes = (state: RootState) => state.gameStateSlice.sizes;
 export const selectPlayersCardsView = (state: RootState) => state.gameStateSlice.playersCardsView;
+export const selectGameRunning = (state: RootState) => state.gameStateSlice.gameRunning;
 
 export default gameStateSlice.reducer;

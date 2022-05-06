@@ -10,6 +10,7 @@ import { useState } from 'react';
 // import { GameState } from 'chaintrix-game-mechanics';
 import { GameState, getNewGameState } from '../../chaintrix-game-mechanics/dist';
 import ReduxTesting from '../components/ReduxTesting';
+import Game from '../components/Game';
 
 const Home: NextPage = () => {
   const [gameState, setGameState] = useState<GameState>(getNewGameState());
@@ -23,14 +24,7 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         {/* <ReduxTesting /> */}
-        <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
-          <div>
-            <GameBoard />
-          </div>
-          <div>
-            <OponentsBanner />
-          </div>
-        </div>
+        <Game />
         {/* <SocketTesting /> */}
         {/* <SolanaAndSocket /> */}
         {/* <SmartContractTesting /> */}
