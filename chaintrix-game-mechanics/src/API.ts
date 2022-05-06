@@ -14,6 +14,11 @@ export type GameStartedPayload = {
     gameState: GameState
 }
 
+export const GAME_STARTED_PLAYER_ID = 'gameStartedPlayerID'
+export type GameStartedPlayerIDPayload = {
+    playerID: number
+}
+
 export const PLAYER_PLAYS = 'playerPlays'
 export type PlayerPlaysPayload = {
     playerID: number,

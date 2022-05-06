@@ -361,3 +361,12 @@ export const getNumberOfObligatoryCards = (obligatoryCards: Array<Array<Coords>>
     }
     return obligatoryCardsNo;
 }
+
+export const calculateLongestPathForColor = (board: Board, color: string): number => {
+    // get all coords of cards
+
+
+    // keep the track of the 
+
+    return 0
+}

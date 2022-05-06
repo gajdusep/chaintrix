@@ -10,11 +10,13 @@ import {
     getStateAfterMove, getRandomUnusedCardAndAlterArray,
     updateGameStateAfterUnusedCardSelected,
     PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
-    PlayerPlayedPayload
+    PlayerPlayedPayload,
+    GameStartedPlayerIDPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { Socket } from 'socket.io-client';
 
-export interface GameStateState {
+export interface ClientGameState {
+    playerID: number,
     gameState: GameState,
     playersCardsView: Array<Card>,
     sizes: Sizes
@@ -29,10 +31,29 @@ const newGameState = getNewGameState()
 //     playersCardsView: newGameState.playersStates[newGameState.currentlyMovingPlayer].cards,
 //     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
 // };
-const initialState: GameStateState = {
+const initialState: ClientGameState = {
+    playerID: -1,
     gameState: newGameState,
     playersCardsView: [],
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+}
+
+const getNewCardView = (state: ClientGameState): Array<Card> => {
+    if (state.playerID == -1) {
+        return [];
+    }
+    const newCardView = []
+    // const cards = state.gameState.playersStates[state.gameState.currentlyMovingPlayer].cards
+    const cards = state.gameState.playersStates[state.playerID].cards
+    for (let i = 0; i < cards.length; i++) {
+        if (state.playersCardsView[i].cardID == cards[i].cardID) {
+            newCardView.push(state.playersCardsView[i])
+        }
+        else {
+            newCardView.push(cards[i])
+        }
+    }
+    return newCardView
 }
 
 export const gameStateSlice = createSlice({
@@ -46,6 +67,10 @@ export const gameStateSlice = createSlice({
             state.gameState = gameState;
             state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
             state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+        },
+        setPlayerID: (state, action: PayloadAction<GameStartedPlayerIDPayload>) => {
+            state.playerID = action.payload.playerID
+            state.playersCardsView = getNewCardView(state)
         },
         addCardToBoardAction: (state, action: PayloadAction<{ card: Card, x: number, y: number }>) => {
             // TODO: add sizes to the state! - in here, change the sizes based on the new board
@@ -64,18 +89,7 @@ export const gameStateSlice = createSlice({
             state.gameState = updateGameStateAfterUnusedCardSelected(state.gameState, action.payload.playedCard.cardID, action.payload.newCardID)
 
             state.gameState = getStateAfterMove(state.gameState)
-            // update Card View
-            const newCardView = []
-            const cards = state.gameState.playersStates[state.gameState.currentlyMovingPlayer].cards
-            for (let i = 0; i < cards.length; i++) {
-                if (state.playersCardsView[i].cardID == cards[i].cardID) {
-                    newCardView.push(state.playersCardsView[i])
-                }
-                else {
-                    newCardView.push(cards[i])
-                }
-            }
-            state.playersCardsView = newCardView
+            state.playersCardsView = getNewCardView(state)
         },
         addCardToBoardSocket: (state, action: PayloadAction<{ socketClient: Socket, card: Card, x: number, y: number }>) => {
             const playerPlaysPayload: PlayerPlaysPayload = {
@@ -126,13 +140,20 @@ export const {
     updateStateAfterMove,
     setGameState,
     onPlayerPlayedSocketEvent,
-    addCardToBoardSocket
+    addCardToBoardSocket,
+    setPlayerID
 } = gameStateSlice.actions;
 
 // The function below is called a selector and allows us to select a value from
 // the state. Selectors can also be defined inline where they're used instead of
 // in the slice file. For example: `useSelector((state: RootState) => state.counter.value)`
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;
+export const selectPlayerID = (state: RootState) => {
+    if (state.gameStateSlice.playerID == -1) {
+        return 0;
+    }
+    return state.gameStateSlice.playerID
+}
 export const selectSizes = (state: RootState) => state.gameStateSlice.sizes;
 export const selectPlayersCardsView = (state: RootState) => state.gameStateSlice.playersCardsView;
 

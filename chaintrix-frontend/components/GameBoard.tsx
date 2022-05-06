@@ -13,14 +13,15 @@ import {
     checkValidity, addCardToBoard,
     getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
     PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
-    GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN
+    GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
+    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes, addCardToBoardAction, replaceGivenCardWithNewOne, selectPlayersCardsView,
     rotateCardInCardView, updateCardView, updateStateAfterMove, setGameState,
     onPlayerPlayedSocketEvent,
-    addCardToBoardSocket
+    addCardToBoardSocket, setPlayerID, selectPlayerID
 } from '../store/gameStateSlice';
 import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -50,6 +51,7 @@ const GameBoard = (
     const sizes = useAppSelector(selectSizes);
     const playersCardsView = useAppSelector(selectPlayersCardsView);
     const socketClient = useAppSelector(selectSocketClient);
+    const playerID = useAppSelector(selectPlayerID)
     const dispatch = useAppDispatch();
 
     const [tileHovered, setTileHovered] = useState<Coords | null>(null);
@@ -79,7 +81,12 @@ const GameBoard = (
                 console.log(`player played!!!: ${JSON.stringify(payload)}`)
                 dispatch(onPlayerPlayedSocketEvent(payload))
             }
-        }))
+        }));
+        dispatch(setOnEvent({
+            event: GAME_STARTED_PLAYER_ID, func: (payload: GameStartedPlayerIDPayload) => {
+                dispatch(setPlayerID(payload))
+            }
+        }));
         console.log(`finished onevents`)
         socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
     }, []);
@@ -187,28 +194,34 @@ const GameBoard = (
             <div style={{
                 position: 'absolute',
                 bottom: 0, backgroundColor: '#ffaaaa',
-                width: `100%`, height: `${sizes.size * 2}px`, display: 'flex',
-                flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-            }}>
-            </div>
+                width: `100%`, height: `${sizes.size * 2}px`
+            }}></div>
+            <div style={{
+                visibility: playerID === gameState.currentlyMovingPlayer ? 'hidden' : 'visible',
+                position: 'absolute',
+                bottom: 0, backgroundColor: '#ffaabb22', zIndex: 1000000,
+                width: `100%`, height: `${sizes.size * 2}px`
+            }}></div>
             {/* {gameState.playersStates[PLAYER_INDEX].cards.map((element, index) => { */}
-            {playersCardsView.map((element, index) => {
-                return <Draggable
-                    key={index}
-                    bounds="#draggableContainer"
-                    onDrag={(e, data) => { eventLogger(e, data, index) }}
-                    onStop={(e, data) => { eventStop(e, data, index) }}
-                    // nodeRef={nodeRef}
-                    position={controlledPositions[index]}
-                >
-                    <div style={{ zIndex: 10000000, position: 'absolute', cursor: 'pointer' }}>
-                        <GameTileSpace card={element} width={sizes.svgWidth} height={sizes.svgHeight}
-                            highlighted={false} boardFieldType={BoardFieldType.CARD}
-                        />
-                    </div>
-                </Draggable>
-            })}
-        </div>
+            {
+                playersCardsView.map((element, index) => {
+                    return <Draggable
+                        key={index}
+                        bounds="#draggableContainer"
+                        onDrag={(e, data) => { eventLogger(e, data, index) }}
+                        onStop={(e, data) => { eventStop(e, data, index) }}
+                        // nodeRef={nodeRef}
+                        position={controlledPositions[index]}
+                    >
+                        <div style={{ zIndex: 100000, position: 'absolute', cursor: 'pointer' }}>
+                            <GameTileSpace card={element} width={sizes.svgWidth} height={sizes.svgHeight}
+                                highlighted={false} boardFieldType={BoardFieldType.CARD}
+                            />
+                        </div>
+                    </Draggable>
+                })
+            }
+        </div >
     )
 }
 

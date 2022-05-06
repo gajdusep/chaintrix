@@ -14,7 +14,8 @@ import {
     getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
     getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
     getStateAfterMove, GAME_STARTED, PlayerPlaysPayload,
-    PLAYER_PLAYED, PlayerPlayedPayload
+    PLAYER_PLAYED, PlayerPlayedPayload,
+    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, closeGameSolana } from "./SolanaMethods";
 // } from 'chaintrix-game-mechanics';
@@ -150,6 +151,10 @@ export const joinOrCreateRoomNoBlockchain = async (sio: Server, socket: Socket,
         freeRooms.shift();
 
         sio.to(roomID).emit(GAME_STARTED, newGameState)
+        const player0Payload: GameStartedPlayerIDPayload = { playerID: 0 }
+        const player1Payload: GameStartedPlayerIDPayload = { playerID: 1 }
+        sio.to(player0.socketID).emit(GAME_STARTED_PLAYER_ID, player0Payload)
+        sio.to(player1.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
         console.log(`NEW GAME STATE: ${JSON.stringify(newGameState)}`)
     }
     // socket.emit("joinedOrCreated", { 'roomID': roomID })

@@ -10,7 +10,8 @@ import {
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
-    selectGameState, selectSizes
+    selectGameState, selectSizes,
+    selectPlayerID
 } from '../store/gameStateSlice';
 
 const initialWidth = 100
@@ -18,6 +19,7 @@ const initialHeight = 600
 const OponentsBanner = () => {
     const gameState = useAppSelector(selectGameState);
     const sizes = useAppSelector(selectSizes);
+    const playerID = useAppSelector(selectPlayerID)
     const containerRef = React.useRef(null)
 
     return (
@@ -35,9 +37,9 @@ const OponentsBanner = () => {
                 alignItems: 'centers'
 
             }}>
-            <p>COLOR: {gameState.playersStates[mod(gameState.currentlyMovingPlayer + 1, 2)].color}</p>
-            <p>Game state: player {gameState.currentlyMovingPlayer}: phase {gameState.currentlyMovingPhase}</p>
-            {gameState.playersStates[mod(gameState.currentlyMovingPlayer + 1, 2)].cards.map((element, index) => {
+            <p>Player color: {gameState.playersStates[playerID].color}</p>
+            <p>Game state: pl {gameState.currentlyMovingPlayer}: phase {gameState.currentlyMovingPhase}</p>
+            {gameState.playersStates[mod(playerID + 1, 2)].cards.map((element, index) => {
                 return (
                     <div style={{
                         zIndex: 10000000,
