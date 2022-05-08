@@ -22,8 +22,8 @@ const SmartContractTesting = (
     const [responseData, setResponseData] = useState<string>("no response yet")
 
 
-    const connectToWallet = () => {
-        hashConnectService.connectToExtension();
+    const connectToWallet = async () => {
+        await hashConnectService.connectToExtension();
     }
 
     useEffect(() => {

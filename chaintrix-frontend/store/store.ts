@@ -1,6 +1,7 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
 import counterReducer from './counterSlice';
 import gameStateSlice from './gameStateSlice';
+import hederaSlice from './hederaSlice';
 import socketSlice from './socketSlice';
 
 
@@ -11,7 +12,8 @@ export const store = configureStore({
     reducer: {
         counter: counterReducer,
         gameStateSlice: gameStateSlice,
-        socketSlice: socketSlice
+        socketSlice: socketSlice,
+        hederaSlice: hederaSlice
     },
 });
 
