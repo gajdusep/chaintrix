@@ -4,15 +4,15 @@ import { Server } from "socket.io";
 import {
     MoveInfo,
     PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_PLAYS,
-    PlayerPlaysPayload
-
+    PLAYER_WANTS_TO_PLAY_HEDERA, PLAYER_WANTS_TO_PLAY_SOLANA,
+    PlayerPlaysPayload,
+    PlayerWantsToPlaySolanaPayload
 } from "../../chaintrix-game-mechanics/dist";
 import {
-    joinRoomOrCreate,
     playersTurn, joinOrCreateRoomNoBlockchain,
-    playerPlaysNoBlockchain
+    playerPlaysNoBlockchain, joinOrCreateRoomSolana
 } from './SocketMethods'
-import { Player } from "./types";
+import { HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
 
 require('dotenv').config()
 const app = express();
@@ -24,28 +24,24 @@ const io = new Server(httpServer, {
 });
 
 let interval;
-const freeRooms = []
+const freeRoomsSolana: Array<string> = []
+const freeRoomsHedera: Array<string> = []
+const freeRoomsNoBlockchain: Array<string> = []
 const roomObjects = {}
-const players: { [socketID: string]: Player } = {}
+const solanaPlayers: { [socketID: string]: SolanaPlayer } = {}
+const hederaPlayers: { [socketID: string]: HederaPlayer } = {}
+const noBlockchainPlayers: { [socketID: string]: NoBlockchainPlayer } = {}
 io.on("connection", (socket) => {
     console.log("New client connected");
-
-    // Host Events
-    socket.on('wantsToPlay', (betPDA, playerAddress) => {
-        joinRoomOrCreate(io, socket, freeRooms, roomObjects, players, betPDA, playerAddress)
-    });
-    socket.on('playersTurn', (moveInfo: MoveInfo) => {
-        playersTurn(io, socket, roomObjects, moveInfo)
-    });
     socket.on(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, () => {
-        joinOrCreateRoomNoBlockchain(io, socket, freeRooms, roomObjects, players)
+        joinOrCreateRoomNoBlockchain(io, socket, freeRoomsNoBlockchain, roomObjects, noBlockchainPlayers)
+    });
+    socket.on(PLAYER_WANTS_TO_PLAY_SOLANA, (payload: PlayerWantsToPlaySolanaPayload) => {
+        joinOrCreateRoomSolana(io, socket, freeRoomsSolana, roomObjects, solanaPlayers, payload)
     });
     socket.on(PLAYER_PLAYS, (payload: PlayerPlaysPayload) => {
         playerPlaysNoBlockchain(io, socket, roomObjects, payload)
     });
-
-
-
 
     // if (interval) {
     //     clearInterval(interval);

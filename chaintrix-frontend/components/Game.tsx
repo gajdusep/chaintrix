@@ -1,16 +1,10 @@
 import styles from '../components/Hexagons.module.css'
-import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 'react-draggable'; // The default
 import { useEffect, useState } from 'react';
-import GameTileSpace from './GameTileSpace'
 import {
-    Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
-    getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition, GameState,
-    checkValidity, addCardToBoard,
-    getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
-    PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
+    GameState, PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
     GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload
+    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
+    PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet, WalletProvider } from "@solana/wallet-adapter-react";
@@ -21,10 +15,8 @@ import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
 import { IDL } from "../types/chaintrix_solana";
 import {
-    selectGameState, selectSizes, addCardToBoardAction, replaceGivenCardWithNewOne, selectPlayersCardsView,
-    rotateCardInCardView, updateCardView, updateStateAfterMove, setGameState,
-    onPlayerPlayedSocketEvent,
-    addCardToBoardSocket, setPlayerID, selectPlayerID, selectGameRunning
+    selectGameState, setGameState, onPlayerPlayedSocketEvent,
+    setPlayerID, selectPlayerID, selectGameRunning
 } from '../store/gameStateSlice';
 import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -33,22 +25,16 @@ import OponentsBanner from '../components/OponentsBanner';
 import GameBoard from '../components/GameBoard';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
-    Client, PrivateKey, AccountCreateTransaction,
-    AccountBalanceQuery, Hbar, TransferTransaction,
-    ContractCallQuery, ContractId, ContractFunctionParameters,
-    TransactionReceipt, ContractFunctionResult, TransactionReceiptQuery,
-
+    Hbar, ContractCallQuery, ContractId, ContractFunctionParameters,
 } from "@hashgraph/sdk";
 import { HashConnect, HashConnectTypes } from 'hashconnect';
 import {
-    getNewHashConnectService, HashConnectService, initHashconnect, sendTransaction,
-    connectToExtension, HashConnectStatus
+    sendTransaction, connectToExtension, HashConnectStatus
 } from '../helpers/HashConnectService'
 import web3 from 'web3'
 import {
     selectHederaConnectService, selectHederaStatus,
-    initHederaAsync,
-    setUpHederaEvents
+    initHederaAsync, addAvailableExtension, setPairedData
 } from '../store/hederaSlice';
 
 const Game = () => {
@@ -64,19 +50,41 @@ const Game = () => {
     const [connection, setConnection] = useState<Connection>(() => { return new Connection(LOCALHOST_SOLANA_ENDPOINT) })
 
     // HEDERA VARS
-    // const [hashConnectService, setHashConnectService] = useState<HashConnectService>(() => { return getNewHashConnectService() })
-
     const hashConnectService = useAppSelector(selectHederaConnectService)
     const hederaStatus = useAppSelector(selectHederaStatus)
+
+    useEffect(() => {
+        // TODO: if hedera status == PAIRED..?
+
+        console.log(`hedera status changed: ${hederaStatus}`)
+        // dispatch(setUpHederaEvents())
+        if (!hashConnectService) return;
+        // dispatch(setUpHederaEvents())
+        hashConnectService.hashconnect.foundExtensionEvent.on((data) => {
+            console.log("Found extension", data);
+            dispatch(addAvailableExtension({ data: data }))
+        })
+        hashConnectService.hashconnect.pairingEvent.on((data) => {
+            if (hashConnectService == null) return;
+
+            console.log("Paired with wallet", data);
+            // state.status = HashConnectStatus.PAIRED
+            // setStatus(state.hashConnecteService?, HashConnectStatus.PAIRED)
+
+            dispatch(setPairedData({ pairedWalletData: data.metadata, accountsIds: data.accountIds }))
+
+            // TODO: save data in localstorage
+            // saveDataInLocalstorage(hashconnectWrapper);
+        });
+
+    }, [hederaStatus])
 
     useEffect((): any => {
         const runHederaConnectEffect = async () => {
             dispatch(initHederaAsync())
-            dispatch(setUpHederaEvents())
         }
         runHederaConnectEffect()
 
-        console.log(`setting onevents`)
         dispatch(setOnEvent({
             event: GAME_STARTED, func: (payload: GameState) => {
                 console.log(`whyyyyy ${payload}, ${JSON.stringify(payload)}`)
@@ -95,7 +103,6 @@ const Game = () => {
                 dispatch(setPlayerID(payload))
             }
         }));
-        console.log(`finished onevents`)
         // socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
     }, []);
 
@@ -138,6 +145,11 @@ const Game = () => {
         console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
 
         // TODO: socket emit (wantstoplaysolana)
+        const payload: PlayerWantsToPlaySolanaPayload = {
+            betPDA: betAccountPDA.toBase58(),
+            playerAddress: wallet.publicKey.toBase58()
+        }
+        socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);
     }
 
     const onPlayHederaCLick = async () => {
@@ -160,7 +172,6 @@ const Game = () => {
             response: res,
             receipt: null
         }
-
 
         //todo: how to change query bytes back to query?
         if (res.success) {

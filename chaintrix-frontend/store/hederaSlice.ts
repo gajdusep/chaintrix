@@ -9,13 +9,13 @@ import {
 import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect';
 
 export interface HederaState {
-    hashConnecteService: HashConnectService | null
+    hashConnectService: HashConnectService | null
     status: HashConnectStatus
 }
 
 const initialState: HederaState = {
     // hashConnecteService: getNewHashConnectService()
-    hashConnecteService: null,
+    hashConnectService: null,
     status: HashConnectStatus.INITIALIZING
 };
 
@@ -50,44 +50,18 @@ export const hederaSlice = createSlice({
     name: 'hedera',
     initialState,
     reducers: {
-        setUpHederaEvents: (state) => {
-            state.hashConnecteService?.hashconnect.foundExtensionEvent.on((data) => {
-                console.log("Found extension", data);
-                state.hashConnecteService?.availableExtensions.push(data);
+        addAvailableExtension: (state, action: PayloadAction<{ data: any }>) => {
+            state.hashConnectService?.availableExtensions.push(action.payload.data);
+        },
+        setPairedData: (state, action: PayloadAction<{ pairedWalletData: HashConnectTypes.WalletMetadata, accountsIds: Array<string> }>) => {
+            if (!state.hashConnectService) return;
+            state.hashConnectService.savedData.pairedWalletData = action.payload.pairedWalletData;
+            action.payload.accountsIds.forEach(id => {
+                if (state.hashConnectService == null) return;
+                if (state.hashConnectService.savedData.pairedAccounts.indexOf(id) == -1)
+                    state.hashConnectService.savedData.pairedAccounts.push(id);
             })
-
-            // this.hashconnect.additionalAccountResponseEvent.on((data) => {
-            //     console.log("Received account info", data);
-
-            //     data.accountIds.forEach(id => {
-            //         if(this.saveData.pairedAccounts.indexOf(id) == -1)
-            //             this.saveData.pairedAccounts.push(id);
-            //     })
-            // })
-
-            state.hashConnecteService?.hashconnect.pairingEvent.on((data) => {
-                if (state.hashConnecteService == null) return;
-
-                console.log("Paired with wallet", data);
-                state.status = HashConnectStatus.PAIRED
-                // setStatus(state.hashConnecteService?, HashConnectStatus.PAIRED)
-
-                state.hashConnecteService.savedData.pairedWalletData = data.metadata;
-
-                data.accountIds.forEach(id => {
-                    if (state.hashConnecteService == null) return;
-                    if (state.hashConnecteService.savedData.pairedAccounts.indexOf(id) == -1)
-                        state.hashConnecteService.savedData.pairedAccounts.push(id);
-                })
-
-                // saveDataInLocalstorage(hashconnectWrapper);
-            });
-
-
-            state.hashConnecteService?.hashconnect.transactionEvent.on((data) => {
-                //this will not be common to be used in a dapp
-                console.log("transaction event callback");
-            });
+            state.status = HashConnectStatus.PAIRED;
         }
     },
     extraReducers: (builder) => {
@@ -102,16 +76,13 @@ export const hederaSlice = createSlice({
                 // state.value += action.payload;
                 const hashConnectService = action.payload.wrapper
                 const savedData = action.payload.data;
-                state.hashConnecteService = hashConnectService;
-                state.hashConnecteService.savedData = savedData
-                if (state.hashConnecteService) {
-                    console.log('setting up events')
+                state.hashConnectService = hashConnectService;
+                state.hashConnectService.savedData = savedData
+                if (state.hashConnectService) {
                     // setUpEvents(hashConnectService)
                 }
                 // hashConnectService.hashconnect.connectToLocalWallet();
-                state.status = HashConnectStatus.PAIRED;
-
-
+                state.status = HashConnectStatus.CONNECTED;
             })
             .addCase(initHederaAsync.rejected, (state) => {
                 console.log(`failed`)
@@ -121,10 +92,11 @@ export const hederaSlice = createSlice({
 });
 
 export const {
-    setUpHederaEvents
+    addAvailableExtension,
+    setPairedData
 } = hederaSlice.actions;
 
-export const selectHederaConnectService = (state: RootState) => state.hederaSlice.hashConnecteService;
+export const selectHederaConnectService = (state: RootState) => state.hederaSlice.hashConnectService;
 export const selectHederaStatus = (state: RootState) => state.hederaSlice.status
 
 export default hederaSlice.reducer;

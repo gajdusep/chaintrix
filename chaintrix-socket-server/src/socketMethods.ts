@@ -2,20 +2,17 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { Server, Socket } from "socket.io";
 import { Connection, PublicKey } from '@solana/web3.js';
-import { Player, SolanaPlayer, NoBlockchainPlayer, HederaPlayer, GameRoom, BlockchainType, AcceptedBetInfo, SolanaAcceptedBetInfo } from "./types";
+import {
+    Player, SolanaPlayer, NoBlockchainPlayer,
+    GameRoom, BlockchainType, SolanaAcceptedBetInfo
+} from "./types";
 import { IDL, ChaintrixSolana } from './types/chaintrix_solana';
 import { randomBytes } from "crypto";
 import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "./Constants";
 import {
-    Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
-    getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition, GameState,
-    checkValidity, addCardToBoard,
-    getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
-    getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
-    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload,
-    PLAYER_PLAYED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload
+    Card, addCardToBoard, getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
+    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerPlayedPayload,
+    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, closeGameSolana } from "./SolanaMethods";
 // } from 'chaintrix-game-mechanics';
@@ -35,23 +32,29 @@ const getGameRoomID = (socket: Socket): string | null => {
     return answer;
 }
 
+const getNewRoomName = (): string => {
+    // const room = uuid(); // TODO: the room id should be strictly unique!
+    return (Math.floor(Math.random() * 100000)).toString();
+}
+
 // TODO: check if the betPDA was really done by playerAddress...
 // load the account and check the data
-export const joinRoomOrCreate = async (sio: Server, socket: Socket,
+export const joinOrCreateRoomSolana = async (sio: Server, socket: Socket,
     freeRooms: Array<string>, roomObjects: RoomObjects, players: { [socketID: string]: Player },
-    betPDA: string, playerAddress: string
+    payload: PlayerWantsToPlaySolanaPayload
+    // betPDA: string, playerAddress: string
 ) => {
     let roomID = "blbost";
     const roomsList = Array.from(socket.rooms)
     console.log(roomsList);
-    console.log(`betPDA: '${betPDA}';`)
+    console.log(`betPDA: '${payload.betPDA}';`)
 
     const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
     const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
     const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
     const localWallet = anchor.Wallet.local();
 
-    const pubKey = new PublicKey(betPDA)
+    const pubKey = new PublicKey(payload.betPDA)
     const balance = await connection.getBalance(pubKey);
     console.log(`balance is: ${balance}`);
 
@@ -59,13 +62,13 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
     if (socket.rooms.size >= 2) {
         roomID = `already in a room ${getGameRoomID(socket)}`;
     } else if (!freeRooms || !freeRooms.length) {
-        // const room = uuid(); // TODO: the room id should be strictly unique!
-        roomID = (Math.floor(Math.random() * 100000)).toString();
+        roomID = getNewRoomName();
         console.log(`${socket.id} created, roomID: ${roomID}`);
         freeRooms.push(roomID);
+        // TODO: check that the betPDA exists and is loaded
         const player0: SolanaPlayer = {
-            address: playerAddress,
-            betPDA: betPDA,
+            address: payload.playerAddress,
+            betPDA: payload.betPDA,
             socketID: socket.id
         }
         players[socket.id] = player0
@@ -77,17 +80,15 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
         delete players[clients[0]];
         const player1: SolanaPlayer = {
             socketID: socket.id,
-            betPDA: betPDA,
-            address: playerAddress
+            betPDA: payload.betPDA,
+            address: payload.playerAddress
         };
         console.log(`${socket.id} wants to join, roomID: ${roomID}`);
         socket.join(roomID);
 
-        // TODOOOOOOOOOOOOOOOOOOOOOO 
         const acceptedBetsPDA = await acceptBetsSolana(player0.betPDA, player1.betPDA)
 
         const playersInRoom = [player0, player1];
-
         console.log(`clients list: ${JSON.stringify(playersInRoom)}`)
         const acceptedBetInfo: SolanaAcceptedBetInfo = {
             acceptedBetAccount: acceptedBetsPDA.toBase58()
@@ -101,26 +102,31 @@ export const joinRoomOrCreate = async (sio: Server, socket: Socket,
         }
         freeRooms.shift();
 
-        sio.to(roomID).emit("gameStarted", newGameState)
-
-        // TODO: call smart contract: accept bets
+        sio.to(roomID).emit(GAME_STARTED, newGameState)
+        const player0Payload: GameStartedPlayerIDPayload = { playerID: 0 }
+        const player1Payload: GameStartedPlayerIDPayload = { playerID: 1 }
+        sio.to(player0.socketID).emit(GAME_STARTED_PLAYER_ID, player0Payload)
+        sio.to(player1.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
+        console.log(`NEW GAME STATE: ${JSON.stringify(newGameState)}`)
     }
-    socket.emit("joinedOrCreated", { 'roomID': roomID })
 }
 
 export const joinOrCreateRoomNoBlockchain = async (sio: Server, socket: Socket,
     freeRooms: Array<string>, roomObjects: RoomObjects, players: { [socketID: string]: Player }
 ) => {
-    let roomID = "blbost";
+    let roomID = "";
     const roomsList = Array.from(socket.rooms)
     console.log(roomsList);
 
     // automatically in a room with socket id and moreover in a game room
     if (socket.rooms.size >= 2) {
         roomID = `already in a room ${getGameRoomID(socket)}`;
+        // TODO: inform player that something is wrong (is already in room)
+        // socket.emit("joinedOrCreated", { 'roomID': roomID })
+        // return;
     } else if (!freeRooms || !freeRooms.length) {
         // const room = uuid(); // TODO: the room id should be strictly unique!
-        roomID = (Math.floor(Math.random() * 100000)).toString();
+        roomID = getNewRoomName();
         console.log(`no blockchain: ${socket.id} created, roomID: ${roomID}`);
         freeRooms.push(roomID);
         const player0: NoBlockchainPlayer = {
@@ -128,6 +134,8 @@ export const joinOrCreateRoomNoBlockchain = async (sio: Server, socket: Socket,
         }
         players[socket.id] = player0
         socket.join(roomID);
+        // TODO: inform player that he's in the line
+        // socket.emit("joinedOrCreated", { 'roomID': roomID })
     } else {
         roomID = freeRooms[0];
         let clients = sio.sockets.adapter.rooms.get(roomID);
@@ -157,7 +165,6 @@ export const joinOrCreateRoomNoBlockchain = async (sio: Server, socket: Socket,
         sio.to(player1.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
         console.log(`NEW GAME STATE: ${JSON.stringify(newGameState)}`)
     }
-    // socket.emit("joinedOrCreated", { 'roomID': roomID })
 }
 
 export const playerPlaysNoBlockchain = async (
