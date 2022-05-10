@@ -11,7 +11,8 @@ import {
     updateGameStateAfterUnusedCardSelected,
     PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
     PlayerPlayedPayload,
-    GameStartedPlayerIDPayload
+    GameStartedPlayerIDPayload,
+    calculateLongestPathForColor
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { Socket } from 'socket.io-client';
 
@@ -93,6 +94,12 @@ export const gameStateSlice = createSlice({
 
             state.gameState = getStateAfterMove(state.gameState)
             state.playersCardsView = getNewCardView(state)
+
+            // TODO: make this visible in client
+            calculateLongestPathForColor(state.gameState.board, 'R')
+            calculateLongestPathForColor(state.gameState.board, 'G')
+            calculateLongestPathForColor(state.gameState.board, 'B')
+            calculateLongestPathForColor(state.gameState.board, 'Y')
         },
         addCardToBoardSocket: (state, action: PayloadAction<{ socketClient: Socket, card: Card, x: number, y: number }>) => {
             const playerPlaysPayload: PlayerPlaysPayload = {

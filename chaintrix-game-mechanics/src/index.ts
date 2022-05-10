@@ -5,3 +5,4 @@ export * from './CustomTypes.js';
 export * from './Game.js';
 export * from './methods.js';
 export * from './API.js';
+export * from './PathCalculations.js';

@@ -1,6 +1,8 @@
 import { Card, CardNullable, Coords } from "./CustomTypes";
 import { CARDS } from "./Constants";
-import { flipParity, mod, getRotatedCard, create2DArray } from "./methods";
+import {
+    flipParity, mod, getRotatedCard, create2DArray
+} from "./methods";
 import { BoardFieldType } from "./CustomTypes";
 
 export type BoardFieldType2DArray = Array<Array<BoardFieldType>>;
@@ -156,7 +158,6 @@ export const calculateBoardFieldsTypes = (board: Board): BoardFieldType2DArray =
     return boardFieldsTypes;
 }
 
-
 export const isCardInBoard = (board: Board, cardID: string): boolean => {
     for (let i = 0; i < getBoardHeight(board); i++) {
         for (let j = 0; j < getBoardWidth(board); j++) {
@@ -166,15 +167,25 @@ export const isCardInBoard = (board: Board, cardID: string): boolean => {
     return false;
 }
 
+const neighborsCoords = {
+    0: (i: number, j: number, par: number) => { return { x: i - 1, y: j + par } },
+    1: (i: number, j: number, par: number) => { return { x: i, y: j + 1 } },
+    2: (i: number, j: number, par: number) => { return { x: i + 1, y: j + par } },
+    3: (i: number, j: number, par: number) => { return { x: i + 1, y: j - flipParity(par) } },
+    4: (i: number, j: number, par: number) => { return { x: i, y: j - 1 } },
+    5: (i: number, j: number, par: number) => { return { x: i - 1, y: j - flipParity(par) } },
+}
+
+export const getNeighborCoords = (index: number, i: number, j: number, parity: number): Coords => {
+    return neighborsCoords[index](i, j, parity)
+}
+
 export const getTileNeighborsCoords = (board: Board, i: number, j: number): Array<Coords | null> => {
     const neighbors: Array<Coords | null> = []
     const par = mod(i + board.parity, 2)
-    neighbors.push({ x: i - 1, y: j + par })
-    neighbors.push({ x: i, y: j + 1 })
-    neighbors.push({ x: i + 1, y: j + par })
-    neighbors.push({ x: i + 1, y: j - flipParity(par) })
-    neighbors.push({ x: i, y: j - 1 })
-    neighbors.push({ x: i - 1, y: j - flipParity(par) })
+    for (let index = 0; index < 6; index++) {
+        neighbors.push(getNeighborCoords(index, i, j, par))
+    }
 
     for (let nIndex = 0; nIndex < neighbors.length; nIndex++) {
         const neighbor = neighbors[nIndex];
@@ -360,13 +371,4 @@ export const getNumberOfObligatoryCards = (obligatoryCards: Array<Array<Coords>>
         if (obligatoryCards[i].length > 0) obligatoryCardsNo += 1;
     }
     return obligatoryCardsNo;
-}
-
-export const calculateLongestPathForColor = (board: Board, color: string): number => {
-    // get all coords of cards
-
-
-    // keep the track of the 
-
-    return 0
 }

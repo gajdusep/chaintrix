@@ -38,3 +38,15 @@ export const create2DArray = <T,>(defaultValue: T, height: number, width: number
     }
     return arrayToReturn;
 }
+
+export const create2DArrayOfObjects = <T,>(defaultValue: T, height: number, width: number): Array<Array<T>> => {
+    const arrayToReturn = []
+    for (let i = 0; i < height; i++) {
+        const subArray = []
+        for (let j = 0; j < width; j++) {
+            subArray.push(JSON.parse(JSON.stringify(defaultValue)))
+        }
+        arrayToReturn.push(subArray)
+    }
+    return arrayToReturn;
+}
