@@ -12,7 +12,9 @@ import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "./Constants";
 import {
     Card, addCardToBoard, getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
     getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload
+    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload,
+    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload, GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA,
+
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, closeGameSolana } from "./SolanaMethods";
 // } from 'chaintrix-game-mechanics';
@@ -85,8 +87,10 @@ export const joinOrCreateRoomSolana = async (sio: Server, socket: Socket,
         };
         console.log(`${socket.id} wants to join, roomID: ${roomID}`);
         socket.join(roomID);
-
+        console.log(`accepting bets solana`)
+        // TODO: check error
         const acceptedBetsPDA = await acceptBetsSolana(player0.betPDA, player1.betPDA)
+        console.log(`bets accepted`)
 
         const playersInRoom = [player0, player1];
         console.log(`clients list: ${JSON.stringify(playersInRoom)}`)
@@ -175,22 +179,67 @@ export const playerPlaysNoBlockchain = async (
     const gameRoomID = getGameRoomID(socket);
     const room = roomObjects[gameRoomID]
 
-    const newCard = playerMove(room, payload)
-    const responsePayload: PlayerPlayedPayload = {
-        newCardID: newCard.cardID,
-        playedCard: payload.card,
-        x: payload.x,
-        y: payload.y
+    const playerMoveResult = playerMove(room, payload)
+    if (playerMoveResult.card) {
+        const responsePayload: PlayerPlayedPayload = {
+            newCardID: playerMoveResult.card.cardID,
+            playedCard: payload.card,
+            x: payload.x,
+            y: payload.y
+        }
+        sio.to(gameRoomID).emit(PLAYER_PLAYED, responsePayload)
+        return;
     }
-    sio.to(gameRoomID).emit(PLAYER_PLAYED, responsePayload)
 
+    if (playerMoveResult.movedType == MovedType.MovedAndNoCardsLeft) {
+        const winnerIndex = 0
+
+        if (room.blockchainType == BlockchainType.NO_BLOCKCHAIN) {
+            const responsePayload: GameFinishedNoBlockchainPayload = {
+                // TODO: who won
+                winningPlayerIndex: winnerIndex
+            }
+            sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
+            return;
+        }
+
+        if (room.blockchainType == BlockchainType.SOLANA) {
+            const responsePayload: GameFinishedSolanaPayload = {
+                // TODO: who won
+                winningPlayerIndex: winnerIndex,
+                transactionHash: ''
+
+            }
+            sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
+            return;
+        }
+
+        if (room.blockchainType == BlockchainType.HEDERA) {
+            const responsePayload: GameFinishedHederaPayload = {
+                // TODO: who won
+                winningPlayerIndex: winnerIndex
+            }
+            sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
+            return;
+        }
+    }
 }
 
-export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): Card => {
+enum MovedType {
+    Moved,
+    MovedAndNoCardsLeft,
+    IllegalMove
+}
+
+export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
+    card: Card | null,
+    movedType: MovedType
+} => {
     // TODO: check:
     // - is the card in currently playing players cards
     // - is the card valid in the position
     // - is the game phase correct
+    // - if the number of cards is 0 (or what exact rule applies), return false/null etc
     const currentlyMoving = room.gameState.currentlyMovingPlayer
     const cardIndex = room.gameState.playersStates[currentlyMoving].cards.findIndex((value) => value.cardID == moveInfo.card.cardID)
     if (cardIndex == -1) {
@@ -200,38 +249,23 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): Card =
 
     const newBoard = addCardToBoard(room.gameState.board, moveInfo.card, moveInfo.x, moveInfo.y)
     room.gameState.board = newBoard
+
+    // TODO: here?
+    if (room.gameState.unusedCards.length < 40) {
+        return {
+            card: null,
+            movedType: MovedType.MovedAndNoCardsLeft
+        }
+    }
+
     const newCard = getRandomUnusedCardAndAlterArray(room.gameState.unusedCards)
     room.gameState.playersStates[currentlyMoving].cards[cardIndex] = newCard
     room.gameState = getStateAfterMove(room.gameState)
 
-    return newCard
-}
-
-
-// TODO: if these methods are async, will it make any problems? 
-// TODO: keep some variables that will be changed (e.g. game closed etc, if the game is already closed, don't do anything)
-export const playersTurn = async (sio: Server, socket: Socket, roomObjects: RoomObjects, moveInfo: MoveInfo) => {
-    const roomGameID = getGameRoomID(socket);
-    const room = roomObjects[roomGameID]
-
-    console.log(`the socket ${socket.id} called playersTurn. RoomID: ${roomGameID}`)
-    // TODO: better error handling here
-    if (!room) return;
-
-    // playerMove(room, moveInfo)
-
-    // the finishing condition (artificial rn)
-    if (room.gameState.unusedCards.length < 50) {
-        // TODO: chose who won in method that will be common to all 
-        // TODO call a smart contract finish game
-        await closeGameSolana(room)
-        console.log(`gameSuccesfullyFinished`)
-        sio.to(roomGameID).emit("gameSuccesfullyFinished")
-        return
+    return {
+        card: newCard,
+        movedType: MovedType.Moved
     }
-
-    // TODO all logic here with afterCardAdded 
-
-    sio.to(roomGameID).emit('playerPlayed', `(playerPlaying: ${room.gameState.currentlyMovingPlayer})`);
-    // socket.leave(roomGameID)
 }
+
+

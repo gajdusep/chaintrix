@@ -19,6 +19,7 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
     );
     console.log(`accepted bet accounts: ${acceptedBetsPDA} ${acceptedBetsPDABump}`)
     try {
+        // TODO: commitment (should be max?)
         const tx = await program.methods.acceptBets(acceptedBetsPDABump, seed)
             .accounts({
                 acceptedBetsAccount: acceptedBetsPDA,

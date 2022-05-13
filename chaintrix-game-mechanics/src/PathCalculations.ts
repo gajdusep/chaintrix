@@ -52,6 +52,28 @@ const logFromLeftEnd = (leftEnd: PathState): string => {
     return s
 }
 
+const getLengthFromLeftEnd = (leftEnd: PathState): number => {
+    let currentLeftEnd = leftEnd;
+    let l = 0
+    while (currentLeftEnd != null) {
+        l++;
+        currentLeftEnd = currentLeftEnd.right
+    }
+    return l
+}
+
+const getLoopLengthFromLeftEnd = (leftEnd: PathState): number => {
+    console.log(`calculating loop length`)
+    const beginning = leftEnd
+    let currentLeftEnd = leftEnd.right;
+    let l = 1
+    while (currentLeftEnd.coords != beginning.coords) {
+        l++;
+        currentLeftEnd = currentLeftEnd.right
+    }
+    return l
+}
+
 export const calculateLongestPathForColor = (board: Board, color: string): number => {
     // get all coords of cards    
     console.log(`Calculating: ${color}`)
@@ -62,7 +84,7 @@ export const calculateLongestPathForColor = (board: Board, color: string): numbe
 
     const leftEnds: Array<Coords> = []
     // TODO: loops
-    const loops = []
+    const loops: Array<Coords> = []
 
     const continuePath = (
         previousCoords: Coords, currentCoords: Coords, fromLeft: boolean, cameFromIndex: number
@@ -134,7 +156,15 @@ export const calculateLongestPathForColor = (board: Board, color: string): numbe
                 leftEndCoords = leftCoords
             }
             // if nextMove is null, it means we are at the end of the path            
+            let loopFound = false;
             while (nextMove != null) {
+                // LOOP DETECTION
+                if (pathStates[nextMove.nextCoords.x][nextMove.nextCoords.y].visitState == VisitState.DONE) {
+                    console.log(`Loop found`)
+                    loopFound = true;
+                    break;
+                }
+
                 // console.log(`left end before: ${JSON.stringify(leftEndCoords)}, next ${JSON.stringify(nextMove?.nextCoords)}`)
                 const newNextMove = continuePath(leftEndCoords, nextMove.nextCoords, false, nextMove.nextCameFrom)
                 if (newNextMove != null) {
@@ -143,9 +173,14 @@ export const calculateLongestPathForColor = (board: Board, color: string): numbe
                 nextMove = newNextMove
                 // console.log(`left end after: ${JSON.stringify(leftEndCoords)}, next ${JSON.stringify(nextMove?.nextCoords)}`)
             }
+            if (loopFound) {
+                loops.push(leftEndCoords)
+                continue;
+            }
             leftEnds.push(leftEndCoords)
             const leftEndPath = pathStates[leftEndCoords.x][leftEndCoords.y]
             // console.log(`left end: ${JSON.stringify(leftEndPath.coords)}, ${JSON.stringify(leftEndPath.left?.coords)}, ${JSON.stringify(leftEndPath.right?.coords)}`)
+
 
             // console.log('in right')
             const rightCoords = getNeighborCoords(indices[1], i, j, par)
@@ -167,10 +202,9 @@ export const calculateLongestPathForColor = (board: Board, color: string): numbe
         }
     }
 
-    for (let leftIndex = 0; leftIndex < leftEnds.length; leftIndex++) {
-        const element = leftEnds[leftIndex];
-        console.log(`Left ends for ${color}: ${JSON.stringify(logFromLeftEnd(pathStates[element.x][element.y]))}`)
-    }
+    const maxLeftEnds = Math.max(...leftEnds.map((leToCheck) => getLengthFromLeftEnd(pathStates[leToCheck.x][leToCheck.y])))
+    const maxLoopLength = Math.max(...loops.map((leToCheck) => getLoopLengthFromLeftEnd(pathStates[leToCheck.x][leToCheck.y])))
 
-    return 0
+    console.log(`path: ${maxLeftEnds}, loop: ${maxLoopLength}`)
+    return Math.max(maxLeftEnds, maxLoopLength * 2)
 }

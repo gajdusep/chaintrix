@@ -4,6 +4,7 @@ import {
     flipParity, mod, getRotatedCard, create2DArray
 } from "./methods";
 import { BoardFieldType } from "./CustomTypes";
+import { MovePhase } from "./Game";
 
 export type BoardFieldType2DArray = Array<Array<BoardFieldType>>;
 export type BoardCards2DArray = Array<Array<CardNullable>>;
@@ -232,7 +233,10 @@ export const getColorsOfNeighbors = (board: Board, neighbors: Array<Coords | nul
     return colors;
 }
 
-export const checkValidity = (board: Board, card: Card, posX: number, posY: number, shouldCheckThreeOfColor: boolean = true) => {
+// TODO: check validity also of the move PHASE
+export const checkValidity = (
+    board: Board, card: Card, posX: number, posY: number, shouldCheckThreeOfColor: boolean = true
+) => {
     const tileNeighbors = getTileNeighborsCoords(board, posX, posY)
 
     // for all neighbors check if the colors fit
@@ -272,6 +276,31 @@ export const checkValidity = (board: Board, card: Card, posX: number, posY: numb
     }
 
     return true;
+}
+
+export const checkValidityWithMovePhase = (
+    board: Board, card: Card, posX: number, posY: number,
+    movePhase: MovePhase, cards: Array<Card>, shouldCheckThreeOfColor: boolean = true
+) => {
+    const validity = checkValidity(board, card, posX, posY, shouldCheckThreeOfColor)
+    if (!validity) return validity;
+    if (movePhase == MovePhase.SECOND_PHASE_FREE_MOVE) return validity;
+
+    // in the first and third phase, check that player played one of his obligatory cards
+    const obligatoryCards = getObligatoryPlayersCards(board, cards)
+    const obligatoryCardsCount = getNumberOfObligatoryCards(obligatoryCards);
+    if (obligatoryCardsCount == 0) return true;
+
+    for (let cardIndex = 0; cardIndex < obligatoryCards.length; cardIndex++) {
+        const coordsList = obligatoryCards[cardIndex];
+        for (let coordsIndex = 0; coordsIndex < coordsList.length; coordsIndex++) {
+            const coords = coordsList[coordsIndex]
+            if (coords.x == posX && coords.y == posY) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 export const addCardToBoard = (board: Board, card: CardNullable, posX: number, posY: number): Board => {

@@ -6,7 +6,7 @@ import {
     Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
     getHexPositions, calculatePlayersTilesPositions, Coords,
     CardNullable, Card, HexPosition, GameState,
-    checkValidity, addCardToBoard,
+    addCardToBoard, checkValidityWithMovePhase,
     getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
     PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
     GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
@@ -66,6 +66,8 @@ const GameBoard = () => {
                     tileFieldType == BoardFieldType.CARD) {
                     return;
                 }
+
+                // TODO: here should be the validity check as well!
                 setTileHovered(hexPositions[i].ijPosition)
                 return;
             }
@@ -93,7 +95,11 @@ const GameBoard = () => {
                     return;
                 }
                 const cardToAdd = playersCardsView[index]
-                const isValid = checkValidity(gameState.board, cardToAdd, hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)
+                const isValid = checkValidityWithMovePhase(
+                    gameState.board, cardToAdd,
+                    hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y,
+                    gameState.currentlyMovingPhase, gameState.playersStates[playerID].cards
+                )
                 if (!isValid) return;
 
                 dispatch(addCardToBoardSocket({ socketClient: socketClient, card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))

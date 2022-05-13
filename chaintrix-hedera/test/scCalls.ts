@@ -8,9 +8,10 @@ import {
     Client,
     AccountBalanceQuery
 } from "@hashgraph/sdk";
+import NodeClient from "@hashgraph/sdk/lib/client/NodeClient";
 import { Config } from "./config";
 
-export const scCallBet = async (playerClient, playerId, contractId: ContractId) => {
+export const scCallBet = async (playerClient: NodeClient, playerId: AccountId, contractId: ContractId) => {
     const contractExecuteTx = new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
         .setContractId(contractId)
         .setGas(1000000)

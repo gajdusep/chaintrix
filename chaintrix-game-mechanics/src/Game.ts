@@ -165,20 +165,3 @@ export const getStateAfterMove = (gameState: GameState): GameState => {
 
     return gameState;
 }
-
-export const move = (gameState: GameState, playerNumber: number, cardIndex: number, coordsToPlaceTheCard: Coords): boolean => {
-    if (playerNumber != gameState.currentlyMovingPlayer) return false;
-    const card = gameState.playersStates[playerNumber].cards[cardIndex]
-    if (!checkValidity(gameState.board, card, coordsToPlaceTheCard.x, coordsToPlaceTheCard.y)) return false;
-    gameState.board = addCardToBoard(gameState.board, card, coordsToPlaceTheCard.x, coordsToPlaceTheCard.y)
-
-    const min = 0
-    const max = gameState.unusedCards.length - 1
-    const newCardIndex = Math.floor(Math.random() * (max - min + 1)) + min;
-    gameState.playersStates[gameState.currentlyMovingPlayer].cards[cardIndex] = {
-        cardID: gameState.unusedCards[newCardIndex],
-        orientation: 0
-    }
-    gameState.unusedCards.splice(newCardIndex, 1)
-    return true;
-}

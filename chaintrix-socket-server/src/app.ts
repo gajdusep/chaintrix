@@ -6,10 +6,11 @@ import {
     PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_PLAYS,
     PLAYER_WANTS_TO_PLAY_HEDERA, PLAYER_WANTS_TO_PLAY_SOLANA,
     PlayerPlaysPayload,
-    PlayerWantsToPlaySolanaPayload
+    PlayerWantsToPlaySolanaPayload,
+    PlayerWantsToPlayHederaPayload
 } from "../../chaintrix-game-mechanics/dist";
 import {
-    playersTurn, joinOrCreateRoomNoBlockchain,
+    joinOrCreateRoomNoBlockchain,
     playerPlaysNoBlockchain, joinOrCreateRoomSolana
 } from './SocketMethods'
 import { HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
@@ -38,6 +39,8 @@ io.on("connection", (socket) => {
     });
     socket.on(PLAYER_WANTS_TO_PLAY_SOLANA, (payload: PlayerWantsToPlaySolanaPayload) => {
         joinOrCreateRoomSolana(io, socket, freeRoomsSolana, roomObjects, solanaPlayers, payload)
+    });
+    socket.on(PLAYER_WANTS_TO_PLAY_HEDERA, (payload: PlayerWantsToPlayHederaPayload) => {
     });
     socket.on(PLAYER_PLAYS, (payload: PlayerPlaysPayload) => {
         playerPlaysNoBlockchain(io, socket, roomObjects, payload)

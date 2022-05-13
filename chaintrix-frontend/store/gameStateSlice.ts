@@ -12,16 +12,24 @@ import {
     PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
     PlayerPlayedPayload,
     GameStartedPlayerIDPayload,
-    calculateLongestPathForColor
+    calculateLongestPathForColor, GameFinishedNoBlockchainPayload,
+    GAME_FINISHED_NO_BLOCKCHAIN, GAME_FINISHED_SOLANA
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { Socket } from 'socket.io-client';
+
+export enum GameRunningState {
+    NOT_STARTED,
+    RUNNING,
+    FINISHED
+}
 
 export interface ClientGameState {
     playerID: number,
     gameState: GameState,
     playersCardsView: Array<Card>,
     sizes: Sizes,
-    gameRunning: boolean
+    gameRunningState: GameRunningState,
+    lengths: { [color: string]: number }
 }
 
 const INITIAL_WIDTH = 500
@@ -38,7 +46,8 @@ const initialState: ClientGameState = {
     gameState: newGameState,
     playersCardsView: [],
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT),
-    gameRunning: false
+    gameRunningState: GameRunningState.NOT_STARTED,
+    lengths: {}
 }
 
 const getNewCardView = (state: ClientGameState): Array<Card> => {
@@ -70,7 +79,7 @@ export const gameStateSlice = createSlice({
             state.gameState = gameState;
             state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
             state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
-            state.gameRunning = true;
+            state.gameRunningState = GameRunningState.RUNNING;
         },
         setPlayerID: (state, action: PayloadAction<GameStartedPlayerIDPayload>) => {
             state.playerID = action.payload.playerID
@@ -96,10 +105,10 @@ export const gameStateSlice = createSlice({
             state.playersCardsView = getNewCardView(state)
 
             // TODO: make this visible in client
-            calculateLongestPathForColor(state.gameState.board, 'R')
-            calculateLongestPathForColor(state.gameState.board, 'G')
-            calculateLongestPathForColor(state.gameState.board, 'B')
-            calculateLongestPathForColor(state.gameState.board, 'Y')
+            state.lengths['R'] = calculateLongestPathForColor(state.gameState.board, 'R')
+            state.lengths['G'] = calculateLongestPathForColor(state.gameState.board, 'G')
+            state.lengths['B'] = calculateLongestPathForColor(state.gameState.board, 'B')
+            state.lengths['Y'] = calculateLongestPathForColor(state.gameState.board, 'Y')
         },
         addCardToBoardSocket: (state, action: PayloadAction<{ socketClient: Socket, card: Card, x: number, y: number }>) => {
             const playerPlaysPayload: PlayerPlaysPayload = {
@@ -138,7 +147,13 @@ export const gameStateSlice = createSlice({
         },
         rotateCardInCardView: (state, action: PayloadAction<{ cardIndex: number }>) => {
             state.playersCardsView[action.payload.cardIndex].orientation = mod(state.playersCardsView[action.payload.cardIndex].orientation + 1, 6)
-        }
+        },
+        // TODO set finished - solana, hedera, solana
+        setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
+            state.gameRunningState = GameRunningState.FINISHED;
+
+            // state.playersCardsView[action.payload.cardIndex].orientation = mod(state.playersCardsView[action.payload.cardIndex].orientation + 1, 6)
+        },
     },
 });
 
@@ -151,7 +166,8 @@ export const {
     setGameState,
     onPlayerPlayedSocketEvent,
     addCardToBoardSocket,
-    setPlayerID
+    setPlayerID,
+    setGameFinishedNoBlockchain
 } = gameStateSlice.actions;
 
 // The function below is called a selector and allows us to select a value from
@@ -164,8 +180,9 @@ export const selectPlayerID = (state: RootState) => {
     }
     return state.gameStateSlice.playerID
 }
+export const selectLengths = (state: RootState) => state.gameStateSlice.lengths;
 export const selectSizes = (state: RootState) => state.gameStateSlice.sizes;
 export const selectPlayersCardsView = (state: RootState) => state.gameStateSlice.playersCardsView;
-export const selectGameRunning = (state: RootState) => state.gameStateSlice.gameRunning;
+export const selectGameRunningState = (state: RootState) => state.gameStateSlice.gameRunningState;
 
 export default gameStateSlice.reducer;

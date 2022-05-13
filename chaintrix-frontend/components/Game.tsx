@@ -4,11 +4,12 @@ import {
     GameState, PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
     GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
     GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
-    PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload
+    PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload,
+    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet, WalletProvider } from "@solana/wallet-adapter-react";
-import { randomBytes } from 'crypto';
+import { randomBytes, sign } from 'crypto';
 import * as anchor from "@project-serum/anchor";
 import { Program, Provider } from "@project-serum/anchor";
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
@@ -16,7 +17,7 @@ import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPO
 import { IDL } from "../types/chaintrix_solana";
 import {
     selectGameState, setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectPlayerID, selectGameRunning
+    setPlayerID, selectPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain
 } from '../store/gameStateSlice';
 import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -26,7 +27,12 @@ import GameBoard from '../components/GameBoard';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import {
     Hbar, ContractCallQuery, ContractId, ContractFunctionParameters,
+    ContractExecuteTransaction,
+    AccountId,
+    Client,
+    AccountBalanceQuery
 } from "@hashgraph/sdk";
+import NodeClient from "@hashgraph/sdk/lib/client/NodeClient";
 import { HashConnect, HashConnectTypes } from 'hashconnect';
 import {
     sendTransaction, connectToExtension, HashConnectStatus
@@ -42,7 +48,8 @@ const Game = () => {
     const socketClient = useAppSelector(selectSocketClient);
     const playerID = useAppSelector(selectPlayerID)
     const dispatch = useAppDispatch();
-    const gameRunning = useAppSelector(selectGameRunning)
+    const gameRunningState = useAppSelector(selectGameRunningState)
+    const pathLengths = useAppSelector(selectLengths)
 
     // SOLANA VARS
     const wallet = useWallet();
@@ -68,6 +75,7 @@ const Game = () => {
             if (hashConnectService == null) return;
 
             console.log("Paired with wallet", data);
+            // console.log(`And after paired, the signer is: ${}`)
             // state.status = HashConnectStatus.PAIRED
             // setStatus(state.hashConnecteService?, HashConnectStatus.PAIRED)
 
@@ -103,7 +111,14 @@ const Game = () => {
                 dispatch(setPlayerID(payload))
             }
         }));
+        dispatch(setOnEvent({
+            event: GAME_FINISHED_NO_BLOCKCHAIN, func: (payload: GameFinishedNoBlockchainPayload) => {
+                dispatch(setGameFinishedNoBlockchain(payload))
+            }
+        }));
+        // TODO: game finished - solana, hedera
         // socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
+
     }, []);
 
     const onPlayNoBCCLick = () => {
@@ -152,8 +167,49 @@ const Game = () => {
         socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);
     }
 
+    const scCallBet = async (playerClient: NodeClient, playerId: AccountId, contractId: ContractId) => {
+        const contractExecuteTx = new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
+            .setContractId(contractId)
+            .setGas(1000000)
+            .setFunction("bet", new ContractFunctionParameters().addAddress(playerId.toSolidityAddress()));
+
+        const contractExecuteSubmit = await contractExecuteTx.execute(playerClient);
+        const contractExecuteRx = await contractExecuteSubmit.getReceipt(playerClient);
+        console.log(`- Contract function call status: ${contractExecuteRx.status}`);
+    }
+
     const onPlayHederaCLick = async () => {
-        const contractId = new ContractId(34021824)
+        const contractId = new ContractId(34754718)
+        if (!hashConnectService) return;
+        const playerHederaIdStr = hashConnectService.savedData.pairedAccounts[0]
+        const topic = hashConnectService.savedData.topic
+        const playerHederaId = AccountId.fromString(playerHederaIdStr)
+        console.log(`playerID: ${playerHederaIdStr}`)
+        // TODO: provider correct this.
+        const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
+        const signer = hashConnectService.hashconnect.getSigner(provider)
+
+        const contractExecuteTx = await new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
+            .setContractId(contractId)
+            .setGas(1000000)
+            .setFunction("bet", new ContractFunctionParameters().addAddress(playerHederaId.toSolidityAddress()))
+            .freezeWithSigner(signer)
+
+        console.log(`signer: ${signer.getAccountId().toString()}`)
+        const response = await contractExecuteTx.executeWithSigner(signer);
+
+        console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
+        // const traRec = await provider.getTransactionReceipt(response.transactionId)
+        // console.log(`trarec: ${traRec.status}`)
+        // const rec = await provider.waitForReceipt(response)
+        // console.log(`rec: ${rec.status}`)
+        const receipt = await response.getReceipt(provider.client);
+        console.log(`- Contract function call status: ${receipt.status.toString()}`);
+
+
+        return;
+
+        // const contractId = new ContractId(34021824)
         //this is the example contract from https://hedera.com/blog/how-to-deploy-smart-contracts-on-hedera-part-1-a-simple-getter-and-setter-contract
         let trans = new ContractCallQuery()
             .setContractId(contractId)
@@ -191,14 +247,25 @@ const Game = () => {
         await connectToExtension(hashConnectService);
     }
 
-    if (gameRunning) return (
+    const colors = ['R', 'B', 'G', 'Y']
+
+    if (gameRunningState == GameRunningState.RUNNING) return (
         <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
+            <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
+                {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
+            </div>
             <div>
                 <GameBoard />
             </div>
             <div>
                 <OponentsBanner />
             </div>
+        </div>
+    )
+
+    if (gameRunningState == GameRunningState.FINISHED) return (
+        <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
+            <div>Game finished</div>
         </div>
     )
 

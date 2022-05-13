@@ -64,12 +64,13 @@ contract ChaintrixContract {
             "winner is not one of the players"
         );
 
-        winner.transfer(2 * 777);
-
         playerBets[player0].isSet = false;
         playerBets[player0].oponentAddress = address(0x0);
         playerBets[player1].isSet = false;
         playerBets[player1].oponentAddress = address(0x0);
+
+        // TODO: check the order of actions
+        winner.transfer(2 * 777);
     }
 
     // TODO: write a function that will allow server to close bets for single player

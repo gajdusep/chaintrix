@@ -541,14 +541,6 @@
     "@ethersproject/properties" "^5.6.0"
     "@ethersproject/strings" "^5.6.0"
 
-"@grpc/grpc-js@^1.5.3":
-  version "1.5.10"
-  resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.5.10.tgz#12f0b33b338fad5a0e48ee1d5999b5b08da60bcc"
-  integrity sha512-++oAubX/7rJzlqH0ShyzDENNNDHYrlttdc3NM40KlaVQDcgGqQknuPoavmyTC+oNUDyxPCX5dHceKhfcgN3tiw==
-  dependencies:
-    "@grpc/proto-loader" "^0.6.4"
-    "@types/node" ">=12.12.47"
-
 "@grpc/grpc-js@^1.6.3":
   version "1.6.7"
   resolved "https://registry.yarnpkg.com/@grpc/grpc-js/-/grpc-js-1.6.7.tgz#4c4fa998ff719fe859ac19fe977fdef097bb99aa"
@@ -568,7 +560,7 @@
     protobufjs "^6.10.0"
     yargs "^16.2.0"
 
-"@hashgraph/cryptography@^1.1.0-beta.5", "@hashgraph/cryptography@^1.1.2":
+"@hashgraph/cryptography@^1.1.2":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@hashgraph/cryptography/-/cryptography-1.1.2.tgz#bd2ca9e8f91ab21155f0eb230a58e3e7d45d7982"
   integrity sha512-oSnDDs5foNq6Yni4kCwbA01NuVY2mewVr1jhkJG7yNDT6+xIBCztRWDeINb1JuShXe57Cuf88M1zmN5iFN7JgA==
@@ -582,14 +574,6 @@
     tweetnacl "^1.0.3"
     utf8 "^3.0.0"
 
-"@hashgraph/proto@2.1.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@hashgraph/proto/-/proto-2.1.5.tgz#665202dc2c0fe099a5a07018bc82a409cb0933be"
-  integrity sha512-7iKO98T3iS+V+Ddy3Ew7+u8nzFT8MjRs6HczPE2scCjwKRhsodtYfGyOxVji+HN6WDqZmylr1VJwhNy5de/CRQ==
-  dependencies:
-    long "^4.0.0"
-    protobufjs "^6.11.2"
-
 "@hashgraph/proto@2.4.0":
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/@hashgraph/proto/-/proto-2.4.0.tgz#95cbe3d6eb36eb9dc4befda7e4aa9425f3f269aa"
@@ -597,22 +581,6 @@
   dependencies:
     long "^4.0.0"
     protobufjs "^6.11.2"
-
-"@hashgraph/sdk@^2.11.3":
-  version "2.11.3"
-  resolved "https://registry.yarnpkg.com/@hashgraph/sdk/-/sdk-2.11.3.tgz#e92acb30eca02a5b72c502e8c146d995f0f70338"
-  integrity sha512-49nA5Xl2B7MBxDruBaM9xvB0J8dRhgO8jcqsXuVI57m1EBiSNRzIWn4S51Nf2nqo5xoZRiMTGvfZbYXEIC9XLw==
-  dependencies:
-    "@grpc/grpc-js" "^1.5.3"
-    "@hashgraph/cryptography" "^1.1.0-beta.5"
-    "@hashgraph/proto" "2.1.5"
-    bignumber.js "^9.0.2"
-    crypto-js "^4.1.1"
-    js-base64 "^3.7.2"
-    js-logger "^1.6.1"
-    long "^4.0.0"
-    protobufjs "^6.11.2"
-    utf8 "^3.0.0"
 
 "@hashgraph/sdk@^2.13.1":
   version "2.13.1"

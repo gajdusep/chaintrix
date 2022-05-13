@@ -16,8 +16,8 @@ export type PlayerWantsToPlaySolanaPayload = {
 }
 
 export const PLAYER_WANTS_TO_PLAY_HEDERA = 'playerWantsToPlayHedera'
-export type PlayerWantsToPlayHedera = {
-
+export type PlayerWantsToPlayHederaPayload = {
+    playerAddress: string
 }
 
 export const GAME_STARTED = 'gameStarted'
@@ -46,5 +46,21 @@ export type PlayerPlayedPayload = {
     newCardID: string
 }
 
-export const GAME_FINISHED = 'gameFinished'
+type GameFinishedGenericPayload = {
+    winningPlayerIndex: 0,
+}
+
+export const GAME_FINISHED_NO_BLOCKCHAIN = 'gameFinishedNoBlockchain'
+export type GameFinishedNoBlockchainPayload = GameFinishedGenericPayload & {
+}
+
+export const GAME_FINISHED_SOLANA = 'gameFinishedSolana'
+export type GameFinishedSolanaPayload = GameFinishedGenericPayload & {
+    transactionHash: string
+}
+
+export const GAME_FINISHED_HEDERA = 'gameFinishedHedera'
+export type GameFinishedHederaPayload = GameFinishedGenericPayload & {
+
+}
 

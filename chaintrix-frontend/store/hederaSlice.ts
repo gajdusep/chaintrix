@@ -8,6 +8,8 @@ import {
 } from '../helpers/HashConnectService';
 import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect';
 
+// TODO: don't hold account ids in saved data, refresh after every loading!!!
+
 export interface HederaState {
     hashConnectService: HashConnectService | null
     status: HashConnectStatus

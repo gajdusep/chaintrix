@@ -14,7 +14,7 @@
         "testEnvironment": "node"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.11.3",
+        "@hashgraph/sdk": "^2.13.1",
         "@project-serum/anchor": "^0.24.2",
         "@reduxjs/toolkit": "^1.8.1",
         "@solana/wallet-adapter-base": "^0.9.5",
