@@ -5,7 +5,7 @@ import {
     GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
     GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
     PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload
+    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet, WalletProvider } from "@solana/wallet-adapter-react";
@@ -167,19 +167,8 @@ const Game = () => {
         socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);
     }
 
-    const scCallBet = async (playerClient: NodeClient, playerId: AccountId, contractId: ContractId) => {
-        const contractExecuteTx = new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
-            .setContractId(contractId)
-            .setGas(1000000)
-            .setFunction("bet", new ContractFunctionParameters().addAddress(playerId.toSolidityAddress()));
-
-        const contractExecuteSubmit = await contractExecuteTx.execute(playerClient);
-        const contractExecuteRx = await contractExecuteSubmit.getReceipt(playerClient);
-        console.log(`- Contract function call status: ${contractExecuteRx.status}`);
-    }
-
     const onPlayHederaCLick = async () => {
-        const contractId = new ContractId(34754718)
+        const contractId = new ContractId(34813188)
         if (!hashConnectService) return;
         const playerHederaIdStr = hashConnectService.savedData.pairedAccounts[0]
         const topic = hashConnectService.savedData.topic
@@ -199,47 +188,18 @@ const Game = () => {
         const response = await contractExecuteTx.executeWithSigner(signer);
 
         console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
-        // const traRec = await provider.getTransactionReceipt(response.transactionId)
-        // console.log(`trarec: ${traRec.status}`)
-        // const rec = await provider.waitForReceipt(response)
-        // console.log(`rec: ${rec.status}`)
-        const receipt = await response.getReceipt(provider.client);
-        console.log(`- Contract function call status: ${receipt.status.toString()}`);
+        const sec = response.transactionId.validStart?.seconds.low;
+        const nano = response.transactionId.validStart?.nanos.low;
+        const txId = `${playerHederaIdStr}@${sec}.${nano}`;
+        const receipt = await provider.getTransactionReceipt(txId);
+        console.log(`receipt: ${receipt.status}`)
 
+        const payload: PlayerWantsToPlayHederaPayload = {
+            playerAddress: playerHederaIdStr
+        }
+        socketClient.emit(PLAYER_WANTS_TO_PLAY_HEDERA, payload);
 
         return;
-
-        // const contractId = new ContractId(34021824)
-        //this is the example contract from https://hedera.com/blog/how-to-deploy-smart-contracts-on-hedera-part-1-a-simple-getter-and-setter-contract
-        let trans = new ContractCallQuery()
-            .setContractId(contractId)
-            .setGas(100000)
-            .setFunction("getMobileNumber", new ContractFunctionParameters().addString("Alice"))
-            .setMaxQueryPayment(new Hbar(0.00000001));
-
-        let transactionBytes: Uint8Array = await trans.toBytes();
-
-        const signingAcctWTF = "0.0.34055185"
-        if (!hashConnectService) return;
-        let res = await sendTransaction(hashConnectService, transactionBytes, signingAcctWTF, false);
-
-        //handle response
-        let responseData: any = {
-            response: res,
-            receipt: null
-        }
-
-        //todo: how to change query bytes back to query?
-        if (res.success) {
-            const bytes = res.receipt as Uint8Array
-            const numberString = web3.utils.hexToNumberString(`0x${Buffer.from(bytes).toString('hex')}`)
-            console.log(`what: ${numberString.length}, ${bytes}`)
-        }
-        else {
-            console.log(`unsuccessful`)
-        }
-
-        // TODO: socket emit (wantstoplayhedera)
     }
 
     const connectToHederaWallet = async () => {

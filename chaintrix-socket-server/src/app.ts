@@ -10,10 +10,9 @@ import {
     PlayerWantsToPlayHederaPayload
 } from "../../chaintrix-game-mechanics/dist";
 import {
-    joinOrCreateRoomNoBlockchain,
-    playerPlaysNoBlockchain, joinOrCreateRoomSolana
+    playerPlays, joinOrCreateRoom
 } from './SocketMethods'
-import { HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
+import { BlockchainType, HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
 
 require('dotenv').config()
 const app = express();
@@ -35,15 +34,16 @@ const noBlockchainPlayers: { [socketID: string]: NoBlockchainPlayer } = {}
 io.on("connection", (socket) => {
     console.log("New client connected");
     socket.on(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, () => {
-        joinOrCreateRoomNoBlockchain(io, socket, freeRoomsNoBlockchain, roomObjects, noBlockchainPlayers)
+        joinOrCreateRoom(io, socket, freeRoomsNoBlockchain, roomObjects, noBlockchainPlayers, BlockchainType.NO_BLOCKCHAIN)
     });
     socket.on(PLAYER_WANTS_TO_PLAY_SOLANA, (payload: PlayerWantsToPlaySolanaPayload) => {
-        joinOrCreateRoomSolana(io, socket, freeRoomsSolana, roomObjects, solanaPlayers, payload)
+        joinOrCreateRoom(io, socket, freeRoomsSolana, roomObjects, solanaPlayers, BlockchainType.SOLANA, payload, null)
     });
     socket.on(PLAYER_WANTS_TO_PLAY_HEDERA, (payload: PlayerWantsToPlayHederaPayload) => {
+        joinOrCreateRoom(io, socket, freeRoomsHedera, roomObjects, hederaPlayers, BlockchainType.HEDERA, null, payload)
     });
     socket.on(PLAYER_PLAYS, (payload: PlayerPlaysPayload) => {
-        playerPlaysNoBlockchain(io, socket, roomObjects, payload)
+        playerPlays(io, socket, roomObjects, payload)
     });
 
     // if (interval) {

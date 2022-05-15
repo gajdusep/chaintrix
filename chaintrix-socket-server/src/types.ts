@@ -4,9 +4,9 @@ import {
 // } from 'chaintrix-game-mechanics';
 
 export enum BlockchainType {
-    SOLANA,
-    HEDERA,
-    NO_BLOCKCHAIN
+    SOLANA = 'Solana',
+    HEDERA = 'Hedera',
+    NO_BLOCKCHAIN = 'NoBlockchain'
 }
 
 export type GameRoom = {

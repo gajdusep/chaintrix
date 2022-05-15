@@ -66,5 +66,5 @@ export const closeGameSolana = async (room: GameRoom) => {
             systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([])
-        .rpc({ commitment: 'confirmed' })
+        .rpc({ commitment: 'max' })
 }
