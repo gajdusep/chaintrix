@@ -281,7 +281,7 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
     room.gameState.board = newBoard
 
     // TODO: here?
-    if (room.gameState.unusedCards.length < 44) {
+    if (room.gameState.unusedCards.length < 42) {
         return {
             card: null,
             movedType: MovedType.MovedAndNoCardsLeft

@@ -14,10 +14,8 @@ import {
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
-    selectGameState, selectSizes, addCardToBoardAction, replaceGivenCardWithNewOne, selectPlayersCardsView,
-    rotateCardInCardView, updateCardView, updateStateAfterMove, setGameState,
-    onPlayerPlayedSocketEvent,
-    addCardToBoardSocket, setPlayerID, selectPlayerID
+    selectGameState, selectSizes, selectPlayersCardsView,
+    rotateCardInCardView, addCardToBoardSocket, selectPlayerID
 } from '../store/gameStateSlice';
 import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';

@@ -20,6 +20,7 @@ import { Socket } from 'socket.io-client';
 export enum GameRunningState {
     NOT_STARTED,
     RUNNING,
+    FINISHED_AND_WAITING_FOR_FINALIZATION,
     FINISHED
 }
 
@@ -37,11 +38,6 @@ const INITIAL_WIDTH = 500
 const INITIAL_HEIGHT = 600
 
 const newGameState = getNewGameState()
-// const initialState: GameStateState = {
-//     gameState: newGameState,
-//     playersCardsView: newGameState.playersStates[newGameState.currentlyMovingPlayer].cards,
-//     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
-// };
 const initialState: ClientGameState = {
     playerID: -1,
     gameState: newGameState,
@@ -90,8 +86,14 @@ export const gameStateSlice = createSlice({
         setSocketError: (state, action: PayloadAction<string>) => {
             state.error = action.payload
         },
-        addCardToBoardAction: (state, action: PayloadAction<{ card: Card, x: number, y: number }>) => {
-            // TODO: add sizes to the state! - in here, change the sizes based on the new board
+        addCardToBoardSocket: (state, action: PayloadAction<{ socketClient: Socket, card: Card, x: number, y: number }>) => {
+            const playerPlaysPayload: PlayerPlaysPayload = {
+                playerID: state.gameState.currentlyMovingPlayer,
+                card: action.payload.card,
+                x: action.payload.x,
+                y: action.payload.y
+            }
+            action.payload.socketClient.emit(PLAYER_PLAYS, playerPlaysPayload)
             const newBoard = addCardToBoard(state.gameState.board, action.payload.card, action.payload.x, action.payload.y)
             state.gameState.board = newBoard
             state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT)
@@ -114,25 +116,6 @@ export const gameStateSlice = createSlice({
             state.lengths['G'] = calculateLongestPathForColor(state.gameState.board, 'G')
             state.lengths['B'] = calculateLongestPathForColor(state.gameState.board, 'B')
             state.lengths['Y'] = calculateLongestPathForColor(state.gameState.board, 'Y')
-        },
-        addCardToBoardSocket: (state, action: PayloadAction<{ socketClient: Socket, card: Card, x: number, y: number }>) => {
-            const playerPlaysPayload: PlayerPlaysPayload = {
-                playerID: state.gameState.currentlyMovingPlayer,
-                card: action.payload.card,
-                x: action.payload.x,
-                y: action.payload.y
-            }
-            action.payload.socketClient.emit(PLAYER_PLAYS, playerPlaysPayload)
-            const newBoard = addCardToBoard(state.gameState.board, action.payload.card, action.payload.x, action.payload.y)
-            state.gameState.board = newBoard
-            state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT)
-        },
-        replaceGivenCardWithNewOne: (state, action: PayloadAction<{ card: Card, playerIndex: number, cardIndex: number }>) => {
-            // state.gameState.playersStates[action.payload.playerIndex].cards[action.payload.cardIndex] = action.payload.card
-            console.log(`before altering: ${state.gameState.unusedCards.length}`)
-            const newCard = getRandomUnusedCardAndAlterArray(state.gameState.unusedCards)
-            state.gameState.playersStates[action.payload.playerIndex].cards[action.payload.cardIndex] = newCard
-            console.log(`after altering: ${state.gameState.unusedCards.length}`)
         },
         updateStateAfterMove: (state) => {
             state.gameState = getStateAfterMove(state.gameState)
@@ -163,22 +146,12 @@ export const gameStateSlice = createSlice({
 });
 
 export const {
-    addCardToBoardAction,
-    replaceGivenCardWithNewOne,
-    rotateCardInCardView,
-    updateCardView,
-    updateStateAfterMove,
-    setGameState,
-    onPlayerPlayedSocketEvent,
-    addCardToBoardSocket,
-    setPlayerID,
-    setGameFinishedNoBlockchain,
-    setSocketError
+    rotateCardInCardView, updateCardView,
+    updateStateAfterMove, setGameState,
+    onPlayerPlayedSocketEvent, addCardToBoardSocket,
+    setPlayerID, setGameFinishedNoBlockchain, setSocketError
 } = gameStateSlice.actions;
 
-// The function below is called a selector and allows us to select a value from
-// the state. Selectors can also be defined inline where they're used instead of
-// in the slice file. For example: `useSelector((state: RootState) => state.counter.value)`
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;
 export const selectPlayerID = (state: RootState) => {
     if (state.gameStateSlice.playerID == -1) {
