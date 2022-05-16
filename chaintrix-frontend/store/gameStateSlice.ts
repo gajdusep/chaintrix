@@ -29,7 +29,8 @@ export interface ClientGameState {
     playersCardsView: Array<Card>,
     sizes: Sizes,
     gameRunningState: GameRunningState,
-    lengths: { [color: string]: number }
+    lengths: { [color: string]: number },
+    error: string | null
 }
 
 const INITIAL_WIDTH = 500
@@ -47,7 +48,8 @@ const initialState: ClientGameState = {
     playersCardsView: [],
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT),
     gameRunningState: GameRunningState.NOT_STARTED,
-    lengths: {}
+    lengths: {},
+    error: null
 }
 
 const getNewCardView = (state: ClientGameState): Array<Card> => {
@@ -84,6 +86,9 @@ export const gameStateSlice = createSlice({
         setPlayerID: (state, action: PayloadAction<GameStartedPlayerIDPayload>) => {
             state.playerID = action.payload.playerID
             state.playersCardsView = getNewCardView(state)
+        },
+        setSocketError: (state, action: PayloadAction<string>) => {
+            state.error = action.payload
         },
         addCardToBoardAction: (state, action: PayloadAction<{ card: Card, x: number, y: number }>) => {
             // TODO: add sizes to the state! - in here, change the sizes based on the new board
@@ -167,7 +172,8 @@ export const {
     onPlayerPlayedSocketEvent,
     addCardToBoardSocket,
     setPlayerID,
-    setGameFinishedNoBlockchain
+    setGameFinishedNoBlockchain,
+    setSocketError
 } = gameStateSlice.actions;
 
 // The function below is called a selector and allows us to select a value from
@@ -184,5 +190,6 @@ export const selectLengths = (state: RootState) => state.gameStateSlice.lengths;
 export const selectSizes = (state: RootState) => state.gameStateSlice.sizes;
 export const selectPlayersCardsView = (state: RootState) => state.gameStateSlice.playersCardsView;
 export const selectGameRunningState = (state: RootState) => state.gameStateSlice.gameRunningState;
+export const selectError = (state: RootState) => state.gameStateSlice.error;
 
 export default gameStateSlice.reducer;

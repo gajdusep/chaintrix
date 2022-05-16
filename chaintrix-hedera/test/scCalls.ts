@@ -33,6 +33,17 @@ export const getBalance = async (config: Config, contractId: ContractId) => {
     console.log(`- Balance of the contract: ${contractQueryResult} \n`);
 }
 
+export const getHasPlayerPlacedBet = async (config: Config, contractId: ContractId, playerId: AccountId): Promise<boolean> => {
+    // Query the contract to check changes in state variable
+    const contractQueryTx = new ContractCallQuery()
+        .setContractId(contractId)
+        .setGas(100000)
+        .setFunction("hasPlayerPlacedBet", new ContractFunctionParameters().addAddress(playerId.toSolidityAddress()));
+    const contractQuerySubmit = await contractQueryTx.execute(config.player0Client);
+    const contractQueryResult = contractQuerySubmit.getBool(0);
+    return contractQueryResult
+}
+
 export const scCallAcceptBets = async (config: Config, contractId: ContractId) => {
     const contractParams = new ContractFunctionParameters()
         .addAddress(config.player0Id.toSolidityAddress())

@@ -1,27 +1,21 @@
-import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
 import { Server, Socket } from "socket.io";
-import { Connection, PublicKey } from '@solana/web3.js';
 import {
     Player, SolanaPlayer, NoBlockchainPlayer,
     GameRoom, BlockchainType, HederaPlayer, AcceptedBetInfo
 } from "./types";
-import { IDL, ChaintrixSolana } from './types/chaintrix_solana';
-import { randomBytes } from "crypto";
-import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "./Constants";
 import {
     Card, addCardToBoard, getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
     getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerPlayedPayload,
     GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload, GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, SOCKET_ERROR, ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG, PlayerWantsToPlayHederaPayload,
-
+    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload,
+    GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, SOCKET_ERROR,
+    ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
+    PlayerWantsToPlayHederaPayload,
 } from '../../chaintrix-game-mechanics/dist/index.js';
-import { acceptBetsSolana, closeGameSolana } from "./SolanaMethods";
+import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
+import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
+import { toSolidityAddress } from "@hashgraph/sdk/lib/EntityIdHelper";
 // } from 'chaintrix-game-mechanics';
-
-const NUMBER_OF_PLAYERS = 2
-
-// TODO: roomID: should be strictly unique, not from 1 to 10000
 
 type RoomObjects = { [key: string]: GameRoom }
 
@@ -45,8 +39,14 @@ const getJoiningPlayerNoBlockchain = (socket: Socket): NoBlockchainPlayer => {
     }
 }
 
-const getJoiningPlayerSolana = async (socket: Socket, solanaPayload: PlayerWantsToPlaySolanaPayload): Promise<SolanaPlayer | null> => {
+const getJoiningPlayerSolana = async (
+    socket: Socket, solanaPayload: PlayerWantsToPlaySolanaPayload
+): Promise<SolanaPlayer | null> => {
     // TODO: bet account checks
+    if (!checkBetAccount(solanaPayload)) {
+        return null;
+    }
+
     return {
         address: solanaPayload.playerAddress,
         betPDA: solanaPayload.betPDA,
@@ -54,9 +54,18 @@ const getJoiningPlayerSolana = async (socket: Socket, solanaPayload: PlayerWants
     }
 }
 
-const getJoiningPlayerHedera = async (socket: Socket, hederaPayload: PlayerWantsToPlayHederaPayload): Promise<HederaPlayer | null> => {
-    // TODO: implement
-    return null;
+const getJoiningPlayerHedera = async (
+    socket: Socket, hederaPayload: PlayerWantsToPlayHederaPayload
+): Promise<HederaPlayer | null> => {
+    console.log(`checking hedera play bet for player: ${hederaPayload.playerAddress}`)
+    if (!checkPlayerBet(hederaPayload)) {
+        return null;
+    }
+
+    return {
+        socketID: socket.id,
+        address: hederaPayload.playerAddress
+    }
 }
 
 export const joinOrCreateRoom = async (sio: Server, socket: Socket,
@@ -133,6 +142,12 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
             }
             break;
         case BlockchainType.HEDERA:
+            const result = await acceptBetsHedera(
+                getHederaConfig(),
+                toSolidity((waitingPlayer as HederaPlayer).address),
+                toSolidity((joiningPlayer as HederaPlayer).address)
+            )
+            acceptedBetInfo = {}
             break;
     }
 
@@ -142,7 +157,7 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     roomObjects[roomID] = {
         players: playersInRoom,
         gameState: newGameState,
-        blockchainType: BlockchainType.NO_BLOCKCHAIN,
+        blockchainType: blockchainType,
         acceptedBetInfo: acceptedBetInfo
     }
     console.log(`${blockchainType} new gameroom created with players: ${JSON.stringify(playersInRoom)}`)
@@ -154,39 +169,53 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     sio.to(joiningPlayer.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
 }
 
-const closeGameSolanaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
+const closeGameSolanaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom) => {
+    await solanaCloseGame(room)
     const responsePayload: GameFinishedSolanaPayload = {
-        // TODO: who won
         winningPlayerIndex: winnerIndex,
         transactionHash: ''
 
     }
-    sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
+    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
+    // TODO!!!
+    // sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
 }
 
 const closeGameNoBlockchainSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
     const responsePayload: GameFinishedNoBlockchainPayload = {
-        // TODO: who won
         winningPlayerIndex: winnerIndex
     }
     sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
 }
 
-const closeGameHederaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
+const closeGameHederaSocket = async (
+    winnerIndex: number, sio: Server, gameRoomID: string, gameRoom: GameRoom
+) => {
+    let winnerAddress = (gameRoom.players[0] as HederaPlayer).address
+    if (winnerIndex == 1) {
+        winnerAddress = (gameRoom.players[1] as HederaPlayer).address
+    }
+    await hederaCloseGame(
+        getHederaConfig(),
+        toSolidity((gameRoom.players[0] as HederaPlayer).address),
+        toSolidity((gameRoom.players[1] as HederaPlayer).address),
+        winnerAddress
+    )
     const responsePayload: GameFinishedHederaPayload = {
-        // TODO: who won
         winningPlayerIndex: winnerIndex
     }
-    sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
+    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
+    // TODO: !!!
+    // sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
 }
 
 export const playerPlays = async (
     sio: Server, socket: Socket, roomObjects: RoomObjects,
     payload: PlayerPlaysPayload
 ) => {
-    console.log(`NO_BC: payload: ${JSON.stringify(payload)}`)
     const gameRoomID = getGameRoomID(socket);
     const room = roomObjects[gameRoomID]
+    console.log(`${room.blockchainType}: payload: ${JSON.stringify(payload)}`)
 
     const playerMoveResult = playerMove(room, payload)
     if (playerMoveResult.card) {
@@ -202,15 +231,16 @@ export const playerPlays = async (
 
     if (playerMoveResult.movedType == MovedType.MovedAndNoCardsLeft) {
         const winnerIndex = 0
+        // TODO: emit to the room, that the game is over and it's closing the game also on the blockchains
         switch (room.blockchainType) {
             case BlockchainType.NO_BLOCKCHAIN:
-                closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID)
+                await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID)
                 break;
             case BlockchainType.SOLANA:
-                closeGameSolanaSocket(winnerIndex, sio, gameRoomID)
+                await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room)
                 break;
             case BlockchainType.HEDERA:
-                closeGameHederaSocket(winnerIndex, sio, gameRoomID)
+                await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room)
                 break;
             default:
                 break;
@@ -251,7 +281,7 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
     room.gameState.board = newBoard
 
     // TODO: here?
-    if (room.gameState.unusedCards.length < 40) {
+    if (room.gameState.unusedCards.length < 44) {
         return {
             card: null,
             movedType: MovedType.MovedAndNoCardsLeft

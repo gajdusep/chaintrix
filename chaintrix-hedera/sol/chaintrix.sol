@@ -33,6 +33,16 @@ contract ChaintrixContract {
         // sender.transfer(7777);
     }
 
+    function hasPlayerPlacedBet(address playerAddress)
+        public
+        view
+        returns (bool)
+    {
+        return
+            playerBets[playerAddress].isSet &&
+            playerBets[playerAddress].oponentAddress == address(0);
+    }
+
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }

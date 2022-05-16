@@ -5,7 +5,7 @@ import {
     GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
     GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
     PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA
+    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA, SOCKET_ERROR
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet, WalletProvider } from "@solana/wallet-adapter-react";
@@ -13,11 +13,11 @@ import { randomBytes, sign } from 'crypto';
 import * as anchor from "@project-serum/anchor";
 import { Program, Provider } from "@project-serum/anchor";
 import { Connection, PublicKey, clusterApiUrl } from '@solana/web3.js';
-import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
+import { HEDERA_CONTRACT_ID, LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
 import { IDL } from "../types/chaintrix_solana";
 import {
     selectGameState, setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain
+    setPlayerID, selectPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError
 } from '../store/gameStateSlice';
 import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -50,6 +50,7 @@ const Game = () => {
     const dispatch = useAppDispatch();
     const gameRunningState = useAppSelector(selectGameRunningState)
     const pathLengths = useAppSelector(selectLengths)
+    const error = useAppSelector(selectError);
 
     // SOLANA VARS
     const wallet = useWallet();
@@ -116,6 +117,11 @@ const Game = () => {
                 dispatch(setGameFinishedNoBlockchain(payload))
             }
         }));
+        dispatch(setOnEvent({
+            event: SOCKET_ERROR, func: (payload) => {
+                dispatch(setSocketError(payload))
+            }
+        }));
         // TODO: game finished - solana, hedera
         // socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
 
@@ -168,7 +174,6 @@ const Game = () => {
     }
 
     const onPlayHederaCLick = async () => {
-        const contractId = new ContractId(34813188)
         if (!hashConnectService) return;
         const playerHederaIdStr = hashConnectService.savedData.pairedAccounts[0]
         const topic = hashConnectService.savedData.topic
@@ -179,7 +184,7 @@ const Game = () => {
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
         const contractExecuteTx = await new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
-            .setContractId(contractId)
+            .setContractId(HEDERA_CONTRACT_ID)
             .setGas(1000000)
             .setFunction("bet", new ContractFunctionParameters().addAddress(playerHederaId.toSolidityAddress()))
             .freezeWithSigner(signer)
@@ -208,6 +213,10 @@ const Game = () => {
     }
 
     const colors = ['R', 'B', 'G', 'Y']
+
+    if (error) return (
+        <div>Something went wrong: ${error}</div>
+    )
 
     if (gameRunningState == GameRunningState.RUNNING) return (
         <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
