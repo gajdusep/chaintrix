@@ -121,7 +121,11 @@ const GameSelect = () => {
     }
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }}>
+        <div
+        //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }}
+        >
+            <h1>chaintrix</h1>
+            <div>Begin with selecting your blockchain:</div>
             <div>
                 <button className='basic-button' onClick={() => onPlayNoBCCLick()}>Play with no blockchain</button>
             </div>
@@ -134,6 +138,7 @@ const GameSelect = () => {
                 {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onPlayHederaCLick() }} className='basic-button'>Play with Hedera</button> : <></>}
             </div>
         </div>
+
     )
 }
 

@@ -15,11 +15,11 @@ const Home: NextPage = () => {
         <link rel="icon" href="/tiles/Tantrix_tile_3.svg" />
       </Head>
 
-      <main className={styles.main}>
+      <div className={styles.main}>
         {/* <ReduxTesting /> */}
         <GameWrapper />
-      </main>
-    </div>
+      </div >
+    </div >
   )
 }
 

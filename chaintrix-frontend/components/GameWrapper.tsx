@@ -20,6 +20,9 @@ import {
     initHederaAsync, addAvailableExtension, setPairedData
 } from '../store/hederaSlice';
 import GameSelect from './GameSelect';
+import Description from './Description';
+import { ParallaxProvider } from 'react-scroll-parallax';
+import Background from './Background';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
@@ -124,7 +127,26 @@ const GameWrapper = () => {
     )
 
     return (
-        <GameSelect />
+        <>
+            <div style={{
+                position: 'absolute', width: `100%`,
+                // minHeight: `100%`,
+                top: 0, left: 0, right: 0, margin: 0, bottom: 'auto',
+                overflowX: 'clip'
+                // overflowX: 'hidden'
+            }}>
+                <ParallaxProvider>
+                    <Background />
+                </ParallaxProvider>
+            </div>
+            <div className='select-wrapper'>
+                <div style={{ height: 100 }}></div>
+                <GameSelect />
+                <div style={{ height: 100 }}></div>
+                <Description />
+                <div style={{ height: 100 }}></div>
+            </div>
+        </>
     )
 }
 
