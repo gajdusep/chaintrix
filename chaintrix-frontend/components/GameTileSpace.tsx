@@ -1,7 +1,3 @@
-import styles from '../components/Hexagons.module.css'
-import { useState } from 'react';
-// import { BoardFieldType } from "../helpers/Board"
-// import { BoardFieldType, CardNullable } from 'chaintrix-game-mechanics';
 import { BoardFieldType, CardNullable } from '../../chaintrix-game-mechanics/dist/index';
 
 type GameTileSpaceProps = {

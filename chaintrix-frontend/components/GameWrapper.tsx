@@ -10,7 +10,7 @@ import {
     setGameState, onPlayerPlayedSocketEvent,
     setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError
 } from '../store/gameStateSlice';
-import { setOnEvent } from '../store/socketSlice';
+import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import OponentsBanner from './OponentsBanner';
@@ -23,12 +23,17 @@ import GameSelect from './GameSelect';
 import Description from './Description';
 import { ParallaxProvider } from 'react-scroll-parallax';
 import Background from './Background';
+import ErrorComponent from './ErrorComponent';
+import MovePhaseBanner from './MovePhaseBanner';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
     const gameRunningState = useAppSelector(selectGameRunningState)
     const pathLengths = useAppSelector(selectLengths)
     const error = useAppSelector(selectError);
+
+    // SOCKET
+    // const socketConnected = useAppSelector(selectSocketConnected);
 
     // HEDERA VARS
     const hashConnectService = useAppSelector(selectHederaConnectService)
@@ -103,19 +108,26 @@ const GameWrapper = () => {
     const colors = ['R', 'B', 'G', 'Y']
 
     if (error) return (
-        <div>Something went wrong: ${error}</div>
+        <ErrorComponent />
     )
 
     if (gameRunningState == GameRunningState.RUNNING) return (
-        <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
-            <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
-                {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
-            </div>
-            <div>
-                <GameBoard />
-            </div>
-            <div>
-                <OponentsBanner />
+        <div className='glass' style={{ display: 'flex', flexDirection: 'column' }} >
+            <MovePhaseBanner />
+            <div style={{
+                display: 'flex', flexDirection: 'row',
+                width: `100%`,
+                justifyContent: 'center'
+            }}>
+                <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
+                    {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
+                </div>
+                <div>
+                    <GameBoard />
+                </div>
+                <div>
+                    <OponentsBanner />
+                </div>
             </div>
         </div>
     )
@@ -139,7 +151,7 @@ const GameWrapper = () => {
                     <Background />
                 </ParallaxProvider>
             </div>
-            <div className='select-wrapper'>
+            <div className='select-wrapper glass'>
                 <div style={{ height: 100 }}></div>
                 <GameSelect />
                 <div style={{ height: 100 }}></div>

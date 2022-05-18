@@ -29,5 +29,6 @@ export const {
 } = socketSlice.actions;
 
 export const selectSocketClient = (state: RootState) => state.socketSlice.socketClient;
+export const selectSocketConnected = (state: RootState) => state.socketSlice.socketClient.connected;
 
 export default socketSlice.reducer;

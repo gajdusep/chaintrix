@@ -1,4 +1,4 @@
-import styles from '../components/Hexagons.module.css'
+import styles from '../components/GameBoard.module.css'
 import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 'react-draggable'; // The default
 import { useEffect, useState } from 'react';
 import GameTileSpace from './GameTileSpace'
@@ -15,7 +15,7 @@ import {
 // } from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes, selectPlayersCardsView,
-    rotateCardInCardView, addCardToBoardSocket, selectPlayerID
+    rotateCardInCardView, addCardToBoardSocket, selectPlayerID, selectIsCurrentlyPlaying
 } from '../store/gameStateSlice';
 import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -25,8 +25,10 @@ const GameBoard = () => {
     const gameState = useAppSelector(selectGameState);
     const sizes = useAppSelector(selectSizes);
     const playersCardsView = useAppSelector(selectPlayersCardsView);
+    const [playersObligatoryCardsView, setPlayersObligatoryCardsView] = useState<Array<Array<Coords>>>(() => []);
     const socketClient = useAppSelector(selectSocketClient);
     const playerID = useAppSelector(selectPlayerID)
+    const isCurrentlyPlaying = useAppSelector(selectIsCurrentlyPlaying);
     const dispatch = useAppDispatch();
 
     const [tileHovered, setTileHovered] = useState<Coords | null>(null);
@@ -34,6 +36,12 @@ const GameBoard = () => {
     const [playerTilesMoving, setPlayerTilesMoving] = React.useState(Array(6).fill(false));
     const containerRef = React.useRef(null)
     const [controlledPositions, setControlledPositions] = useState<Array<Coords>>(() => calculatePlayersTilesPositions(sizes));
+
+
+    useEffect(() => {
+        console.log(`calculating obligatory cards`)
+        setPlayersObligatoryCardsView(getObligatoryPlayersCards(gameState.board, playersCardsView))
+    }, [gameState])
 
     useEffect(() => {
         setHexPositions(getHexPositions(gameState.board, sizes))
@@ -47,7 +55,7 @@ const GameBoard = () => {
         }
     }
 
-    const eventLogger = (e: DraggableEvent, data: DraggableData, index: number) => {
+    const eventDrag = (e: DraggableEvent, data: DraggableData, index: number) => {
         // if (!board) return;
         playerTilesMoving[index] = true;
         // setControlledPosition({ x: data.x, y: data.y })
@@ -110,6 +118,13 @@ const GameBoard = () => {
         return i == tileHovered.x && j == tileHovered.y
     }
 
+    const classByColorMapping: { [color: string]: string } = {
+        'R': styles.redPlayer,
+        'B': styles.bluePlayer,
+        'G': styles.greenPlayer,
+        'Y': styles.yellowPlayer,
+    }
+
     return (
         <div
             id='draggableContainer'
@@ -125,10 +140,10 @@ const GameBoard = () => {
                     return <div key={`${i}-${j}`} className={styles.hex}
                         draggable='false'
                         style={{ top: getTilePosition(i, j, gameState.board.parity, sizes).x, left: getTilePosition(i, j, gameState.board.parity, sizes).y }}>
-                        <img className='dont-drag-image'
+                        {/* <img className='dont-drag-image'
                             draggable='false'
                             src={`/emptyTiles/Tile_obligatory_border.svg`} width={sizes.svgWidth} height={sizes.svgHeight}
-                            style={{ position: 'absolute' }} />
+                            style={{ position: 'absolute' }} /> */}
                         <GameTileSpace card={object2} width={sizes.svgWidth} height={sizes.svgHeight}
                             highlighted={isHighlighted(i, j)}
                             boardFieldType={gameState.board.boardFieldsTypes[i][j]}
@@ -137,36 +152,44 @@ const GameBoard = () => {
                     </div>
                 })
             })}
-            <div style={{
-                position: 'absolute',
-                bottom: 0, backgroundColor: '#ffaaaa',
-                width: `100%`, height: `${sizes.size * 2}px`
-            }}></div>
-            <div style={{
-                visibility: playerID === gameState.currentlyMovingPlayer ? 'hidden' : 'visible',
-                position: 'absolute',
-                bottom: 0, backgroundColor: '#ffaabb22', zIndex: 1000000,
-                width: `100%`, height: `${sizes.size * 2}px`
-            }}></div>
-            {/* {gameState.playersStates[PLAYER_INDEX].cards.map((element, index) => { */}
-            {
-                playersCardsView.map((element, index) => {
-                    return <Draggable
-                        key={index}
-                        bounds="#draggableContainer"
-                        onDrag={(e, data) => { eventLogger(e, data, index) }}
-                        onStop={(e, data) => { eventStop(e, data, index) }}
-                        // nodeRef={nodeRef}
-                        position={controlledPositions[index]}
-                    >
-                        <div style={{ zIndex: 100000, position: 'absolute', cursor: 'pointer' }}>
-                            <GameTileSpace card={element} width={sizes.svgWidth} height={sizes.svgHeight}
-                                highlighted={false} boardFieldType={BoardFieldType.CARD}
-                            />
+            <div className={styles.currentPlayersCardsWrapper + " " + classByColorMapping[gameState.playersStates[playerID].color]}
+                style={{ height: `${sizes.size * 2}px` }}
+            />
+            <div className={styles.currentPlayerCardsOverdiv}
+                style={{ visibility: isCurrentlyPlaying ? 'hidden' : 'visible', height: `${sizes.size * 2}px` }} />
+            {playersCardsView.map((element, index) => {
+                return <Draggable
+                    key={index}
+                    bounds="#draggableContainer"
+                    onDrag={(e, data) => { eventDrag(e, data, index) }}
+                    onStop={(e, data) => { eventStop(e, data, index) }}
+                    // nodeRef={nodeRef}
+                    position={controlledPositions[index]}
+                >
+                    <div style={{ zIndex: 100000, position: 'absolute', cursor: 'pointer' }}>
+                        <GameTileSpace card={element} width={sizes.svgWidth} height={sizes.svgHeight}
+                            highlighted={false} boardFieldType={BoardFieldType.CARD}
+                        />
+                    </div>
+                </Draggable>
+            })}
+            {playersObligatoryCardsView.map((element, index) => {
+                if (element.length > 0) {
+                    return (
+                        <div className={styles.hex}
+                            draggable='false'
+                            style={{ top: calculatePlayersTilesPositions(sizes)[index].y, left: calculatePlayersTilesPositions(sizes)[index].x }}>
+                            <div>
+                                <img className='dont-drag-image'
+                                    draggable='false'
+                                    src={`/emptyTiles/Tile_obligatory_border.svg`} width={sizes.svgWidth} height={sizes.svgHeight}
+                                    style={{ position: 'absolute' }}
+                                />
+                            </div>
                         </div>
-                    </Draggable>
-                })
-            }
+                    )
+                }
+            })}
         </div >
     )
 }

@@ -13,8 +13,9 @@ import {
     selectGameState, selectSizes,
     selectPlayerID
 } from '../store/gameStateSlice';
+import styles from '../components/GameBoard.module.css'
 
-const initialWidth = 100
+const initialWidth = 150
 const initialHeight = 600
 const OponentsBanner = () => {
     const gameState = useAppSelector(selectGameState);
@@ -22,23 +23,27 @@ const OponentsBanner = () => {
     const playerID = useAppSelector(selectPlayerID)
     const containerRef = React.useRef(null)
 
+    const classByColorMapping: { [color: string]: string } = {
+        'R': styles.redPlayer,
+        'B': styles.bluePlayer,
+        'G': styles.greenPlayer,
+        'Y': styles.yellowPlayer,
+    }
+
     return (
         <div
-            id='draggableContainer'
             ref={containerRef}
             style={{
                 height: `${initialHeight}px`,
                 width: `${initialWidth}px`,
-                position: 'absolute',
-                backgroundColor: 'white',
                 border: `black 3px solid`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'centers'
-
-            }}>
-            <p>Player color: {gameState.playersStates[playerID].color}</p>
-            <p>Game state: pl {gameState.currentlyMovingPlayer}: phase {gameState.currentlyMovingPhase}</p>
+            }}
+            className={classByColorMapping[gameState.playersStates[mod(playerID + 1, 2)].color]}
+        >
+            <div className='glass'>Oponent's cards</div>
             {gameState.playersStates[mod(playerID + 1, 2)].cards.map((element, index) => {
                 return (
                     <div style={{

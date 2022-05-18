@@ -164,5 +164,8 @@ export const selectSizes = (state: RootState) => state.gameStateSlice.sizes;
 export const selectPlayersCardsView = (state: RootState) => state.gameStateSlice.playersCardsView;
 export const selectGameRunningState = (state: RootState) => state.gameStateSlice.gameRunningState;
 export const selectError = (state: RootState) => state.gameStateSlice.error;
+export const selectIsCurrentlyPlaying = (state: RootState): boolean => {
+    return state.gameStateSlice.playerID == state.gameStateSlice.gameState.currentlyMovingPlayer;
+}
 
 export default gameStateSlice.reducer;

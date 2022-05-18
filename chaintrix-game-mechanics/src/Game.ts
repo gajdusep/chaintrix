@@ -77,19 +77,42 @@ export const get6Cards = (unusedCards: Array<string>): Array<Card> => {
     return cards;
 }
 
+const getRandom = (arr: Array<string>, n: number): Array<string> => {
+    const result = new Array<string>(n);
+    let len = arr.length;
+    const taken = new Array(len);
+    if (n > len)
+        throw new RangeError("getRandom: more elements taken than available");
+    while (n--) {
+        var x = Math.floor(Math.random() * len);
+        result[n] = arr[x in taken ? taken[x] : x];
+        taken[x] = --len in taken ? taken[len] : len;
+    }
+    return result;
+}
+
+const getTwoRandomColors = (): { color0: string, color1: string } => {
+    const randoms = getRandom(['R', 'B', 'G', 'Y'], 2)
+    return {
+        color0: randoms[0],
+        color1: randoms[1]
+    }
+}
+
 export const getNewGameState = (): GameState => {
     const initialCards = getInitialCardIds()
     const player0Cards = get6Cards(initialCards)
     const player1Cards = get6Cards(initialCards)
+    const twoRandomColors = getTwoRandomColors()
     console.log(`after initialization: ${initialCards.length}, pl0: ${JSON.stringify(player0Cards)}`)
     return {
         playersStates: [
             {
-                color: "R",
+                color: twoRandomColors.color0,
                 cards: player0Cards
             },
             {
-                color: "B",
+                color: twoRandomColors.color1,
                 cards: player1Cards
             }
         ],
@@ -109,12 +132,12 @@ export const getStateAfterMove = (gameState: GameState): GameState => {
     const currentlyMovingPlayer = gameState.currentlyMovingPlayer;
     const currentPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[currentlyMovingPlayer].cards)
     const currentPlayerObligatoryCardsCount = getNumberOfObligatoryCards(currentPlayerObligatoryCards);
-    console.log(`currently playing (${currentlyMovingPlayer}): ${JSON.stringify(currentPlayerObligatoryCards)}`)
+    // console.log(`currently playing (${currentlyMovingPlayer}): ${JSON.stringify(currentPlayerObligatoryCards)}`)
 
     const waitingPlayer = mod(currentlyMovingPlayer + 1, 2)
     const waitingPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[waitingPlayer].cards)
     const waitingPlayerObligatoryCardsCount = getNumberOfObligatoryCards(waitingPlayerObligatoryCards);
-    console.log(`waiting playing (${waitingPlayer}): ${JSON.stringify(waitingPlayerObligatoryCards)}`)
+    // console.log(`waiting playing (${waitingPlayer}): ${JSON.stringify(waitingPlayerObligatoryCards)}`)
     switch (gameState.currentlyMovingPhase) {
         case MovePhase.FIRST_PHASE_OBLIGATORY: {
             // Is there a card the player must play (obligatory)?
