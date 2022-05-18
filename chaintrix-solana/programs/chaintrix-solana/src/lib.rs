@@ -9,7 +9,7 @@ mod context;
 
 const BET_AMOUNT: u64 = LAMPORTS_PER_SOL / 10; // 0.1 sol
 
-declare_id!("2Gv4zT6tX8jhkECtsDiSdmUaNxFkZSnrLerS1AzK7uxs");
+declare_id!("Agi74KZH6XY5fKPycWtg9X5g4RgfPZpNNmKodLCXDA7q");
 
 #[program]
 pub mod chaintrix_solana {
@@ -41,26 +41,26 @@ pub mod chaintrix_solana {
     pub fn accept_bets(ctx: Context<AcceptBets>, bump: u8, seed: Vec<u8>) -> Result<()> {
         let accepted_bets_account: &mut Account<AcceptedBetsAccount> =
             &mut ctx.accounts.accepted_bets_account;
-        let player0: &mut Account<BetAccount> = &mut ctx.accounts.player0_bet_account;
-        let player1: &mut Account<BetAccount> = &mut ctx.accounts.player1_bet_account;
+        let player0_bet_account: &mut Account<BetAccount> = &mut ctx.accounts.player0_bet_account;
+        let player1_bet_account: &mut Account<BetAccount> = &mut ctx.accounts.player1_bet_account;
         let server: &mut Signer = &mut ctx.accounts.server;
         // msg!("server: {:?}", server.to_account_info().lamports());
 
         let rent = Rent::default();
-        let rent_amount = player0.to_account_info().lamports() - BET_AMOUNT;
+        let rent_amount = player0_bet_account.to_account_info().lamports() - BET_AMOUNT;
 
         let is_exempt = Rent::is_exempt(&rent, rent_amount, BetAccount::LEN);
         if !is_exempt {
             return Err(error!(ErrorCode::BetAccountNotEnoughLamports));
         }
 
-        accepted_bets_account.player0 = player0.player;
-        accepted_bets_account.player1 = player1.player;
+        accepted_bets_account.player0 = player0_bet_account.player;
+        accepted_bets_account.player1 = player1_bet_account.player;
         accepted_bets_account.bump = bump;
 
         let server_fee = Rent::minimum_balance(&rent, AcceptedBetsAccount::LEN);
-        let all_lamports =
-            player0.to_account_info().lamports() + player1.to_account_info().lamports();
+        let all_lamports = player0_bet_account.to_account_info().lamports()
+            + player1_bet_account.to_account_info().lamports();
         let diff_all_fee = all_lamports - server_fee;
 
         **server.to_account_info().lamports.borrow_mut() += server_fee;
@@ -69,8 +69,8 @@ pub mod chaintrix_solana {
             .lamports
             .borrow_mut() += diff_all_fee;
 
-        **player0.to_account_info().lamports.borrow_mut() = 0;
-        **player1.to_account_info().lamports.borrow_mut() = 0;
+        **player0_bet_account.to_account_info().lamports.borrow_mut() = 0;
+        **player1_bet_account.to_account_info().lamports.borrow_mut() = 0;
 
         // msg!("server: {:?}", server.to_account_info().lamports());
         // return Err(error!(ErrorCode::Debugging));

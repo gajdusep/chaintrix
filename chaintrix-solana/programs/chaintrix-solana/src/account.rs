@@ -32,7 +32,7 @@ size!(AcceptedBetsAccount, 2 * PUBKEY_LENGTH + U8_LENGTH);
 pub struct GameClosedAccount {
     pub player0: Pubkey,
     pub player1: Pubkey,
-    pub winner_index: u8,
+    pub winner_index: u8, // 0 or 1, rename this variable, winnerId
     pub bump: u8,
 }
 
