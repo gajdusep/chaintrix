@@ -5,5 +5,10 @@
 This is repository contains a code for `chaintrix-game-mechanics` npm package.
 
 ```bash
-
+npm install
+npm run prepare
 ```
+
+## Rules
+
+

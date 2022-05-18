@@ -5,7 +5,7 @@ yarn install
 yarn dev
 ```
 
-## HEDERA
+## to work in HEDERA!!!
 
 ```
 npm install -g local-ssl-proxy

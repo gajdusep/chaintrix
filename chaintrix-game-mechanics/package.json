@@ -7,14 +7,17 @@
     "files": [
         "/dist"
     ],
-    "dependencies": {
+    "dependencies": {},
+    "devDependencies": {
+        "@types/jest": "^27.4.1",
+        "jest": "^27.1.4",
+        "ts-jest": "^27.1.4",
         "typescript": "^4.6.3"
     },
-    "devDependencies": {},
     "scripts": {
         "build": "tsc",
         "prepare": "npm run build",
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "jest"
     },
     "compilerOptions": {
         "rootDir": "src"

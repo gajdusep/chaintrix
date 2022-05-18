@@ -1,0 +1,42 @@
+.hex {
+    display: flex;
+    position: absolute;
+    align-items: center;
+    align-content: center;
+    user-select: none;
+}
+
+.currentPlayersCardsWrapper {
+    position: absolute;
+    bottom: 0px;
+    /* background-color: #ffaaaa; */
+    width: 100%;
+}
+
+.currentPlayerCardsOverdiv {
+    position: absolute;
+    bottom: 0px;
+    background-color: #ffaabb22;
+    width: 100%;
+    z-index: 1000000;
+}
+
+.redPlayer {
+    /* background-color: rgb(215, 31, 43); */
+    background-color: #e96971;
+}
+
+.bluePlayer {
+    /* background-color: rgb(12, 108, 217); */
+    background-color: #519ef5;
+}
+
+.greenPlayer {
+    /* background-color: rgb(0, 161, 69); */
+    background-color: #1cff7d;
+}
+
+.yellowPlayer {
+    /* background-color: rgb(255, 232, 0); */
+    background-color: #fff059;
+}

@@ -1,5 +1,5 @@
 import { Coords, HexPosition } from "./CustomTypes";
-import { Board } from "./Board";
+import { Board, getBoardHeight, getBoardWidth } from "./Board";
 
 export type Sizes = {
     size: number,
@@ -52,11 +52,13 @@ export const getTilePosition = (i: number, j: number, parity: number, sizes: Siz
     }
 }
 
-export const getHexPositions = (newBoard: Board, sizes: Sizes): Array<HexPosition> => {
+export const getHexPositions = (board: Board, sizes: Sizes): Array<HexPosition> => {
     const newHexPositions: Array<HexPosition> = []
-    for (let i = 0; i < newBoard.height; i++) {
-        for (let j = 0; j < newBoard.width; j++) {
-            const tilePosition = getTilePosition(i, j, newBoard.parity, sizes)
+    const height = getBoardHeight(board)
+    const width = getBoardWidth(board)
+    for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+            const tilePosition = getTilePosition(i, j, board.parity, sizes)
             newHexPositions.push({ xyPosition: tilePosition, ijPosition: { x: i, y: j } })
         }
     }

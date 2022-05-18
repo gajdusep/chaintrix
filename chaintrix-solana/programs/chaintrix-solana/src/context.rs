@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::system_program;
 use std::str::FromStr;
 
 use crate::account::*;

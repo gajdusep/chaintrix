@@ -1,10 +1,7 @@
 import type { NextPage } from 'next'
 import Head from 'next/head'
-import GameBoard from '../components/GameBoard';
 import styles from '../components/Home.module.css';
-import SmartContractTesting from '../components/SmartContractTesting';
-import SocketTesting from '../components/SocketTesting';
-import SolanaAndSocket from '../components/SolanaAndSocket';
+import GameWrapper from '../components/GameWrapper';
 
 const Home: NextPage = () => {
   return (
@@ -12,17 +9,14 @@ const Home: NextPage = () => {
       <Head>
         <title>Chaintrix</title>
         <meta name="description" content="Tantrix on blockchains" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/tiles/Tantrix_tile_3.svg" />
       </Head>
 
-      <main className={styles.main}>
-        <GameBoard />
-        {/* <SocketTesting /> */}
-        {/* <SolanaAndSocket /> */}
-        {/* <SmartContractTesting /> */}
-
-      </main>
-    </div>
+      <div className={styles.main}>
+        {/* <ReduxTesting /> */}
+        <GameWrapper />
+      </div >
+    </div >
   )
 }
 

@@ -2,10 +2,17 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import {
-    joinRoomOrCreate,
-    playersTurn
-} from './socketMethods'
-import { Player } from "./types";
+    MoveInfo,
+    PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_PLAYS,
+    PLAYER_WANTS_TO_PLAY_HEDERA, PLAYER_WANTS_TO_PLAY_SOLANA,
+    PlayerPlaysPayload,
+    PlayerWantsToPlaySolanaPayload,
+    PlayerWantsToPlayHederaPayload
+} from "../../chaintrix-game-mechanics/dist";
+import {
+    playerPlays, joinOrCreateRoom
+} from './SocketMethods'
+import { BlockchainType, HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
 
 require('dotenv').config()
 const app = express();
@@ -17,15 +24,27 @@ const io = new Server(httpServer, {
 });
 
 let interval;
-const freeRooms = []
+const freeRoomsSolana: Array<string> = []
+const freeRoomsHedera: Array<string> = []
+const freeRoomsNoBlockchain: Array<string> = []
 const roomObjects = {}
-const players: { [socketID: string]: Player } = {}
+const solanaPlayers: { [socketID: string]: SolanaPlayer } = {}
+const hederaPlayers: { [socketID: string]: HederaPlayer } = {}
+const noBlockchainPlayers: { [socketID: string]: NoBlockchainPlayer } = {}
 io.on("connection", (socket) => {
     console.log("New client connected");
-
-    // Host Events
-    socket.on('wantsToPlay', (betPDA) => { joinRoomOrCreate(io, socket, freeRooms, roomObjects, players, betPDA) });
-    socket.on('playersTurn', () => { playersTurn(io, socket, roomObjects) })
+    socket.on(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, () => {
+        joinOrCreateRoom(io, socket, freeRoomsNoBlockchain, roomObjects, noBlockchainPlayers, BlockchainType.NO_BLOCKCHAIN)
+    });
+    socket.on(PLAYER_WANTS_TO_PLAY_SOLANA, (payload: PlayerWantsToPlaySolanaPayload) => {
+        joinOrCreateRoom(io, socket, freeRoomsSolana, roomObjects, solanaPlayers, BlockchainType.SOLANA, payload, null)
+    });
+    socket.on(PLAYER_WANTS_TO_PLAY_HEDERA, (payload: PlayerWantsToPlayHederaPayload) => {
+        joinOrCreateRoom(io, socket, freeRoomsHedera, roomObjects, hederaPlayers, BlockchainType.HEDERA, null, payload)
+    });
+    socket.on(PLAYER_PLAYS, (payload: PlayerPlaysPayload) => {
+        playerPlays(io, socket, roomObjects, payload)
+    });
 
     // if (interval) {
     //     clearInterval(interval);
