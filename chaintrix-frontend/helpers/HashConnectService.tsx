@@ -1,9 +1,5 @@
-// import { Injectable } from '@angular/core';
-// import { ButtonLayoutDisplay, ButtonMaker, DialogInitializer, DialogLayoutDisplay } from '@costlydeveloper/ngx-awesome-popup';
 import { Transaction, TransactionReceipt } from '@hashgraph/sdk';
 import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect';
-// import { ResultModalComponent } from '../components/result-modal/result-modal.component';
-// import { SigningService } from './signing.service';
 
 export interface SavedData {
     topic: string;

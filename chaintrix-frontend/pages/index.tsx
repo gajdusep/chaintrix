@@ -13,7 +13,6 @@ const Home: NextPage = () => {
       </Head>
 
       <div className={styles.main}>
-        {/* <ReduxTesting /> */}
         <GameWrapper />
       </div >
     </div >

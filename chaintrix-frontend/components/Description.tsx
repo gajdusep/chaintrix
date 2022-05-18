@@ -1,5 +1,4 @@
 import React from 'react'
-import { ParallaxProvider, useParallax } from 'react-scroll-parallax';
 
 const Description = () => {
 
