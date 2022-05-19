@@ -8,7 +8,7 @@ import {
 // } from 'chaintrix-game-mechanics';
 import {
     setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError
+    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState
 } from '../store/gameStateSlice';
 import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -28,6 +28,7 @@ import MovePhaseBanner from './MovePhaseBanner';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
+    const gameState = useAppSelector(selectGameState);
     const gameRunningState = useAppSelector(selectGameRunningState)
     const pathLengths = useAppSelector(selectLengths)
     const error = useAppSelector(selectError);
@@ -121,6 +122,7 @@ const GameWrapper = () => {
             }}>
                 <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
                     {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
+                    <div>Cards in the deck: {gameState.unusedCards.length}</div>
                 </div>
                 <div>
                     <GameBoard />

@@ -2,15 +2,17 @@
 
 import {
     Board, getNewBoard, checkValidity, addCardToBoard,
-    getObligatoryPlayersCards, getNumberOfObligatoryCards
+    getObligatoryPlayersCards, getNumberOfObligatoryCards, getNumberOfPlayableCards
 } from "./Board";
-import { Card, Coords } from "./CustomTypes";
+import { Card, CardNullable, Coords } from "./CustomTypes";
 import { COLORS, CARDS } from "./Constants";
 import { getRandomCard, mod } from "./methods";
 
+export const DECK_SIZE = 13
+
 export type PlayerState = {
     color: string,
-    cards: Array<Card>
+    cards: Array<CardNullable>
 }
 
 export enum MovePhase {
@@ -31,47 +33,51 @@ export interface GameState {
 
 export const getInitialCardIds = (): Array<string> => {
     const initialCards = []
-    for (let i = 1; i <= 56; i++) {
+    for (let i = 1; i <= DECK_SIZE; i++) {
         initialCards.push(i.toString())
     }
     return initialCards;
 }
 
-export const getRandomUnusedCardAndAlterArray = (cardIds: Array<string>): Card => {
+export const getRandomUnusedCardIDAndAlterArray = (cardIds: Array<string>): string => {
     const i = (Math.random() * cardIds.length) | 0
-    return {
-        cardID: cardIds.splice(i, 1)[0],
-        orientation: 0
-    }
+    return cardIds.splice(i, 1)[0];
+
 }
 
 export const updateGameStateAfterUnusedCardSelected = (
-    gameState: GameState, playedCardID: string, newCardID: string
+    gameState: GameState, playedCardID: string, newCardID: string | null
 ): GameState => {
-    const pl0Index = gameState.playersStates[0].cards.findIndex((value) => value.cardID == playedCardID)
-    const pl1Index = gameState.playersStates[1].cards.findIndex((value) => value.cardID == playedCardID)
-    const unusedCardsIndex = gameState.unusedCards.findIndex((value) => value == newCardID)
-    const newCard: Card = { cardID: newCardID, orientation: 0 }
+    const pl0Index = gameState.playersStates[0].cards.findIndex((value) => value?.cardID == playedCardID)
+    const pl1Index = gameState.playersStates[1].cards.findIndex((value) => value?.cardID == playedCardID)
+
+    let newCard = null
+    if (newCardID != null) {
+        const unusedCardsIndex = gameState.unusedCards.findIndex((value) => value == newCardID)
+        newCard = { cardID: newCardID, orientation: 0 }
+        gameState.unusedCards.splice(unusedCardsIndex, 1)
+    }
 
     if (pl0Index == -1 && pl1Index == -1) {
         // TODO: throw errror
         return gameState;
     }
-
     if (pl0Index != -1) {
         gameState.playersStates[0].cards[pl0Index] = newCard
     }
     else {
         gameState.playersStates[1].cards[pl1Index] = newCard
     }
-    gameState.unusedCards.splice(unusedCardsIndex, 1)
     return gameState;
 }
 
 export const get6Cards = (unusedCards: Array<string>): Array<Card> => {
     const cards: Array<Card> = []
     for (let index = 0; index < 6; index++) {
-        const card = getRandomUnusedCardAndAlterArray(unusedCards)
+        const card: Card = {
+            cardID: getRandomUnusedCardIDAndAlterArray(unusedCards),
+            orientation: 0
+        }
         cards.push(card)
     }
     return cards;
@@ -125,6 +131,66 @@ export const getNewGameState = (): GameState => {
     }
 }
 
+const getSecondPlayer = (
+    waitingObligatoryCount: number
+): MovePhase => {
+    if (waitingObligatoryCount == 0) {
+        return MovePhase.SECOND_PHASE_FREE_MOVE
+    }
+    return MovePhase.FIRST_PHASE_OBLIGATORY;
+}
+
+const getNextPlayerAndNextPhase = (
+    gameState: GameState,
+    currentMovePhase: MovePhase,
+    playing: number,
+    playingObligatoryCount: number,
+    waitingObligatoryCount: number,
+): { nextPlayer: number, nextPhase: MovePhase } => {
+    const secondPlayerPotentialPhase = getSecondPlayer(waitingObligatoryCount)
+    const secondPlayerIndex = mod(playing + 1, 2)
+
+    // has anything to play?
+    if (getNumberOfPlayableCards(gameState.playersStates[playing].cards) == 0) {
+        return {
+            nextPlayer: secondPlayerIndex,
+            nextPhase: secondPlayerPotentialPhase
+        }
+    }
+
+    // has any obligatory
+    let nextMovePhase = currentMovePhase;
+    let nextPlayer = playing;
+    if (playingObligatoryCount == 0) {
+        switch (currentMovePhase) {
+            case MovePhase.FIRST_PHASE_OBLIGATORY:
+                nextMovePhase = MovePhase.SECOND_PHASE_FREE_MOVE
+                break;
+            case MovePhase.SECOND_PHASE_FREE_MOVE:
+            case MovePhase.THIRD_PHASE_OBLIGATORY:
+                nextMovePhase = secondPlayerPotentialPhase;
+                nextPlayer = secondPlayerIndex;
+                break;
+            default:
+                break;
+        }
+    } else {
+        switch (currentMovePhase) {
+            case MovePhase.SECOND_PHASE_FREE_MOVE:
+                nextMovePhase = MovePhase.THIRD_PHASE_OBLIGATORY;
+                break;
+            default:
+                // in other cases, the state remains the same
+                break;
+        }
+    }
+
+    return {
+        nextPlayer: nextPlayer,
+        nextPhase: nextMovePhase
+    }
+}
+
 // This method is called after the card was added, it returns a new game state
 export const getStateAfterMove = (gameState: GameState): GameState => {
     // TODO: what happens according to the rules, if the player cannot play? (very low probability)
@@ -138,53 +204,13 @@ export const getStateAfterMove = (gameState: GameState): GameState => {
     const waitingPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[waitingPlayer].cards)
     const waitingPlayerObligatoryCardsCount = getNumberOfObligatoryCards(waitingPlayerObligatoryCards);
     // console.log(`waiting playing (${waitingPlayer}): ${JSON.stringify(waitingPlayerObligatoryCards)}`)
-    switch (gameState.currentlyMovingPhase) {
-        case MovePhase.FIRST_PHASE_OBLIGATORY: {
-            // Is there a card the player must play (obligatory)?
-            // - yes: stay in the first phase
-            // - no: move to the second phase 
-            if (currentPlayerObligatoryCardsCount == 0) {
-                gameState.currentlyMovingPhase = MovePhase.SECOND_PHASE_FREE_MOVE;
-            }
-            break;
-        }
-        case MovePhase.SECOND_PHASE_FREE_MOVE: {
-            // Is there any obligatory card the player can play in the third phase?
-            // - yes: move to the third phase.
-            // - no: change the currently moving player and move to the appropriate phase
-            if (currentPlayerObligatoryCardsCount == 0) {
-                gameState.currentlyMovingPlayer = mod(gameState.currentlyMovingPlayer + 1, 2)
-                if (waitingPlayerObligatoryCardsCount == 0) {
-                    gameState.currentlyMovingPhase = MovePhase.SECOND_PHASE_FREE_MOVE;
-                }
-                else {
-                    gameState.currentlyMovingPhase = MovePhase.FIRST_PHASE_OBLIGATORY;
-                }
-            }
-            else {
-                gameState.currentlyMovingPhase = MovePhase.THIRD_PHASE_OBLIGATORY;
-            }
-            break;
-        }
-        case MovePhase.THIRD_PHASE_OBLIGATORY: {
-            // Is there a card the player must play (obligatory)?
-            // - yes: stay in the third phase
-            // - no: change the player and move to the first phase
-            if (currentPlayerObligatoryCardsCount == 0) {
-                gameState.currentlyMovingPlayer = mod(gameState.currentlyMovingPlayer + 1, 2)
-                if (waitingPlayerObligatoryCardsCount == 0) {
-                    gameState.currentlyMovingPhase = MovePhase.SECOND_PHASE_FREE_MOVE;
-                }
-                else {
-                    gameState.currentlyMovingPhase = MovePhase.FIRST_PHASE_OBLIGATORY;
-                }
-            }
-            break;
-        }
-        default: {
-            break;
-        }
-    }
+
+    const nextPlayerAndPhase = getNextPlayerAndNextPhase(
+        gameState, gameState.currentlyMovingPhase, gameState.currentlyMovingPlayer,
+        currentPlayerObligatoryCardsCount, waitingPlayerObligatoryCardsCount
+    )
+    gameState.currentlyMovingPhase = nextPlayerAndPhase.nextPhase
+    gameState.currentlyMovingPlayer = nextPlayerAndPhase.nextPlayer
 
     return gameState;
 }

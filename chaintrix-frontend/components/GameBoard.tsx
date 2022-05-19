@@ -21,6 +21,10 @@ import { selectSocketClient, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 
+interface ValidityChecks {
+    [cardID: string]: { [coords: string]: boolean }
+}
+
 const GameBoard = () => {
     const gameState = useAppSelector(selectGameState);
     const sizes = useAppSelector(selectSizes);
@@ -36,10 +40,27 @@ const GameBoard = () => {
     const [playerTilesMoving, setPlayerTilesMoving] = React.useState(Array(6).fill(false));
     const containerRef = React.useRef(null)
     const [controlledPositions, setControlledPositions] = useState<Array<Coords>>(() => calculatePlayersTilesPositions(sizes));
+    const [cachedValidityChecks, setCachedValidityChecks] = useState<ValidityChecks>({});
+
+    const getValidityCheck = (card: Card, posX: number, posY: number) => {
+        const positionKey = `${posX},${posY},${card.orientation}`
+        if (card.cardID in cachedValidityChecks && positionKey in cachedValidityChecks[card.cardID]) {
+            return cachedValidityChecks[card.cardID][positionKey];
+        }
+        cachedValidityChecks[card.cardID] = {}
+        const isValid = checkValidityWithMovePhase(
+            gameState.board, card,
+            posX, posY,
+            gameState.currentlyMovingPhase, gameState.playersStates[playerID].cards
+        )
+        cachedValidityChecks[card.cardID][positionKey] = isValid;
+        return isValid;
+    }
 
 
     useEffect(() => {
-        console.log(`calculating obligatory cards`)
+        console.log(`calculating obligatory cards, reset validity checks`)
+        setCachedValidityChecks({})
         setPlayersObligatoryCardsView(getObligatoryPlayersCards(gameState.board, playersCardsView))
     }, [gameState])
 
@@ -55,6 +76,10 @@ const GameBoard = () => {
         }
     }
 
+    const canPlaceFieldType = (tileFieldType: BoardFieldType): boolean => {
+        return tileFieldType == BoardFieldType.GUARDED || tileFieldType == BoardFieldType.UNREACHABLE || tileFieldType == BoardFieldType.CARD
+    }
+
     const eventDrag = (e: DraggableEvent, data: DraggableData, index: number) => {
         // if (!board) return;
         playerTilesMoving[index] = true;
@@ -67,13 +92,11 @@ const GameBoard = () => {
             const y = translatedData.y
             if (Math.abs(x - element.x) < sizes.maxDist && Math.abs(y - element.y) < sizes.maxDist) {
                 const tileFieldType = gameState.board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
-                if (tileFieldType == BoardFieldType.GUARDED ||
-                    tileFieldType == BoardFieldType.UNREACHABLE ||
-                    tileFieldType == BoardFieldType.CARD) {
-                    return;
-                }
+                if (canPlaceFieldType(tileFieldType)) return;
 
-                // TODO: here should be the validity check as well!
+                const cardToAdd = playersCardsView[index]
+                if (cardToAdd == null) return;
+                if (!getValidityCheck(cardToAdd, hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)) return;
                 setTileHovered(hexPositions[i].ijPosition)
                 return;
             }
@@ -95,18 +118,11 @@ const GameBoard = () => {
             const y = translatedData.y
             if (Math.abs(x - element.x) < sizes.maxDist && Math.abs(y - element.y) < sizes.maxDist) {
                 const tileFieldType = gameState.board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
-                if (tileFieldType == BoardFieldType.GUARDED ||
-                    tileFieldType == BoardFieldType.UNREACHABLE ||
-                    tileFieldType == BoardFieldType.CARD) {
-                    return;
-                }
+                if (canPlaceFieldType(tileFieldType)) return;
+
                 const cardToAdd = playersCardsView[index]
-                const isValid = checkValidityWithMovePhase(
-                    gameState.board, cardToAdd,
-                    hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y,
-                    gameState.currentlyMovingPhase, gameState.playersStates[playerID].cards
-                )
-                if (!isValid) return;
+                if (cardToAdd == null) return;
+                if (!getValidityCheck(cardToAdd, hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)) return;
 
                 dispatch(addCardToBoardSocket({ socketClient: socketClient, card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
             }
@@ -158,7 +174,7 @@ const GameBoard = () => {
             <div className={styles.currentPlayerCardsOverdiv}
                 style={{ visibility: isCurrentlyPlaying ? 'hidden' : 'visible', height: `${sizes.size * 2}px` }} />
             {playersCardsView.map((element, index) => {
-                return <Draggable
+                return element != null && <Draggable
                     key={index}
                     bounds="#draggableContainer"
                     onDrag={(e, data) => { eventDrag(e, data, index) }}

@@ -4,13 +4,13 @@ import {
     GameRoom, BlockchainType, HederaPlayer, AcceptedBetInfo
 } from "./types";
 import {
-    Card, addCardToBoard, getNewGameState, MoveInfo, getRandomUnusedCardAndAlterArray,
+    Card, addCardToBoard, getNewGameState, MoveInfo,
     getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerPlayedPayload,
     GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload,
     GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload,
     GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, SOCKET_ERROR,
     ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
-    PlayerWantsToPlayHederaPayload,
+    PlayerWantsToPlayHederaPayload, DECK_SIZE, updateGameStateAfterUnusedCardSelected, getRandomUnusedCardIDAndAlterArray, getNumberOfPlayableCards
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
@@ -42,7 +42,6 @@ const getJoiningPlayerNoBlockchain = (socket: Socket): NoBlockchainPlayer => {
 const getJoiningPlayerSolana = async (
     socket: Socket, solanaPayload: PlayerWantsToPlaySolanaPayload
 ): Promise<SolanaPlayer | null> => {
-    // TODO: bet account checks
     if (!checkBetAccount(solanaPayload)) {
         return null;
     }
@@ -229,7 +228,18 @@ export const playerPlays = async (
         return;
     }
 
-    if (playerMoveResult.movedType == MovedType.MovedAndNoCardsLeft) {
+    if (playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
+        const responsePayload: PlayerPlayedPayload = {
+            newCardID: null,
+            playedCard: payload.card,
+            x: payload.x,
+            y: payload.y
+        }
+        sio.to(gameRoomID).emit(PLAYER_PLAYED, responsePayload)
+        return;
+    }
+
+    if (playerMoveResult.movedType == MovedType.MOVED_AND_PLAYERS_NO_CARDS) {
         const winnerIndex = 0
         // TODO: emit to the room, that the game is over and it's closing the game also on the blockchains
         switch (room.blockchainType) {
@@ -256,9 +266,10 @@ export const playerPlays = async (
 }
 
 enum MovedType {
-    Moved,
-    MovedAndNoCardsLeft,
-    IllegalMove
+    MOVED,
+    MOVED_AND_DECK_EMPTY,
+    MOVED_AND_PLAYERS_NO_CARDS,
+    ILLEGAL_MOVE
 }
 
 export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
@@ -271,8 +282,9 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
     // - is the game phase correct
     // - if the number of cards is 0 (or what exact rule applies), return false/null etc
     const currentlyMoving = room.gameState.currentlyMovingPlayer
-    const cardIndex = room.gameState.playersStates[currentlyMoving].cards.findIndex((value) => value.cardID == moveInfo.card.cardID)
+    const cardIndex = room.gameState.playersStates[currentlyMoving].cards.findIndex((value) => value?.cardID == moveInfo.card.cardID)
     if (cardIndex == -1) {
+        console.log(`what cardIndex: ${cardIndex}, ${JSON.stringify(room.gameState.playersStates[currentlyMoving].cards)}`)
         // TODO: return error
         throw Error()
     }
@@ -280,21 +292,29 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
     const newBoard = addCardToBoard(room.gameState.board, moveInfo.card, moveInfo.x, moveInfo.y)
     room.gameState.board = newBoard
 
-    // TODO: here?
-    if (room.gameState.unusedCards.length < 35) {
+    let newCardID: string | null = null
+    let movedType = MovedType.MOVED_AND_DECK_EMPTY
+    if (room.gameState.unusedCards.length != 0) {
+        newCardID = getRandomUnusedCardIDAndAlterArray(room.gameState.unusedCards)
+        movedType = MovedType.MOVED
+    }
+    room.gameState = updateGameStateAfterUnusedCardSelected(room.gameState, moveInfo.card.cardID, newCardID)
+
+    if (
+        room.gameState.unusedCards.length == 0 &&
+        getNumberOfPlayableCards(room.gameState.playersStates[0].cards) == 0 &&
+        getNumberOfPlayableCards(room.gameState.playersStates[1].cards) == 0
+    ) {
         return {
             card: null,
-            movedType: MovedType.MovedAndNoCardsLeft
+            movedType: MovedType.MOVED_AND_PLAYERS_NO_CARDS
         }
     }
-
-    const newCard = getRandomUnusedCardAndAlterArray(room.gameState.unusedCards)
-    room.gameState.playersStates[currentlyMoving].cards[cardIndex] = newCard
     room.gameState = getStateAfterMove(room.gameState)
 
     return {
-        card: newCard,
-        movedType: MovedType.Moved
+        card: newCardID == null ? null : { cardID: newCardID, orientation: 0 },
+        movedType: movedType
     }
 }
 

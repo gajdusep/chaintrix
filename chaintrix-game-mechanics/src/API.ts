@@ -1,6 +1,3 @@
-
-// TODO: add payload types
-
 import { Card } from "./CustomTypes"
 import { GameState } from "./Game"
 

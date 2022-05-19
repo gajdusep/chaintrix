@@ -48,7 +48,6 @@ export const getBoardWidth = (board: Board): number => {
 }
 
 export const calculateBoardFieldsTypes = (board: Board): BoardFieldType2DArray => {
-    // TODO: if the shape is already the same, don't create the arrays again
     const height = getBoardHeight(board)
     const width = getBoardWidth(board)
 
@@ -233,6 +232,10 @@ export const getColorsOfNeighbors = (board: Board, neighbors: Array<Coords | nul
     return colors;
 }
 
+export const getNumberOfPlayableCards = (cards: Array<CardNullable>): number => {
+    return cards.filter(item => item != null).length
+}
+
 // TODO: check validity also of the move PHASE
 export const checkValidity = (
     board: Board, card: Card, posX: number, posY: number, shouldCheckThreeOfColor: boolean = true
@@ -280,7 +283,7 @@ export const checkValidity = (
 
 export const checkValidityWithMovePhase = (
     board: Board, card: Card, posX: number, posY: number,
-    movePhase: MovePhase, cards: Array<Card>, shouldCheckThreeOfColor: boolean = true
+    movePhase: MovePhase, cards: Array<CardNullable>, shouldCheckThreeOfColor: boolean = true
 ) => {
     const validity = checkValidity(board, card, posX, posY, shouldCheckThreeOfColor)
     if (!validity) return validity;
@@ -374,11 +377,12 @@ export const getAllObligatoryPositionsCoords = (board: Board): Array<Coords> => 
     return coords;
 }
 
-export const getObligatoryPlayersCards = (board: Board, playerCards: Array<Card>): Array<Array<Coords>> => {
+export const getObligatoryPlayersCards = (board: Board, playerCards: Array<CardNullable>): Array<Array<Coords>> => {
     const result: Array<Array<Coords>> = Array.from(Array(6), () => new Array())
     const obligatoryPositions = getAllObligatoryPositionsCoords(board);
     for (let i = 0; i < playerCards.length; i++) {
         const playerCard = playerCards[i];
+        if (playerCard == null) continue;
         for (let j = 0; j < obligatoryPositions.length; j++) {
             const obligatoryPositionCoord = obligatoryPositions[j];
             for (let rotIndex = 0; rotIndex < 6; rotIndex++) {

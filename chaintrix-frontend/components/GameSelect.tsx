@@ -73,7 +73,6 @@ const GameSelect = () => {
         const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
         console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
 
-        // TODO: socket emit (wantstoplaysolana)
         const payload: PlayerWantsToPlaySolanaPayload = {
             betPDA: betAccountPDA.toBase58(),
             playerAddress: wallet.publicKey.toBase58()
@@ -124,7 +123,7 @@ const GameSelect = () => {
         <div
         //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }}
         >
-            <h1>chaintrix</h1>
+            <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
             <div>Begin with selecting your blockchain:</div>
             <div>
                 <button className='basic-button' onClick={() => onPlayNoBCCLick()}>Play with no blockchain</button>

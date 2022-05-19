@@ -83,7 +83,6 @@ export const calculateLongestPathForColor = (board: Board, color: string): numbe
     const pathStates: Array<Array<PathState>> = create2DArrayOfObjects<PathState>(getDefaultPathState(), height, width)
 
     const leftEnds: Array<Coords> = []
-    // TODO: loops
     const loops: Array<Coords> = []
 
     const continuePath = (

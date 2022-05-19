@@ -7,7 +7,7 @@ import {
     CardNullable, Card, HexPosition, GameState,
     checkValidity, getNewGameState,
     getBoardHeight, getBoardWidth, addCardToBoard, mod,
-    getStateAfterMove, getRandomUnusedCardAndAlterArray,
+    getStateAfterMove,
     updateGameStateAfterUnusedCardSelected,
     PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
     PlayerPlayedPayload,
@@ -27,7 +27,7 @@ export enum GameRunningState {
 export interface ClientGameState {
     playerID: number,
     gameState: GameState,
-    playersCardsView: Array<Card>,
+    playersCardsView: Array<CardNullable>,
     sizes: Sizes,
     gameRunningState: GameRunningState,
     lengths: { [color: string]: number },
@@ -48,7 +48,7 @@ const initialState: ClientGameState = {
     error: null
 }
 
-const getNewCardView = (state: ClientGameState): Array<Card> => {
+const getNewCardView = (state: ClientGameState): Array<Card | null> => {
     if (state.playerID == -1) {
         return [];
     }
@@ -56,7 +56,10 @@ const getNewCardView = (state: ClientGameState): Array<Card> => {
     // const cards = state.gameState.playersStates[state.gameState.currentlyMovingPlayer].cards
     const cards = state.gameState.playersStates[state.playerID].cards
     for (let i = 0; i < cards.length; i++) {
-        if (state.playersCardsView[i].cardID == cards[i].cardID) {
+        if (state.playersCardsView[i] == null || cards[i] == null) {
+            newCardView.push(null)
+        }
+        else if (state.playersCardsView[i]!.cardID == cards[i]!.cardID) {
             newCardView.push(state.playersCardsView[i])
         }
         else {
@@ -123,18 +126,13 @@ export const gameStateSlice = createSlice({
         updateCardView: (state) => {
             const newCardView = []
             const cards = state.gameState.playersStates[state.gameState.currentlyMovingPlayer].cards
-            for (let i = 0; i < cards.length; i++) {
-                if (state.playersCardsView[i].cardID == cards[i].cardID) {
-                    newCardView.push(state.playersCardsView[i])
-                }
-                else {
-                    newCardView.push(cards[i])
-                }
-            }
-            state.playersCardsView = newCardView
+            state.playersCardsView = getNewCardView(state)
         },
         rotateCardInCardView: (state, action: PayloadAction<{ cardIndex: number }>) => {
-            state.playersCardsView[action.payload.cardIndex].orientation = mod(state.playersCardsView[action.payload.cardIndex].orientation + 1, 6)
+            const cardIndex = action.payload.cardIndex;
+            if (state.playersCardsView[cardIndex] != null) {
+                state.playersCardsView[cardIndex]!.orientation = mod(state.playersCardsView[cardIndex]!.orientation + 1, 6)
+            }
         },
         // TODO set finished - solana, hedera, solana
         setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
