@@ -8,7 +8,7 @@ import { Card, CardNullable, Coords } from "./CustomTypes";
 import { COLORS, CARDS } from "./Constants";
 import { getRandomCard, mod } from "./methods";
 
-export const DECK_SIZE = 13
+export const DECK_SIZE = 14
 
 export type PlayerState = {
     color: string,

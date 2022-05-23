@@ -26,6 +26,7 @@ const GameTileSpace = (
             emptyFieldImg = '/Tile_black.svg'
             break;
         default:
+            emptyFieldImg = '/Nothing.svg'
             break;
     }
     if (props.highlighted) {

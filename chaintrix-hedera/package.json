@@ -1,15 +1,21 @@
 {
-  "name": "chaintrix-hedera",
-  "version": "1.0.0",
-  "description": "Chaintrix on Hedera",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@hashgraph/sdk": "^2.11.3",
-    "dotenv": "^16.0.0"
-  }
+    "name": "chaintrix-hedera",
+    "version": "1.0.0",
+    "description": "Chaintrix on Hedera",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest --detectOpenHandles"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@hashgraph/sdk": "^2.11.3",
+        "dotenv": "^16.0.0"
+    },
+    "devDependencies": {
+        "@types/jest": "^27.5.1",
+        "jest": "^28.1.0",
+        "ts-jest": "^28.0.2",
+        "typescript": "^4.6.4"
+    }
 }

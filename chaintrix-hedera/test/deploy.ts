@@ -35,7 +35,7 @@ export const deploy = async (config: Config): Promise<ContractId> => {
     const fileCreateSubmit = await fileCreateSign.execute(serverClient);
     const fileCreateRx = await fileCreateSubmit.getReceipt(serverClient);
     const bytecodeFileId = fileCreateRx.fileId;
-    console.log(`- The bytecode file ID is: ${bytecodeFileId} \n`);
+    console.log(`- The bytecode file ID is: ${bytecodeFileId}`);
 
     for (let i = 1; i < chunks.length; i++) {
         const chunkToAppend = chunks[i];
