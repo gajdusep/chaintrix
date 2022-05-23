@@ -3,7 +3,7 @@ pragma solidity >=0.7.0 <0.9.0;
 
 contract ChaintrixContract {
     struct Bet {
-        address oponentAddress;
+        address opponentAddress;
         bool isSet; // TODO: rename this...
     }
 
@@ -39,27 +39,40 @@ contract ChaintrixContract {
         returns (bool)
     {
         return
-            playerBets[playerAddress].isSet &&
-            playerBets[playerAddress].oponentAddress == address(0);
+            playerBets[playerAddress].isSet == true &&
+            playerBets[playerAddress].opponentAddress == address(0);
     }
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
 
-    function getOponentAddress(address player) public view returns (address) {
-        return playerBets[player].oponentAddress;
+    function getServerAddress() public view isServer returns (address) {
+        return address(server);
+    }
+
+    function getOpponentAddress(address player) public view returns (address) {
+        return playerBets[player].opponentAddress;
     }
 
     // write to acceptedBets
     function acceptBets(address player0, address player1) public isServer {
         require(player0 != player1, "players cannot be the same");
-        // TODO: more checks here, cannot accept bets if oponent is already chosen
+        require(playerBets[player0].isSet == true, "player0 has not bet");
+        require(playerBets[player1].isSet == true, "player1 has not bet");
+        require(
+            playerBets[player0].opponentAddress == address(0),
+            "player0 already playing"
+        );
+        require(
+            playerBets[player1].opponentAddress == address(0),
+            "player1 already playing"
+        );
+        require(this.hasPlayerPlacedBet(player0));
+        require(this.hasPlayerPlacedBet(player1));
 
-        playerBets[player0].isSet = true;
-        playerBets[player0].oponentAddress = player1;
-        playerBets[player1].isSet = true;
-        playerBets[player1].oponentAddress = player0;
+        playerBets[player0] = Bet(player1, true);
+        playerBets[player1] = Bet(player0, true);
     }
 
     function closeGame(
@@ -73,11 +86,15 @@ contract ChaintrixContract {
             winner == player0 || winner == player1,
             "winner is not one of the players"
         );
+        require(playerBets[player0].isSet == true);
+        require(playerBets[player1].isSet == true);
+        require(playerBets[player0].opponentAddress == player1);
+        require(playerBets[player1].opponentAddress == player0);
 
         playerBets[player0].isSet = false;
-        playerBets[player0].oponentAddress = address(0x0);
+        playerBets[player0].opponentAddress = address(0);
         playerBets[player1].isSet = false;
-        playerBets[player1].oponentAddress = address(0x0);
+        playerBets[player1].opponentAddress = address(0);
 
         // TODO: check the order of actions
         winner.transfer(2 * 777);
