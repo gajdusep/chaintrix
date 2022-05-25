@@ -6,16 +6,21 @@ import {
     ContractId,
     AccountId,
     Client,
-    AccountBalanceQuery
+    AccountBalanceQuery,
+    Status,
 } from "@hashgraph/sdk";
 import NodeClient from "@hashgraph/sdk/lib/client/NodeClient";
+import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import { Config } from "./config";
 
 
 const MAX_GAS = 1000000
-const MAX_GASS_BIGGER = MAX_GAS * 10
-export const scCallBet = async (playerClient: NodeClient, playerId: AccountId, contractId: ContractId) => {
-    const contractExecuteTx = new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
+
+export const scCallBet = async (
+    playerClient: NodeClient, playerId: AccountId, contractId: ContractId,
+    amountToBet: number
+) => {
+    const contractExecuteTx = new ContractExecuteTransaction({ amount: Hbar.fromTinybars(amountToBet) })
         .setContractId(contractId)
         .setGas(MAX_GAS)
         .setFunction("bet", new ContractFunctionParameters().addAddress(playerId.toSolidityAddress()));
@@ -25,19 +30,26 @@ export const scCallBet = async (playerClient: NodeClient, playerId: AccountId, c
     console.log(`- Contract function call status: ${contractExecuteRx.status}`);
 }
 
-export const getBalance = async (config: Config, contractId: ContractId) => {
-    // Query the contract to check changes in state variable
+export const getContractBalance = async (contractId: ContractId, client: Client): Promise<BigNumber> => {
     const contractQueryTx = new ContractCallQuery()
         .setContractId(contractId)
         .setGas(MAX_GAS)
         .setFunction("getBalance", new ContractFunctionParameters());
-    const contractQuerySubmit = await contractQueryTx.execute(config.player0Client);
+    const contractQuerySubmit = await contractQueryTx.execute(client);
     const contractQueryResult = contractQuerySubmit.getUint256(0);
-    console.log(`- Balance of the contract: ${contractQueryResult} \n`);
+    return contractQueryResult;
+}
+
+export const getPlayerBalance = async (
+    playerId: AccountId, playerClient: Client
+): Promise<Hbar> => {
+    const accountBalance = await new AccountBalanceQuery()
+        .setAccountId(playerId)
+        .execute(playerClient);
+    return accountBalance.hbars
 }
 
 export const getHasPlayerPlacedBet = async (config: Config, contractId: ContractId, playerId: AccountId): Promise<boolean> => {
-    // Query the contract to check changes in state variable
     const contractQueryTx = new ContractCallQuery()
         .setContractId(contractId)
         .setGas(MAX_GAS)
@@ -59,8 +71,7 @@ export const getServerAddress = async (config: Config, contractId: ContractId): 
 
 export const scCallAcceptBets = async (
     serverClient: Client, player0SolAddress: string, player1SolAddress: string, contractId: ContractId
-) => {
-
+): Promise<Status> => {
     const contractParams = new ContractFunctionParameters()
         .addAddress(player0SolAddress)
         .addAddress(player1SolAddress);
@@ -71,46 +82,25 @@ export const scCallAcceptBets = async (
 
     const contractExecuteSubmit = await contractExecuteTx.execute(serverClient);
     const contractExecuteRx = await contractExecuteSubmit.getReceipt(serverClient);
-    console.log(`- Contract acceptBets call status: ${contractExecuteRx.status}`);
+    return contractExecuteRx.status;
 }
 
-export const getOpponentAddress = async (config: Config, contractId: ContractId, playerAccountId: AccountId) => {
+export const getOpponentAddress = async (contractId: ContractId, playerAccountId: AccountId, client: Client) => {
     const contractQueryTx = new ContractCallQuery()
         .setContractId(contractId)
         .setGas(MAX_GAS)
         .setFunction("getOpponentAddress", new ContractFunctionParameters().addAddress(playerAccountId.toSolidityAddress()));
-    const contractQuerySubmit = await contractQueryTx.execute(config.player0Client);
+    const contractQuerySubmit = await contractQueryTx.execute(client);
     const contractQueryResult = contractQuerySubmit.getAddress();
     return AccountId.fromSolidityAddress(contractQueryResult)
 }
 
-const getOponentGeneric = async (config: Config, contractId: ContractId, playerAccountId: AccountId, shouldBe: AccountId) => {
-    const contractQueryTx = new ContractCallQuery()
-        .setContractId(contractId)
-        .setGas(MAX_GAS)
-        .setFunction("getOpponentAddress", new ContractFunctionParameters().addAddress(playerAccountId.toSolidityAddress()));
-    const contractQuerySubmit = await contractQueryTx.execute(config.player0Client);
-    const contractQueryResult = contractQuerySubmit.getAddress();
-    console.log(`- Player ${playerAccountId} oponent address: ${AccountId.fromSolidityAddress(contractQueryResult)}, should be: ${shouldBe}`);
-}
-
-export const getOponent = async (config: Config, contractId: ContractId) => {
-    await getOponentGeneric(config, contractId, config.player0Id, config.player1Id)
-    await getOponentGeneric(config, contractId, config.player1Id, config.player0Id)
-}
-
 export const closeGame = async (
     serverClient: Client,
-    winnerId: AccountId, winnerClient: Client,
+    winnerId: AccountId,
     loserId: AccountId,
     contractId: ContractId
-) => {
-    // player1 won
-    const accountBalance = await new AccountBalanceQuery()
-        .setAccountId(winnerId)
-        .execute(winnerClient);
-    console.log("Player1 account balance is: " + accountBalance.hbars.toTinybars() + " tinybar.");
-
+): Promise<Status> => {
     const contractParams = new ContractFunctionParameters()
         .addAddress(winnerId.toSolidityAddress())
         .addAddress(loserId.toSolidityAddress())
@@ -123,11 +113,5 @@ export const closeGame = async (
     const contractExecuteSubmit = await contractExecuteTx.execute(serverClient);
     const contractExecuteRx = await contractExecuteSubmit.getReceipt(serverClient);
 
-    console.log(`- Close game call status: ${contractExecuteRx.status}`);
-    const accountBalance2 = await new AccountBalanceQuery()
-        .setAccountId(winnerId)
-        .execute(winnerClient);
-    console.log("Player1 account balance is: " + accountBalance2.hbars.toTinybars() + " tinybar.");
-
-    console.log(`the difference: ${accountBalance2.hbars.toTinybars() - accountBalance.hbars.toTinybars()}`)
+    return contractExecuteRx.status
 }

@@ -43,6 +43,24 @@ contract ChaintrixContract {
             playerBets[playerAddress].opponentAddress == address(0);
     }
 
+    function isAddressNotEmpty(address addressToCheck)
+        internal
+        pure
+        returns (bool)
+    {
+        return addressToCheck != address(0);
+    }
+
+    function isOpponentCorrect(address player, address opponent)
+        internal
+        view
+        returns (bool)
+    {
+        return
+            playerBets[player].isSet == true &&
+            playerBets[player].opponentAddress == opponent;
+    }
+
     function getBalance() public view returns (uint256) {
         return address(this).balance;
     }
@@ -58,6 +76,8 @@ contract ChaintrixContract {
     // write to acceptedBets
     function acceptBets(address player0, address player1) public isServer {
         require(player0 != player1, "players cannot be the same");
+        require(isAddressNotEmpty(player0));
+        require(isAddressNotEmpty(player1));
         require(playerBets[player0].isSet == true, "player0 has not bet");
         require(playerBets[player1].isSet == true, "player1 has not bet");
         require(
@@ -86,15 +106,13 @@ contract ChaintrixContract {
             winner == player0 || winner == player1,
             "winner is not one of the players"
         );
-        require(playerBets[player0].isSet == true);
-        require(playerBets[player1].isSet == true);
-        require(playerBets[player0].opponentAddress == player1);
-        require(playerBets[player1].opponentAddress == player0);
+        require(isAddressNotEmpty(player0));
+        require(isAddressNotEmpty(player1));
+        require(isOpponentCorrect(player0, player1));
+        require(isOpponentCorrect(player1, player0));
 
-        playerBets[player0].isSet = false;
-        playerBets[player0].opponentAddress = address(0);
-        playerBets[player1].isSet = false;
-        playerBets[player1].opponentAddress = address(0);
+        playerBets[player0] = Bet(address(0), false);
+        playerBets[player1] = Bet(address(0), false);
 
         // TODO: check the order of actions
         winner.transfer(2 * 777);

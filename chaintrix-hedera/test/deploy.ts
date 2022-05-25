@@ -35,7 +35,6 @@ export const deploy = async (config: Config): Promise<ContractId> => {
     const fileCreateSubmit = await fileCreateSign.execute(serverClient);
     const fileCreateRx = await fileCreateSubmit.getReceipt(serverClient);
     const bytecodeFileId = fileCreateRx.fileId;
-    console.log(`- The bytecode file ID is: ${bytecodeFileId}`);
 
     for (let i = 1; i < chunks.length; i++) {
         const chunkToAppend = chunks[i];
@@ -52,7 +51,6 @@ export const deploy = async (config: Config): Promise<ContractId> => {
         const txResponse = await signTx.execute(serverClient);
         const receipt = await txResponse.getReceipt(serverClient);
         const transactionStatus = receipt.status;
-        console.log("The transaction consensus status is " + transactionStatus);
     }
 
 
@@ -66,7 +64,6 @@ export const deploy = async (config: Config): Promise<ContractId> => {
     const contractId = contractInstantiateRx.contractId;
     const contractAddress = contractId.toSolidityAddress();
     console.log(`- The smart contract ID is: ${contractId}`);
-    console.log(`- The smart contract ID in Solidity format is: ${contractAddress}`);
 
     return contractId;
 }
