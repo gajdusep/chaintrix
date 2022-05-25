@@ -1,8 +1,8 @@
 
 
 import {
-    Board, getNewBoard, checkValidity, addCardToBoard,
-    getObligatoryPlayersCards, getNumberOfObligatoryCards, getNumberOfPlayableCards
+    Board, getNewBoard,
+    getObligatoryPlayersCards, getNumberOfObligatoryCards, getNumberOfPlayableCards, calculateBoardFieldsTypes, addNewBoardFieldTypesToBoard
 } from "./Board";
 import { Card, CardNullable, Coords } from "./CustomTypes";
 import { COLORS, CARDS } from "./Constants";
@@ -27,7 +27,7 @@ export interface GameState {
     startingPlayer: number
     currentlyMovingPlayer: number,
     currentlyMovingPhase: MovePhase,
-    unusedCards: Array<string>
+    deck: Array<string>
     board: Board
 }
 
@@ -39,24 +39,39 @@ export const getInitialCardIds = (): Array<string> => {
     return initialCards;
 }
 
-export const getRandomUnusedCardIDAndAlterArray = (cardIds: Array<string>): string => {
-    const i = (Math.random() * cardIds.length) | 0
-    return cardIds.splice(i, 1)[0];
-
+export const getRandomCardIdFromDeck = (deck: Array<string>): string => {
+    const i = (Math.random() * deck.length) | 0
+    return deck[i]
 }
 
-export const updateGameStateAfterUnusedCardSelected = (
+export const getAndRemoveRandomCardIdFromDeck = (cardIds: Array<string>): string => {
+    const i = (Math.random() * cardIds.length) | 0
+    return cardIds.splice(i, 1)[0];
+}
+
+export const removeCardFromDeck = (deck: Array<string>, cardId: string) => {
+    const cardIndex = deck.findIndex((value) => value == cardId)
+    deck.splice(cardIndex, 1)[0];
+}
+
+export const updateGameStateAfterDeckCardSelected = (
     gameState: GameState, playedCardID: string, newCardID: string | null
 ): GameState => {
     const pl0Index = gameState.playersStates[0].cards.findIndex((value) => value?.cardID == playedCardID)
     const pl1Index = gameState.playersStates[1].cards.findIndex((value) => value?.cardID == playedCardID)
 
+    console.log(`in updating game state after deck select: ${newCardID}, ${JSON.stringify(gameState.deck)}`)
     let newCard = null
     if (newCardID != null) {
-        const unusedCardsIndex = gameState.unusedCards.findIndex((value) => value == newCardID)
+        const deckCardIndex = gameState.deck.findIndex((value) => value == newCardID)
         newCard = { cardID: newCardID, orientation: 0 }
-        gameState.unusedCards.splice(unusedCardsIndex, 1)
+        gameState.deck.splice(deckCardIndex, 1)
     }
+
+    const finalPhase = isFinalPhase(gameState)
+    const newBoardFieldTypes = calculateBoardFieldsTypes(gameState.board, finalPhase)
+    const boardResult = addNewBoardFieldTypesToBoard(gameState.board, newBoardFieldTypes)
+    gameState.board = boardResult
 
     if (pl0Index == -1 && pl1Index == -1) {
         // TODO: throw errror
@@ -71,11 +86,11 @@ export const updateGameStateAfterUnusedCardSelected = (
     return gameState;
 }
 
-export const get6Cards = (unusedCards: Array<string>): Array<Card> => {
+export const get6CardsFromDeck = (deck: Array<string>): Array<Card> => {
     const cards: Array<Card> = []
     for (let index = 0; index < 6; index++) {
         const card: Card = {
-            cardID: getRandomUnusedCardIDAndAlterArray(unusedCards),
+            cardID: getAndRemoveRandomCardIdFromDeck(deck),
             orientation: 0
         }
         cards.push(card)
@@ -107,8 +122,8 @@ const getTwoRandomColors = (): { color0: string, color1: string } => {
 
 export const getNewGameState = (): GameState => {
     const initialCards = getInitialCardIds()
-    const player0Cards = get6Cards(initialCards)
-    const player1Cards = get6Cards(initialCards)
+    const player0Cards = get6CardsFromDeck(initialCards)
+    const player1Cards = get6CardsFromDeck(initialCards)
     const twoRandomColors = getTwoRandomColors()
     console.log(`after initialization: ${initialCards.length}, pl0: ${JSON.stringify(player0Cards)}`)
     return {
@@ -126,7 +141,7 @@ export const getNewGameState = (): GameState => {
         currentlyMovingPhase: MovePhase.SECOND_PHASE_FREE_MOVE,
         currentlyMovingPlayer: 0,
         moves: [],
-        unusedCards: initialCards,
+        deck: initialCards,
         board: getNewBoard()
     }
 }
@@ -158,6 +173,8 @@ const getNextPlayerAndNextPhase = (
         }
     }
 
+    const secondPlayerCanPlay = getNumberOfPlayableCards(gameState.playersStates[secondPlayerIndex].cards) != 0
+
     // has any obligatory
     let nextMovePhase = currentMovePhase;
     let nextPlayer = playing;
@@ -168,8 +185,12 @@ const getNextPlayerAndNextPhase = (
                 break;
             case MovePhase.SECOND_PHASE_FREE_MOVE:
             case MovePhase.THIRD_PHASE_OBLIGATORY:
-                nextMovePhase = secondPlayerPotentialPhase;
-                nextPlayer = secondPlayerIndex;
+                if (secondPlayerCanPlay) {
+                    nextMovePhase = secondPlayerPotentialPhase;
+                    nextPlayer = secondPlayerIndex;
+                } else {
+                    nextMovePhase = MovePhase.SECOND_PHASE_FREE_MOVE
+                }
                 break;
             default:
                 break;
@@ -191,17 +212,23 @@ const getNextPlayerAndNextPhase = (
     }
 }
 
+export const isFinalPhase = (gameState: GameState): boolean => {
+    return gameState.deck.length == 0;
+}
+
 // This method is called after the card was added, it returns a new game state
 export const getStateAfterMove = (gameState: GameState): GameState => {
     // TODO: what happens according to the rules, if the player cannot play? (very low probability)
 
+    const finalPhase = isFinalPhase(gameState);
+
     const currentlyMovingPlayer = gameState.currentlyMovingPlayer;
-    const currentPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[currentlyMovingPlayer].cards)
+    const currentPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[currentlyMovingPlayer].cards, finalPhase)
     const currentPlayerObligatoryCardsCount = getNumberOfObligatoryCards(currentPlayerObligatoryCards);
     // console.log(`currently playing (${currentlyMovingPlayer}): ${JSON.stringify(currentPlayerObligatoryCards)}`)
 
     const waitingPlayer = mod(currentlyMovingPlayer + 1, 2)
-    const waitingPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[waitingPlayer].cards)
+    const waitingPlayerObligatoryCards = getObligatoryPlayersCards(gameState.board, gameState.playersStates[waitingPlayer].cards, finalPhase)
     const waitingPlayerObligatoryCardsCount = getNumberOfObligatoryCards(waitingPlayerObligatoryCards);
     // console.log(`waiting playing (${waitingPlayer}): ${JSON.stringify(waitingPlayerObligatoryCards)}`)
 

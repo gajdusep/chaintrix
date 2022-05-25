@@ -122,7 +122,7 @@ const GameWrapper = () => {
             }}>
                 <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
                     {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
-                    <div>Cards in the deck: {gameState.unusedCards.length}</div>
+                    <div>Cards in the deck: {gameState.deck.length}</div>
                 </div>
                 <div>
                     <GameBoard />

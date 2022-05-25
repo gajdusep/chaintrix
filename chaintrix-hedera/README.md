@@ -23,6 +23,6 @@ solcjs --bin chaintrix.sol
 ```
 
 ```bash
-ts-node ./test/test.ts
+npm t
 ```
 

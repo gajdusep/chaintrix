@@ -10,7 +10,9 @@ import {
     GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload,
     GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, SOCKET_ERROR,
     ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
-    PlayerWantsToPlayHederaPayload, DECK_SIZE, updateGameStateAfterUnusedCardSelected, getRandomUnusedCardIDAndAlterArray, getNumberOfPlayableCards
+    PlayerWantsToPlayHederaPayload, DECK_SIZE, updateGameStateAfterDeckCardSelected, getAndRemoveRandomCardIdFromDeck,
+    getNumberOfPlayableCards,
+    getRandomCardIdFromDeck
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
@@ -294,14 +296,14 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
 
     let newCardID: string | null = null
     let movedType = MovedType.MOVED_AND_DECK_EMPTY
-    if (room.gameState.unusedCards.length != 0) {
-        newCardID = getRandomUnusedCardIDAndAlterArray(room.gameState.unusedCards)
+    if (room.gameState.deck.length != 0) {
+        newCardID = getRandomCardIdFromDeck(room.gameState.deck)
         movedType = MovedType.MOVED
     }
-    room.gameState = updateGameStateAfterUnusedCardSelected(room.gameState, moveInfo.card.cardID, newCardID)
+    room.gameState = updateGameStateAfterDeckCardSelected(room.gameState, moveInfo.card.cardID, newCardID)
 
     if (
-        room.gameState.unusedCards.length == 0 &&
+        room.gameState.deck.length == 0 &&
         getNumberOfPlayableCards(room.gameState.playersStates[0].cards) == 0 &&
         getNumberOfPlayableCards(room.gameState.playersStates[1].cards) == 0
     ) {

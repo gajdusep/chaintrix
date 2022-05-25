@@ -8,9 +8,9 @@ import {
     checkValidity, getNewGameState,
     getBoardHeight, getBoardWidth, addCardToBoard, mod,
     getStateAfterMove,
-    updateGameStateAfterUnusedCardSelected,
+    updateGameStateAfterDeckCardSelected,
     PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
-    PlayerPlayedPayload,
+    PlayerPlayedPayload, isFinalPhase,
     GameStartedPlayerIDPayload,
     calculateLongestPathForColor, GameFinishedNoBlockchainPayload,
     GAME_FINISHED_NO_BLOCKCHAIN, GAME_FINISHED_SOLANA
@@ -75,7 +75,6 @@ export const gameStateSlice = createSlice({
     // The `reducers` field lets us define reducers and generate associated actions
     reducers: {
         setGameState: (state, action: PayloadAction<{ gameState: GameState }>) => {
-            console.log(`hhhhhhhhhhhhhhhhhhhhhhhhhhh ${JSON.stringify(action.payload.gameState)}`)
             const gameState = action.payload.gameState;
             state.gameState = gameState;
             state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
@@ -109,9 +108,11 @@ export const gameStateSlice = createSlice({
                 state.sizes = calculateSizes(getBoardWidth(state.gameState.board), getBoardHeight(state.gameState.board), INITIAL_WIDTH, INITIAL_HEIGHT)
             }
 
-            state.gameState = updateGameStateAfterUnusedCardSelected(state.gameState, action.payload.playedCard.cardID, action.payload.newCardID)
+            state.gameState = getStateAfterMove(
+                updateGameStateAfterDeckCardSelected(state.gameState, action.payload.playedCard.cardID, action.payload.newCardID)
+            )
 
-            state.gameState = getStateAfterMove(state.gameState)
+            // state.gameState = getStateAfterMove(state.gameState)
             state.playersCardsView = getNewCardView(state)
 
             // TODO: make this visible in client
@@ -137,8 +138,6 @@ export const gameStateSlice = createSlice({
         // TODO set finished - solana, hedera, solana
         setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
             state.gameRunningState = GameRunningState.FINISHED;
-
-            // state.playersCardsView[action.payload.cardIndex].orientation = mod(state.playersCardsView[action.payload.cardIndex].orientation + 1, 6)
         },
     },
 });

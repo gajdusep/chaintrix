@@ -24,12 +24,12 @@ export const getNewBoard = (): Board => {
         boardCards: create2DArray<CardNullable>(null, initHeight, initWidth),
         boardFieldsTypes: []
     }
-    const newBoardFieldTypes = calculateBoardFieldsTypes(board)
+    const newBoardFieldTypes = calculateBoardFieldsTypes(board, false)
     newBoardFieldTypes[1][1] = BoardFieldType.FREE
     return addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
 }
 
-const addNewBoardFieldTypesToBoard = (board: Board, newBoardFieldTypes: BoardFieldType2DArray): Board => {
+export const addNewBoardFieldTypesToBoard = (board: Board, newBoardFieldTypes: BoardFieldType2DArray): Board => {
     return {
         parity: board.parity,
         boardCards: board.boardCards,
@@ -47,7 +47,7 @@ export const getBoardWidth = (board: Board): number => {
     return board.boardCards[0].length;
 }
 
-export const calculateBoardFieldsTypes = (board: Board): BoardFieldType2DArray => {
+export const calculateBoardFieldsTypes = (board: Board, finalPhase: boolean): BoardFieldType2DArray => {
     const height = getBoardHeight(board)
     const width = getBoardWidth(board)
 
@@ -96,6 +96,8 @@ export const calculateBoardFieldsTypes = (board: Board): BoardFieldType2DArray =
             if (numberOfCardNeighbors < 3) continue;
 
             boardFieldsTypes[i][j] = BoardFieldType.OBLIGATORY;
+
+            if (finalPhase) continue;
 
             // go all directions and find the guarded fields
 
@@ -238,7 +240,7 @@ export const getNumberOfPlayableCards = (cards: Array<CardNullable>): number => 
 
 // TODO: check validity also of the move PHASE
 export const checkValidity = (
-    board: Board, card: Card, posX: number, posY: number, shouldCheckThreeOfColor: boolean = true
+    board: Board, card: Card, posX: number, posY: number, finalPhase: boolean
 ) => {
     const tileNeighbors = getTileNeighborsCoords(board, posX, posY)
 
@@ -260,7 +262,7 @@ export const checkValidity = (
         }
     }
 
-    if (!shouldCheckThreeOfColor) return true;
+    if (finalPhase) return true;
 
     // for all neighbors check if there are not 3 paths of the same color
     for (let nIndex = 0; nIndex < tileNeighbors.length; nIndex++) {
@@ -283,14 +285,14 @@ export const checkValidity = (
 
 export const checkValidityWithMovePhase = (
     board: Board, card: Card, posX: number, posY: number,
-    movePhase: MovePhase, cards: Array<CardNullable>, shouldCheckThreeOfColor: boolean = true
+    movePhase: MovePhase, cards: Array<CardNullable>, finalPhase: boolean
 ) => {
-    const validity = checkValidity(board, card, posX, posY, shouldCheckThreeOfColor)
+    const validity = checkValidity(board, card, posX, posY, finalPhase)
     if (!validity) return validity;
     if (movePhase == MovePhase.SECOND_PHASE_FREE_MOVE) return validity;
 
     // in the first and third phase, check that player played one of his obligatory cards
-    const obligatoryCards = getObligatoryPlayersCards(board, cards)
+    const obligatoryCards = getObligatoryPlayersCards(board, cards, finalPhase)
     const obligatoryCardsCount = getNumberOfObligatoryCards(obligatoryCards);
     if (obligatoryCardsCount == 0) return true;
 
@@ -306,7 +308,9 @@ export const checkValidityWithMovePhase = (
     return false;
 }
 
-export const addCardToBoard = (board: Board, card: CardNullable, posX: number, posY: number): Board => {
+export const addCardToBoard = (
+    board: Board, card: CardNullable, posX: number, posY: number
+): Board => {
     // TODO: check if out of bounds
     // const newBoard: Board = { ...board };
     // TODO: CHECK IF THE PLAYER CAN REALLY PLAY THAT CARD (is in his cards)
@@ -358,9 +362,11 @@ export const addCardToBoard = (board: Board, card: CardNullable, posX: number, p
         }
     }
 
-    const newBoardFieldTypes = calculateBoardFieldsTypes(board)
+    // TODO: this must be called after the deck is updated
+    const newBoardFieldTypes = calculateBoardFieldsTypes(board, false)
     const boardResult = addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
-    return boardResult
+    return boardResult;
+    // return boardResult
 }
 
 export const getAllObligatoryPositionsCoords = (board: Board): Array<Coords> => {
@@ -377,7 +383,7 @@ export const getAllObligatoryPositionsCoords = (board: Board): Array<Coords> => 
     return coords;
 }
 
-export const getObligatoryPlayersCards = (board: Board, playerCards: Array<CardNullable>): Array<Array<Coords>> => {
+export const getObligatoryPlayersCards = (board: Board, playerCards: Array<CardNullable>, finalPhase: boolean): Array<Array<Coords>> => {
     const result: Array<Array<Coords>> = Array.from(Array(6), () => new Array())
     const obligatoryPositions = getAllObligatoryPositionsCoords(board);
     for (let i = 0; i < playerCards.length; i++) {
@@ -387,7 +393,7 @@ export const getObligatoryPlayersCards = (board: Board, playerCards: Array<CardN
             const obligatoryPositionCoord = obligatoryPositions[j];
             for (let rotIndex = 0; rotIndex < 6; rotIndex++) {
                 const rotatedCard = getRotatedCard(playerCard, rotIndex);
-                if (checkValidity(board, rotatedCard, obligatoryPositionCoord.x, obligatoryPositionCoord.y)) {
+                if (checkValidity(board, rotatedCard, obligatoryPositionCoord.x, obligatoryPositionCoord.y, finalPhase)) {
                     result[i].push(obligatoryPositionCoord)
                     break;
                 }

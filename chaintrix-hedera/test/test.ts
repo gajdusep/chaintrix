@@ -10,7 +10,7 @@ import * as assert from "assert";
 
 // let contractId = ContractId.fromString("0.0.34889466")
 let contractId = null
-const BET_AMOUNT = 777
+const BET_AMOUNT = 5555
 const WRONG_BET_AMOUNT = 100
 
 const assertHbarDiff = (bigger: Hbar, smaller: Hbar, expected: number) => {
@@ -24,7 +24,7 @@ const config = getConfig()
 jest.setTimeout(30000);
 it("Contract can be deployed", async () => {
     if (contractId == null) {
-        contractId = await deploy(config)
+        contractId = await deploy(config, BET_AMOUNT)
     }
 
     console.log(`ContractID: ${contractId}`)

@@ -3,14 +3,10 @@ import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 
 import { useEffect, useState } from 'react';
 import GameTileSpace from './GameTileSpace'
 import {
-    Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
-    getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition, GameState,
-    addCardToBoard, checkValidityWithMovePhase,
-    getBoardHeight, getBoardWidth, getObligatoryPlayersCards,
-    PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
-    GameStartedPayload, PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload
+    BoardFieldType, getTilePosition, getHexPositions, calculatePlayersTilesPositions,
+    Coords, Card, HexPosition, checkValidityWithMovePhase,
+    getObligatoryPlayersCards,
+    isFinalPhase
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
@@ -48,10 +44,11 @@ const GameBoard = () => {
             return cachedValidityChecks[card.cardID][positionKey];
         }
         cachedValidityChecks[card.cardID] = {}
+        const finalPhase = isFinalPhase(gameState)
         const isValid = checkValidityWithMovePhase(
             gameState.board, card,
             posX, posY,
-            gameState.currentlyMovingPhase, gameState.playersStates[playerID].cards
+            gameState.currentlyMovingPhase, gameState.playersStates[playerID].cards, finalPhase
         )
         cachedValidityChecks[card.cardID][positionKey] = isValid;
         return isValid;
@@ -61,7 +58,8 @@ const GameBoard = () => {
     useEffect(() => {
         console.log(`calculating obligatory cards, reset validity checks`)
         setCachedValidityChecks({})
-        setPlayersObligatoryCardsView(getObligatoryPlayersCards(gameState.board, playersCardsView))
+        const finalPhase = isFinalPhase(gameState)
+        setPlayersObligatoryCardsView(getObligatoryPlayersCards(gameState.board, playersCardsView, finalPhase))
     }, [gameState])
 
     useEffect(() => {

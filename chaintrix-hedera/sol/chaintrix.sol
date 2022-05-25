@@ -7,11 +7,13 @@ contract ChaintrixContract {
         bool isSet; // TODO: rename this...
     }
 
+    uint256 betAmount;
     address payable server;
     mapping(address => Bet) public playerBets;
 
-    constructor() public {
+    constructor(uint256 _betAmount) {
         server = payable(msg.sender);
+        betAmount = _betAmount;
     }
 
     modifier isServer() {
@@ -21,16 +23,13 @@ contract ChaintrixContract {
 
     function bet(address payable sender) public payable {
         require(sender == msg.sender, "sender is not the same as payer");
-        require(msg.value == 777, "did not send enough tiny hbar");
+        require(msg.value == betAmount, "did not send enough tiny hbar");
         require(
             playerBets[msg.sender].isSet == false,
             "already bet, or is playing"
         );
 
         playerBets[sender].isSet = true;
-
-        // payable(address(this)).transfer(msg.value);
-        // sender.transfer(7777);
     }
 
     function hasPlayerPlacedBet(address playerAddress)
@@ -115,7 +114,7 @@ contract ChaintrixContract {
         playerBets[player1] = Bet(address(0), false);
 
         // TODO: check the order of actions
-        winner.transfer(2 * 777);
+        winner.transfer(2 * betAmount);
     }
 
     // TODO: write a function that will allow server to close bets for single player
