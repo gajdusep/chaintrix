@@ -7,9 +7,14 @@ contract ChaintrixContract {
         bool isSet; // TODO: rename this...
     }
 
+    struct Game {
+        string fileID;
+    }
+
     uint256 betAmount;
     address payable server;
     mapping(address => Bet) public playerBets;
+    Game[] games;
 
     constructor(uint256 _betAmount) {
         server = payable(msg.sender);
@@ -115,6 +120,31 @@ contract ChaintrixContract {
 
         // TODO: check the order of actions
         winner.transfer(2 * betAmount);
+    }
+
+    function addGame(string memory fileId) public isServer {
+        games.push(Game(fileId));
+    }
+
+    function append(
+        string memory a,
+        string memory b,
+        string memory c
+    ) internal pure returns (string memory) {
+        return string(abi.encodePacked(a, b, c));
+    }
+
+    // function getAllGames(uint256[] memory indexes)
+    function getAllGames() public view returns (string memory) {
+        uint256 gamesLength = games.length;
+        // uint256 gamesLength = 1;
+        string memory fileIdsString = "";
+        for (uint256 i = 0; i < gamesLength; i++) {
+            Game storage game = games[i];
+            fileIdsString = append(fileIdsString, ",", game.fileID);
+        }
+        // return games[0].fileID;
+        return fileIdsString;
     }
 
     // TODO: write a function that will allow server to close bets for single player

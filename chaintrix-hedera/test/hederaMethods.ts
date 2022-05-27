@@ -115,3 +115,33 @@ export const closeGame = async (
 
     return contractExecuteRx.status
 }
+
+export const addGame = async (
+    serverClient: Client, gameFileId: string, contractId: ContractId
+): Promise<Status> => {
+    const contractParams = new ContractFunctionParameters()
+        .addString(gameFileId);
+    const contractExecuteTx = new ContractExecuteTransaction()
+        .setContractId(contractId)
+        .setGas(MAX_GAS * 5)
+        .setFunction("addGame", contractParams);
+
+    const contractExecuteSubmit = await contractExecuteTx.execute(serverClient);
+    const contractExecuteRx = await contractExecuteSubmit.getReceipt(serverClient);
+    return contractExecuteRx.status;
+}
+
+export const getGame = async (client: Client, contractId: ContractId): Promise<string> => {
+    const contractQueryTx = new ContractCallQuery()
+        .setContractId(contractId)
+        .setGas(MAX_GAS)
+        .setFunction("getAllGames", new ContractFunctionParameters())
+        .setQueryPayment(new Hbar(1));
+    console.log('after query creation')
+    const contractQuerySubmit = await contractQueryTx.execute(client);
+    console.log('after query execution')
+    const contractQueryResult = contractQuerySubmit.getString();
+    console.log(`after result get: ${contractQueryResult}`)
+    return contractQueryResult
+}
+

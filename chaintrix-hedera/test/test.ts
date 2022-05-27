@@ -3,10 +3,11 @@ import { getConfig } from "./config";
 import { ContractId, Hbar, HbarUnit } from "@hashgraph/sdk";
 import {
     scCallBet, getContractBalance, scCallAcceptBets, closeGame,
-    getHasPlayerPlacedBet, getOpponentAddress, getServerAddress, getPlayerBalance
+    getHasPlayerPlacedBet, getOpponentAddress, getServerAddress, getPlayerBalance, addGame, getGame
 } from "./hederaMethods";
 import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import * as assert from "assert";
+import { getChunks, getFileContents, uploadFileToHederaFS } from "./fileHederaMethods";
 
 // let contractId = ContractId.fromString("0.0.34889466")
 let contractId = null
@@ -21,13 +22,37 @@ const assertHbarDiff = (bigger: Hbar, smaller: Hbar, expected: number) => {
 }
 
 const config = getConfig()
-jest.setTimeout(30000);
+jest.setTimeout(50_000);
+
 it("Contract can be deployed", async () => {
     if (contractId == null) {
         contractId = await deploy(config, BET_AMOUNT)
     }
 
     console.log(`ContractID: ${contractId}`)
+})
+
+it("Server can save the final game state in the hedera FS", async () => {
+    const originalContents = JSON.stringify({
+        "moves": ["move1", "move2"]
+    })
+    const chunks = getChunks(Buffer.from(originalContents, 'utf-8'), 5000)
+
+    const fileId = await uploadFileToHederaFS(config.serverPrivateKey, config.serverClient, chunks)
+
+    const contentsCheck = await getFileContents(fileId, config.serverClient)
+    assert.equal(originalContents, contentsCheck)
+
+    console.log(`fileId to string: ${fileId.toString()}`)
+
+    await addGame(config.serverClient, fileId.toString(), contractId);
+    console.log(`added game 1`);
+    await addGame(config.serverClient, "string2", contractId);
+    console.log(`added game 2`);
+    await addGame(config.serverClient, "lastString", contractId);
+    console.log(`added game 3`);
+    const savedGameFileId = await getGame(config.serverClient, contractId);
+    console.log(`saved game file id: ${savedGameFileId}`)
 })
 
 it("Player cannot place bet with wrong params", async () => {
