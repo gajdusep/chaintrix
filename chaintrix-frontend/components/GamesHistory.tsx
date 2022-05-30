@@ -22,9 +22,9 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId } from "@hashgraph/sdk";
 import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectService'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
+import { Link } from 'react-router-dom';
 
-const GameSelect = () => {
-    const socketClient = useAppSelector(selectSocketClient);
+const GamesHistory = () => {
 
     // SOLANA VARS
     const wallet = useWallet();
@@ -35,50 +35,7 @@ const GameSelect = () => {
     const hashConnectService = useAppSelector(selectHederaConnectService)
     const hederaStatus = useAppSelector(selectHederaStatus)
 
-    const onPlayNoBCCLick = () => {
-        socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
-    }
-
-    const onPlaySolanaClick = async () => {
-        // TODO: error text
-        if (!socketClient) return;
-        // TODO: error text
-        if (!wallet || !wallet.publicKey || !anchorWallet) return;
-
-
-        const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
-        const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
-
-        console.log(`betting started ${wallet.publicKey}`)
-        const seed = randomBytes(32);
-        const [betAccountPDA, betAccountPDABump] = await anchor.web3.PublicKey.findProgramAddress(
-            [Buffer.from("seed"), seed],
-            program.programId
-        );
-        console.log(`bet accounts: ${betAccountPDA} ${betAccountPDABump}`)
-
-        const player0 = anchor.web3.Keypair.generate();
-
-        const tx = await program.methods.bet(betAccountPDABump, seed)
-            .accounts({
-                baseAccount: betAccountPDA,
-                player: wallet.publicKey,
-                // player: player0.publicKey,
-                systemProgram: anchor.web3.SystemProgram.programId,
-            })
-            .signers([])
-            .rpc({ commitment: 'max' });
-        // .rpc({});
-
-        const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
-        console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
-
-        const payload: PlayerWantsToPlaySolanaPayload = {
-            betPDA: betAccountPDA.toBase58(),
-            playerAddress: wallet.publicKey.toBase58()
-        }
-        socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);
-    }
+    const [closedAccounts, setClosedAccounts] = useState<Array<any>>(() => []);
 
     const onLoadAllSolana = async () => {
         if (!wallet || !wallet.publicKey || !anchorWallet) return;
@@ -92,6 +49,8 @@ const GameSelect = () => {
         console.log(`bet account: ${JSON.stringify(allBetAccounts[0].account)}, ${allBetAccounts[0].publicKey},`)
         console.log(`accepted account: ${JSON.stringify(allAccepted[0].account)}, ${allAccepted[0].publicKey},`)
         console.log(`closed account: ${JSON.stringify(allClosedAccounts[6].account)}, ${allClosedAccounts[6].publicKey},`)
+
+        setClosedAccounts(allClosedAccounts)
     }
 
     const onPlayHederaCLick = async () => {
@@ -100,31 +59,9 @@ const GameSelect = () => {
         const topic = hashConnectService.savedData.topic
         const playerHederaId = AccountId.fromString(playerHederaIdStr)
         console.log(`playerID: ${playerHederaIdStr}`)
-        // TODO: provider correct this.
+
         const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
-
-        const contractExecuteTx = await new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
-            .setContractId(HEDERA_CONTRACT_ID)
-            .setGas(1000000)
-            .setFunction("bet", new ContractFunctionParameters().addAddress(playerHederaId.toSolidityAddress()))
-            .freezeWithSigner(signer)
-
-        console.log(`signer: ${signer.getAccountId().toString()}`)
-        const response = await contractExecuteTx.executeWithSigner(signer);
-
-        console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
-        const sec = response.transactionId.validStart?.seconds.low;
-        const nano = response.transactionId.validStart?.nanos.low;
-        const txId = `${playerHederaIdStr}@${sec}.${nano}`;
-        const receipt = await provider.getTransactionReceipt(txId);
-        console.log(`receipt: ${receipt.status}`)
-
-        const payload: PlayerWantsToPlayHederaPayload = {
-            playerAddress: playerHederaIdStr
-        }
-        socketClient.emit(PLAYER_WANTS_TO_PLAY_HEDERA, payload);
-
         return;
     }
 
@@ -137,16 +74,15 @@ const GameSelect = () => {
         <div
         //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }}
         >
-            <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
-            <div>Begin with selecting your blockchain:</div>
-            <div>
-                <button className='basic-button' onClick={() => onPlayNoBCCLick()}>Play with no blockchain</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <Link to='/'>Homepage</Link>
+            <h1 style={{ textAlign: 'center' }}>Game history</h1>
+            <h2>Solana game history</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', maxWidth: `500px` }}>
                 <WalletMultiButton />
-                {wallet && anchorWallet ? <button onClick={() => onPlaySolanaClick()} className='basic-button'>Play with Solana</button> : <></>}
                 {wallet && anchorWallet ? <button onClick={() => onLoadAllSolana()} className='basic-button'>Load and write to console</button> : <></>}
+                {closedAccounts.map((item) => <p>{JSON.stringify(item)}</p>)}
             </div>
+            <h2>Hedera game history</h2>
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <button onClick={() => { connectToHederaWallet() }} className='basic-button'>Connect to Hedera wallet</button>
                 {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onPlayHederaCLick() }} className='basic-button'>Play with Hedera</button> : <></>}
@@ -156,4 +92,4 @@ const GameSelect = () => {
     )
 }
 
-export default GameSelect;
+export default GamesHistory;
