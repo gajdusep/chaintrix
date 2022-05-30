@@ -12,11 +12,14 @@ import {
     ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
     PlayerWantsToPlayHederaPayload, DECK_SIZE, updateGameStateAfterDeckCardSelected, getAndRemoveRandomCardIdFromDeck,
     getNumberOfPlayableCards,
-    getRandomCardIdFromDeck
+    getRandomCardIdFromDeck,
+    Move,
+    serializeMoves
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
 import { toSolidityAddress } from "@hashgraph/sdk/lib/EntityIdHelper";
+import { json } from "stream/consumers";
 // } from 'chaintrix-game-mechanics';
 
 type RoomObjects = { [key: string]: GameRoom }
@@ -219,30 +222,23 @@ export const playerPlays = async (
     console.log(`${room.blockchainType}: payload: ${JSON.stringify(payload)}`)
 
     const playerMoveResult = playerMove(room, payload)
-    if (playerMoveResult.card) {
-        const responsePayload: PlayerPlayedPayload = {
-            newCardID: playerMoveResult.card.cardID,
-            playedCard: payload.card,
-            x: payload.x,
-            y: payload.y
-        }
-        sio.to(gameRoomID).emit(PLAYER_PLAYED, responsePayload)
-        return;
+    // add this move to moves
+    const move: Move = {
+        newCardID: playerMoveResult.newCardId,
+        playedCard: payload.card,
+        x: payload.x,
+        y: payload.y
     }
-
-    if (playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
-        const responsePayload: PlayerPlayedPayload = {
-            newCardID: null,
-            playedCard: payload.card,
-            x: payload.x,
-            y: payload.y
-        }
-        sio.to(gameRoomID).emit(PLAYER_PLAYED, responsePayload)
+    room.gameState.moves.push(move)
+    // if game is not over yet
+    if (playerMoveResult.newCardId || playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
+        sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
         return;
     }
 
     if (playerMoveResult.movedType == MovedType.MOVED_AND_PLAYERS_NO_CARDS) {
         const winnerIndex = 0
+        console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
         // TODO: emit to the room, that the game is over and it's closing the game also on the blockchains
         switch (room.blockchainType) {
             case BlockchainType.NO_BLOCKCHAIN:
@@ -259,10 +255,10 @@ export const playerPlays = async (
         }
 
         // leave the rooms
-        const clients = sio.sockets.adapter.rooms.get(gameRoomID)
-        for (const client in clients) {
-            const clientSocket = sio.sockets.sockets.get(client)
-            clientSocket.leave(gameRoomID)
+        const clients = await sio.in(gameRoomID).fetchSockets();
+        for (const client of clients) {
+            client.leave(gameRoomID)
+            console.log(`client: ${client.id} left ${gameRoomID}`)
         }
     }
 }
@@ -275,7 +271,7 @@ enum MovedType {
 }
 
 export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
-    card: Card | null,
+    newCardId: string | null,
     movedType: MovedType
 } => {
     // TODO: check:
@@ -308,15 +304,16 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
         getNumberOfPlayableCards(room.gameState.playersStates[1].cards) == 0
     ) {
         return {
-            card: null,
+            newCardId: null,
             movedType: MovedType.MOVED_AND_PLAYERS_NO_CARDS
         }
     }
     room.gameState = getStateAfterMove(room.gameState)
 
     return {
-        card: newCardID == null ? null : { cardID: newCardID, orientation: 0 },
-        movedType: movedType
+        newCardId: newCardID,
+        // movedType: movedType
+        movedType: MovedType.MOVED_AND_PLAYERS_NO_CARDS
     }
 }
 

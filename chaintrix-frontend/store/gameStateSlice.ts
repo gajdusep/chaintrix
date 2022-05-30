@@ -139,6 +139,15 @@ export const gameStateSlice = createSlice({
         setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
             state.gameRunningState = GameRunningState.FINISHED;
         },
+        resetAll: (state) => {
+            state.gameRunningState = initialState.gameRunningState
+            state.gameState = initialState.gameState
+            state.playerID = initialState.playerID
+            state.playersCardsView = initialState.playersCardsView
+            state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+            state.lengths = initialState.lengths
+            state.error = null
+        }
     },
 });
 
@@ -146,7 +155,7 @@ export const {
     rotateCardInCardView, updateCardView,
     updateStateAfterMove, setGameState,
     onPlayerPlayedSocketEvent, addCardToBoardSocket,
-    setPlayerID, setGameFinishedNoBlockchain, setSocketError
+    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll
 } = gameStateSlice.actions;
 
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;

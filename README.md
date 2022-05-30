@@ -15,6 +15,10 @@ Hedera private keys:
 
 `chaintrix-hedera` - `.env`
 
+Arweave key
+
+`chaintrix-socket-server` - `arweave-key.json`
+
 ## Architecture
 
 What does a server check?

@@ -8,7 +8,7 @@ import {
 // } from 'chaintrix-game-mechanics';
 import {
     setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState
+    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState, resetAll
 } from '../store/gameStateSlice';
 import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -135,8 +135,9 @@ const GameWrapper = () => {
     )
 
     if (gameRunningState == GameRunningState.FINISHED) return (
-        <div style={{ display: 'flex', width: `100%`, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', width: `auto`, flexDirection: 'column', justifyContent: 'center' }}>
             <div>Game finished</div>
+            <button onClick={() => { dispatch(resetAll()) }}>OK, reset</button>
         </div>
     )
 

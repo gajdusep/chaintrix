@@ -136,7 +136,7 @@ export const getGame = async (client: Client, contractId: ContractId): Promise<s
         .setContractId(contractId)
         .setGas(MAX_GAS)
         .setFunction("getAllGames", new ContractFunctionParameters())
-        .setQueryPayment(new Hbar(1));
+        .setQueryPayment(new Hbar(0.05)); // TODO: how many Hbars exactly needed to be paid
     console.log('after query creation')
     const contractQuerySubmit = await contractQueryTx.execute(client);
     console.log('after query execution')

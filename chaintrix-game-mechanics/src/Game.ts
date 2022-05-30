@@ -21,9 +21,32 @@ export enum MovePhase {
     THIRD_PHASE_OBLIGATORY
 }
 
+export interface Move {
+    playedCard: Card,
+    x: number,
+    y: number,
+    newCardID: string
+}
+
+export const serializeMove = (move: Move): object => {
+    return {
+        p: {
+            id: move.playedCard.cardID,
+            or: move.playedCard.orientation
+        },
+        x: move.x,
+        y: move.y,
+        n: move.newCardID
+    }
+}
+
+export const serializeMoves = (moves: Array<Move>): string => {
+    return JSON.stringify(moves.map(item => serializeMove(item)));
+}
+
 export interface GameState {
     playersStates: Array<PlayerState>
-    moves: Array<string>
+    moves: Array<Move>
     startingPlayer: number
     currentlyMovingPlayer: number,
     currentlyMovingPhase: MovePhase,

@@ -9,6 +9,7 @@ import {
     PlayerWantsToPlaySolanaPayload,
     PlayerWantsToPlayHederaPayload
 } from "../../chaintrix-game-mechanics/dist";
+import { getArweaveConfig } from "./Arweave";
 import {
     playerPlays, joinOrCreateRoom
 } from './SocketMethods'
@@ -22,6 +23,8 @@ const io = new Server(httpServer, {
         origin: '*',
     }
 });
+
+const arweaveConfig = getArweaveConfig()
 
 let interval;
 const freeRoomsSolana: Array<string> = []

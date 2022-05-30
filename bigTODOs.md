@@ -2,3 +2,7 @@
     - return resources
 
 - how to save the game state, and where
+
+- how to get all the games
+
+- timer
