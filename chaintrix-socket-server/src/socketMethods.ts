@@ -195,6 +195,11 @@ const closeGameNoBlockchainSocket = async (winnerIndex: number, sio: Server, gam
 const closeGameHederaSocket = async (
     winnerIndex: number, sio: Server, gameRoomID: string, gameRoom: GameRoom
 ) => {
+    // TODO: calculate who won and send in the finalization message
+
+    // TODO: game finished and waiting for finalization
+    // sio.to(gameRoomID).emit(..., responsePayload)
+
     let winnerAddress = (gameRoom.players[0] as HederaPlayer).address
     if (winnerIndex == 1) {
         winnerAddress = (gameRoom.players[1] as HederaPlayer).address

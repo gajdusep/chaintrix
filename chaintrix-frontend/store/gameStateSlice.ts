@@ -20,7 +20,7 @@ import { Socket } from 'socket.io-client';
 export enum GameRunningState {
     NOT_STARTED,
     RUNNING,
-    FINISHED_AND_WAITING_FOR_FINALIZATION,
+    FINISHED_AND_WAITING_FOR_FINALIZATION, // TODO: complete this running state!
     FINISHED
 }
 

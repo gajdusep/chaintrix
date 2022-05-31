@@ -24,8 +24,6 @@ const io = new Server(httpServer, {
     }
 });
 
-const arweaveConfig = getArweaveConfig()
-
 let interval;
 const freeRoomsSolana: Array<string> = []
 const freeRoomsHedera: Array<string> = []

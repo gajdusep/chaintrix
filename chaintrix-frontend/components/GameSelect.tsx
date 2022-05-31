@@ -80,20 +80,6 @@ const GameSelect = () => {
         socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);
     }
 
-    const onLoadAllSolana = async () => {
-        if (!wallet || !wallet.publicKey || !anchorWallet) return;
-        const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
-        const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
-        const allBetAccounts = await program.account.betAccount.all()
-        const allAccepted = await program.account.acceptedBetsAccount.all()
-        const allClosedAccounts = await program.account.gameClosedAccount.all()
-
-        console.log(`all bet: ${allBetAccounts.length}, all closed: ${allClosedAccounts.length}, all accepted: ${allAccepted.length}`)
-        console.log(`bet account: ${JSON.stringify(allBetAccounts[0].account)}, ${allBetAccounts[0].publicKey},`)
-        console.log(`accepted account: ${JSON.stringify(allAccepted[0].account)}, ${allAccepted[0].publicKey},`)
-        console.log(`closed account: ${JSON.stringify(allClosedAccounts[6].account)}, ${allClosedAccounts[6].publicKey},`)
-    }
-
     const onPlayHederaCLick = async () => {
         if (!hashConnectService) return;
         const playerHederaIdStr = hashConnectService.savedData.pairedAccounts[0]
@@ -145,7 +131,6 @@ const GameSelect = () => {
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <WalletMultiButton />
                 {wallet && anchorWallet ? <button onClick={() => onPlaySolanaClick()} className='basic-button'>Play with Solana</button> : <></>}
-                {wallet && anchorWallet ? <button onClick={() => onLoadAllSolana()} className='basic-button'>Load and write to console</button> : <></>}
             </div>
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <button onClick={() => { connectToHederaWallet() }} className='basic-button'>Connect to Hedera wallet</button>

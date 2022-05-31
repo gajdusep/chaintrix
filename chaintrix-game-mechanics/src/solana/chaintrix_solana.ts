@@ -123,6 +123,10 @@ export type ChaintrixSolana = {
                 {
                     "name": "winner",
                     "type": "u8"
+                },
+                {
+                    "name": "arweave",
+                    "type": "string"
                 }
             ]
         }
@@ -184,6 +188,10 @@ export type ChaintrixSolana = {
                     {
                         "name": "bump",
                         "type": "u8"
+                    },
+                    {
+                        "name": "arweave",
+                        "type": "string"
                     }
                 ]
             }
@@ -199,6 +207,11 @@ export type ChaintrixSolana = {
             "code": 6001,
             "name": "Debugging",
             "msg": "Just debugging"
+        },
+        {
+            "code": 6002,
+            "name": "ArweaveIDWrong",
+            "msg": "Arweave ID must have 43 chars"
         }
     ]
 };
@@ -328,6 +341,10 @@ export const IDL: ChaintrixSolana = {
                 {
                     "name": "winner",
                     "type": "u8"
+                },
+                {
+                    "name": "arweave",
+                    "type": "string"
                 }
             ]
         }
@@ -389,6 +406,10 @@ export const IDL: ChaintrixSolana = {
                     {
                         "name": "bump",
                         "type": "u8"
+                    },
+                    {
+                        "name": "arweave",
+                        "type": "string"
                     }
                 ]
             }
@@ -404,6 +425,11 @@ export const IDL: ChaintrixSolana = {
             "code": 6001,
             "name": "Debugging",
             "msg": "Just debugging"
+        },
+        {
+            "code": 6002,
+            "name": "ArweaveIDWrong",
+            "msg": "Arweave ID must have 43 chars"
         }
     ]
 };
