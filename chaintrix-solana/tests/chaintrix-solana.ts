@@ -1,56 +1,15 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { ChaintrixSolana } from "../target/types/chaintrix_solana";
-import * as assert from "assert";
-import { TOKEN_PROGRAM_ID } from "@project-serum/anchor/dist/cjs/utils/token";
-import { PublicKey, SystemProgram, Transaction, Connection, Commitment, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import bigInt, { BigInteger } from "big-integer";
-import { randomBytes } from 'crypto';
+import { PublicKey } from '@solana/web3.js';
 
-const BET_ACCOUNT_SIZE = 41
-const ACCEPTED_BETS_ACCOUNT_SIZE = 73
-const BET_AMOUNT = LAMPORTS_PER_SOL / 10;
-const PLAYER_INITIAL_SOL = LAMPORTS_PER_SOL;
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+chai.use(chaiAsPromised);
+const expect = chai.expect;
 
-const playerCanBet = async (program: Program<ChaintrixSolana>, player: anchor.web3.Keypair): Promise<[typeof betAccountPDA, typeof betAccountPDABump]> => {
-  const connection = program.provider.connection;
-  const seed = randomBytes(32);
-
-  const [betAccountPDA, betAccountPDABump] = await anchor.web3.PublicKey.findProgramAddress(
-    [Buffer.from("seed"), seed],
-    program.programId
-  );
-  console.log(`bet accounts: ${betAccountPDA} ${betAccountPDABump}`)
-
-  const tx = await program.methods.bet(betAccountPDABump, seed)
-    .accounts({
-      baseAccount: betAccountPDA,
-      player: player.publicKey,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .signers([player])
-    .rpc({ commitment: 'confirmed' });
-
-
-  let playerBalance = await connection.getBalance(player.publicKey)
-  let PDAbalance = await connection.getBalance(betAccountPDA);
-  console.log(`PDA balance: ${PDAbalance}`)
-
-  const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
-  assert.equal(pdaAccount.bump, betAccountPDABump);
-  assert.equal(pdaAccount.player.toBase58(), player.publicKey.toBase58())
-
-  const minRent = await connection.getMinimumBalanceForRentExemption(BET_ACCOUNT_SIZE)
-  assert.equal(PDAbalance, BET_AMOUNT + minRent)
-  assert.equal(playerBalance, PLAYER_INITIAL_SOL - BET_AMOUNT - minRent)
-
-  return [betAccountPDA, betAccountPDABump]
-}
-
-const printAccountBalance = async (connection: Connection, publicKey: PublicKey) => {
-  let balance = await connection.getBalance(publicKey);
-  console.log(`${publicKey}: ${balance}`)
-}
+import { acceptBetsTest, closeGame, playerCanBet } from "./methods";
+import { PLAYER_INITIAL_SOL } from "./constants";
 
 describe("chaintrix-solana", () => {
   // Configure the client to use the local cluster.
@@ -70,6 +29,8 @@ describe("chaintrix-solana", () => {
   let betAccount1PDABump: number = 0
   let acceptedBetsPDA: PublicKey = null
   let acceptedBetsPDABump: number = 0
+  const correctArweave = 'wunAPEbsdwrPe4Lf4V_kC10OGDsgFS-A9WROmeCLHcA';
+  const wrongArweave = 'wrong'
 
   it("Fund necessary wallets", async () => {
     var fromAirDropSignature = await connection.requestAirdrop(
@@ -98,83 +59,61 @@ describe("chaintrix-solana", () => {
     [betAccount1PDA, betAccount1PDABump] = await playerCanBet(program, player1);
   })
 
+  it("Random user CANNOT accept bets", async () => {
+    await expect(acceptBetsTest(
+      program, player0, betAccount0PDA, betAccount1PDA,
+      player0.publicKey, player1.publicKey
+    )).to.be.rejectedWith('An address constraint was violated')
+  })
+
+  it("Server CANNOT accept wrong bets", async () => {
+    // account 0 and account 1 are the same
+    await expect(acceptBetsTest(
+      program, localWallet.payer, betAccount0PDA, betAccount0PDA,
+      player0.publicKey, player1.publicKey
+    )).to.be.rejectedWith('sum of account balances before and after instruction do not match')
+  })
+
   it("Server CAN accept bets", async () => {
-    const seed = randomBytes(32);
-    const [_acceptedBetsPDA, _acceptedBetsPDABump] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("accepted"), seed],
-      program.programId
-    );
-    acceptedBetsPDA = _acceptedBetsPDA
-    acceptedBetsPDABump = _acceptedBetsPDABump
-
-    let transactionFee = 0;
-    const serverBalanceBeforeTx = await connection.getBalance(localWallet.publicKey);
-    // console.log(serverBalanceBeforeTx)
-    try {
-      const tx = await program.methods.acceptBets(acceptedBetsPDABump, seed)
-        .accounts({
-          acceptedBetsAccount: acceptedBetsPDA,
-          player0BetAccount: betAccount0PDA,
-          player1BetAccount: betAccount1PDA,
-          server: localWallet.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([])
-        .rpc({ commitment: 'confirmed' })
-
-      transactionFee = (await connection.getParsedTransaction(tx, 'confirmed')).meta.fee;
-    } catch (e) {
-      console.log(e)
-    }
-    let serverBalanceAfterTx = await connection.getBalance(localWallet.publicKey);
-    assert.equal(bigInt(serverBalanceBeforeTx.toString()).minus(bigInt(serverBalanceAfterTx.toString())).toJSNumber(), transactionFee)
-    console.log(LAMPORTS_PER_SOL / transactionFee)
-
-    const pdaAccount = await program.account.acceptedBetsAccount.fetch(acceptedBetsPDA);
-    assert.equal(pdaAccount.player0.toBase58(), player0.publicKey.toBase58())
-    assert.equal(pdaAccount.player1.toBase58(), player1.publicKey.toBase58())
-
-    let PDAbalance = await connection.getBalance(acceptedBetsPDA);
-
-    const minRent = await connection.getMinimumBalanceForRentExemption(ACCEPTED_BETS_ACCOUNT_SIZE)
-    const betMinRent = await connection.getMinimumBalanceForRentExemption(BET_ACCOUNT_SIZE)
-    console.log(`hmm: ${betMinRent}`)
-    assert.equal(PDAbalance, 2 * BET_AMOUNT + 2 * betMinRent)
+    acceptedBetsPDA = await acceptBetsTest(
+      program, localWallet.payer, betAccount0PDA, betAccount1PDA,
+      player0.publicKey, player1.publicKey
+    )
   })
 
-  it("Winner 0 won", async () => {
-    const seed = randomBytes(32);
-    const [closedGamePDA, closedGamePDABump] = await anchor.web3.PublicKey.findProgramAddress(
-      [Buffer.from("closed"), seed],
-      program.programId
-    );
-
-    let transactionFee = 0;
-    await printAccountBalance(connection, localWallet.publicKey);
-    try {
-      const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, 1)
-        .accounts({
-          acceptedBetsAccount: acceptedBetsPDA,
-          player0: player0.publicKey,
-          player1: player1.publicKey,
-          server: localWallet.publicKey,
-          gameClosedAccount: closedGamePDA,
-          treasury: treasuryWallet.publicKey,
-          systemProgram: anchor.web3.SystemProgram.programId,
-        })
-        .signers([])
-        .rpc({ commitment: 'confirmed' })
-
-      transactionFee = (await connection.getParsedTransaction(tx, 'confirmed')).meta.fee;
-    } catch (e) {
-      console.log(e)
-    }
-    await printAccountBalance(connection, localWallet.publicKey);
-
-    // TODO: calculate how much should the winner have
-    await printAccountBalance(connection, player0.publicKey);
-    await printAccountBalance(connection, player1.publicKey);
-    // let serverBalanceAfterTx = await connection.getBalance(player0.publicKey);
+  it("Server CANNOT accept bets that were already accepted", async () => {
+    await expect(acceptBetsTest(
+      program, localWallet.payer, betAccount0PDA, betAccount1PDA,
+      player0.publicKey, player1.publicKey
+    )).to.be.rejectedWith('Error Code: AccountNotInitialized')
   })
 
+  it("Random user CANNOT close game", async () => {
+    await expect(closeGame(
+      program, player0, acceptedBetsPDA,
+      treasuryWallet.publicKey, player0.publicKey, player1.publicKey, correctArweave
+    )).to.be.rejectedWith('An address constraint was violated')
+  })
+
+  it("Server CANNOT close the game with wrong parameters", async () => {
+    // arweave id incorrect size
+    await expect(closeGame(
+      program, localWallet.payer, acceptedBetsPDA,
+      treasuryWallet.publicKey, player0.publicKey, player1.publicKey, wrongArweave
+    )).to.be.rejectedWith('Arweave ID must have 43 chars.')
+  })
+
+  it("Server can close game", async () => {
+    await closeGame(
+      program, localWallet.payer, acceptedBetsPDA,
+      treasuryWallet.publicKey, player0.publicKey, player1.publicKey, correctArweave
+    )
+  })
+
+  it("Server CANNOT close the game after it was closed", async () => {
+    await expect(closeGame(
+      program, localWallet.payer, acceptedBetsPDA,
+      treasuryWallet.publicKey, player0.publicKey, player1.publicKey, correctArweave
+    )).to.be.rejectedWith('Error Code: AccountNotInitialized')
+  })
 });

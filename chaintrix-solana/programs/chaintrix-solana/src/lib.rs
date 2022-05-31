@@ -84,13 +84,19 @@ pub mod chaintrix_solana {
         bump: u8,
         seed: Vec<u8>,
         winner: u8,
+        arweave: String,
     ) -> Result<()> {
-        let accepted_bets_account: &mut Account<AcceptedBetsAccount> =
-            &mut ctx.accounts.accepted_bets_account;
-        let server: &mut Signer = &mut ctx.accounts.server;
-        let player0: &mut AccountInfo = &mut ctx.accounts.player0;
-        let player1: &mut AccountInfo = &mut ctx.accounts.player1;
-        let treasury: &mut AccountInfo = &mut ctx.accounts.treasury;
+        if arweave.chars().count() != ARWEAVE_ID_LENGTH {
+            return Err(ErrorCode::ArweaveIDWrong.into());
+        }
+
+        let accepted_bets_account = &mut ctx.accounts.accepted_bets_account;
+        let game_closed_account = &mut ctx.accounts.game_closed_account;
+
+        let player0 = &mut ctx.accounts.player0;
+        let player1 = &mut ctx.accounts.player1;
+
+        let treasury = &mut ctx.accounts.treasury;
 
         let winners_amount = accepted_bets_account.to_account_info().lamports();
         **accepted_bets_account
@@ -103,6 +109,12 @@ pub mod chaintrix_solana {
             **player1.to_account_info().lamports.borrow_mut() += winners_amount;
         }
 
+        game_closed_account.player0 = player0.key();
+        game_closed_account.player1 = player1.key();
+        game_closed_account.bump = bump;
+        game_closed_account.winner_index = winner;
+        game_closed_account.arweave = arweave;
+
         Ok(())
     }
 }
@@ -113,4 +125,6 @@ pub enum ErrorCode {
     BetAccountNotEnoughLamports,
     #[msg("Just debugging")]
     Debugging,
+    #[msg("Arweave ID must have 43 chars")]
+    ArweaveIDWrong,
 }

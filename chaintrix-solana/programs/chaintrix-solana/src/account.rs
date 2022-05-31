@@ -34,6 +34,12 @@ pub struct GameClosedAccount {
     pub player1: Pubkey,
     pub winner_index: u8, // 0 or 1, rename this variable, winnerId
     pub bump: u8,
+    pub arweave: String,
 }
 
-size!(GameClosedAccount, 2 * PUBKEY_LENGTH + 2 * U8_LENGTH);
+pub const ARWEAVE_ID_LENGTH: usize = 43;
+const STRING_PREFIX_LENGTH: usize = 4;
+size!(
+    GameClosedAccount,
+    2 * PUBKEY_LENGTH + 2 * U8_LENGTH + ARWEAVE_ID_LENGTH + STRING_PREFIX_LENGTH
+);

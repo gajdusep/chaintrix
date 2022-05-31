@@ -25,3 +25,7 @@ anchor run test
 # or turn off your ledger and run:
 
 ```anchor test```
+
+# to test arweave
+
+```npx ts-node ./arweave-tests/arweave-test.ts```
