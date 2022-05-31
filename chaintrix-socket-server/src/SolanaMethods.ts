@@ -4,7 +4,8 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { SolanaPlayer, GameRoom, SolanaAcceptedBetInfo } from "./types";
 import { randomBytes } from "crypto";
 import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "./Constants";
-import { ChaintrixSolana, IDL, PlayerWantsToPlaySolanaPayload } from "../../chaintrix-game-mechanics/dist";
+import { ChaintrixSolana, IDL, PlayerWantsToPlaySolanaPayload, serializeMoves } from "../../chaintrix-game-mechanics/dist";
+import { getArweaveConfig, uploadGameMovesToArweave } from "./Arweave";
 
 const BET_ACCOUNT_SIZE = 41
 const ACCEPTED_BETS_ACCOUNT_SIZE = 73
@@ -70,6 +71,13 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
 }
 
 export const solanaCloseGame = async (room: GameRoom) => {
+    // upload game to arweave
+    const arweaveConfig = getArweaveConfig()
+    const arweaveFileID = await uploadGameMovesToArweave(
+        arweaveConfig, Buffer.from(serializeMoves(room.gameState.moves), 'utf-8')
+    )
+    console.log(`arweave file uploaded: ${arweaveFileID}`);
+
     const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
     const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
     const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
@@ -91,7 +99,7 @@ export const solanaCloseGame = async (room: GameRoom) => {
     console.log(`in solana close: ${acceptedBetAccount}, ${player0Address}, ${player1Address}, ${localWallet.publicKey.toBase58()}`)
 
     try {
-        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, 1)
+        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, 1, arweaveFileID)
             .accounts({
                 acceptedBetsAccount: acceptedBetAccount,
                 player0: player0Address,

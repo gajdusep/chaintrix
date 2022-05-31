@@ -7,7 +7,10 @@ export interface ArweaveConfig {
 }
 
 export const getArweaveKey = (): object => {
-    return JSON.parse(fs.readFileSync('./arweave-key.json').toString())
+    console.log(`read`)
+    const arweaveKey = JSON.parse(fs.readFileSync('./arweave-key.json').toString())
+    console.log(`finished read`)
+    return arweaveKey
 }
 
 export const getArweaveConfig = (): ArweaveConfig => {
@@ -31,12 +34,13 @@ export const showBalance = async (arweave: Arweave, address: string): Promise<st
 }
 
 export const uploadGameMovesToArweave = async (arweaveConfig: ArweaveConfig, movesBuffer: Buffer): Promise<string> => {
-    const transaction = await arweaveConfig.arweave.createTransaction(
-        { data: movesBuffer }, arweaveConfig.key
-    );
+    const transaction = await arweaveConfig.arweave.createTransaction({
+        data: movesBuffer
+    }, arweaveConfig.key);
 
     // TODO: should be JSON
     transaction.addTag("Content-Type", "application/json");
     await arweaveConfig.arweave.transactions.sign(transaction, arweaveConfig.key);
+    const response = await arweaveConfig.arweave.transactions.post(transaction);
     return transaction.id
 }

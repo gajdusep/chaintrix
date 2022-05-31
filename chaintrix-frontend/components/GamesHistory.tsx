@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
     PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload,
     PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA,
-    IDL
+    IDL,
+    ChaintrixSolana
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
@@ -44,12 +45,7 @@ const GamesHistory = () => {
         const allBetAccounts = await program.account.betAccount.all()
         const allAccepted = await program.account.acceptedBetsAccount.all()
         const allClosedAccounts = await program.account.gameClosedAccount.all()
-
         console.log(`all bet: ${allBetAccounts.length}, all closed: ${allClosedAccounts.length}, all accepted: ${allAccepted.length}`)
-        console.log(`bet account: ${JSON.stringify(allBetAccounts[0].account)}, ${allBetAccounts[0].publicKey},`)
-        console.log(`accepted account: ${JSON.stringify(allAccepted[0].account)}, ${allAccepted[0].publicKey},`)
-        console.log(`closed account: ${JSON.stringify(allClosedAccounts[6].account)}, ${allClosedAccounts[6].publicKey},`)
-
         setClosedAccounts(allClosedAccounts)
     }
 
@@ -80,7 +76,13 @@ const GamesHistory = () => {
             <div style={{ display: 'flex', flexDirection: 'column', maxWidth: `500px` }}>
                 <WalletMultiButton />
                 {wallet && anchorWallet ? <button onClick={() => onLoadAllSolana()} className='basic-button'>Load and write to console</button> : <></>}
-                {closedAccounts.map((item) => <p>{JSON.stringify(item)}</p>)}
+                {closedAccounts.map((closedAccount) => {
+                    return <div key={closedAccount.account.arweave}>
+                        <a target="_blank" rel="noopener noreferrer" href={`https://arweave.net/${closedAccount.account.arweave}`}>{closedAccount.account.arweave}</a>
+                        <p>{closedAccount.account.winnerIndex}</p>
+                        <p>{JSON.stringify(closedAccount.account.player0)}</p>
+                    </div>
+                })}
             </div>
             <h2>Hedera game history</h2>
             <div style={{ display: 'flex', flexDirection: 'row' }}>
