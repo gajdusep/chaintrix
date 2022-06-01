@@ -40,6 +40,7 @@ const GameWrapper = () => {
     const hashConnectService = useAppSelector(selectHederaConnectService)
     const hederaStatus = useAppSelector(selectHederaStatus)
 
+    // TODO: move this to the top level component...
     useEffect(() => {
         // TODO: if hedera status == PAIRED..?
 
@@ -104,6 +105,7 @@ const GameWrapper = () => {
         // TODO: game finished - solana, hedera
         // socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
 
+        // TODO: SOCKET_CREATED_ROOM_AND_WAITING
     }, []);
 
     const colors = ['R', 'B', 'G', 'Y']

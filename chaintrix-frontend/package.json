@@ -14,7 +14,7 @@
         "testEnvironment": "node"
     },
     "dependencies": {
-        "@hashgraph/sdk": "^2.13.1",
+        "@hashgraph/sdk": "^2.15.0",
         "@project-serum/anchor": "^0.24.2",
         "@reduxjs/toolkit": "^1.8.1",
         "@solana/wallet-adapter-base": "^0.9.5",
@@ -24,7 +24,7 @@
         "@solana/web3.js": "^1.37.2",
         "@types/react-redux": "^7.1.24",
         "chaintrix-game-mechanics": "^1.0.12",
-        "hashconnect": "^0.1.6",
+        "hashconnect": "^0.1.9",
         "next": "12.1.0",
         "next-transpile-modules": "^9.0.0",
         "react": "17.0.2",

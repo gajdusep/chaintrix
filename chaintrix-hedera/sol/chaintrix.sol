@@ -8,7 +8,7 @@ contract ChaintrixContract {
     }
 
     struct Game {
-        string fileID;
+        address fileID;
     }
 
     uint256 betAmount;
@@ -102,7 +102,8 @@ contract ChaintrixContract {
     function closeGame(
         address payable player0,
         address payable player1,
-        address payable winner
+        address payable winner,
+        address gameFileId
     ) public isServer {
         require(player0 != player1, "players cannot be the same");
         // TODO: check that in playerBets, the keys of player0 and player1 fit well
@@ -120,31 +121,24 @@ contract ChaintrixContract {
 
         // TODO: check the order of actions
         winner.transfer(2 * betAmount);
+        games.push(Game(gameFileId));
     }
 
-    function addGame(string memory fileId) public isServer {
-        games.push(Game(fileId));
-    }
+    function getAllGames()
+        public
+        view
+        returns (address[] memory, uint256[] memory)
+    {
+        address[] memory addrs = new address[](games.length);
+        uint256[] memory indexes = new uint256[](games.length);
 
-    function append(
-        string memory a,
-        string memory b,
-        string memory c
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(a, b, c));
-    }
-
-    // function getAllGames(uint256[] memory indexes)
-    function getAllGames() public view returns (string memory) {
-        uint256 gamesLength = games.length;
-        // uint256 gamesLength = 1;
-        string memory fileIdsString = "";
-        for (uint256 i = 0; i < gamesLength; i++) {
+        for (uint256 i = 0; i < games.length; i++) {
             Game storage game = games[i];
-            fileIdsString = append(fileIdsString, ",", game.fileID);
+            addrs[i] = game.fileID;
+            indexes[i] = i;
         }
-        // return games[0].fileID;
-        return fileIdsString;
+
+        return (addrs, indexes);
     }
 
     // TODO: write a function that will allow server to close bets for single player

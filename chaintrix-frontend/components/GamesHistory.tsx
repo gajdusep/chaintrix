@@ -20,10 +20,11 @@ import { selectSocketClient } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId } from "@hashgraph/sdk";
+import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId, ContractCallQuery, FileId } from "@hashgraph/sdk";
 import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectService'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { Link } from 'react-router-dom';
+const abiCoder = require("web3-eth-abi");
 
 const GamesHistory = () => {
 
@@ -37,6 +38,7 @@ const GamesHistory = () => {
     const hederaStatus = useAppSelector(selectHederaStatus)
 
     const [closedAccounts, setClosedAccounts] = useState<Array<any>>(() => []);
+    const [hederaClosedGames, setHederaClosedGames] = useState<Array<FileId>>(() => []);
 
     const onLoadAllSolana = async () => {
         if (!wallet || !wallet.publicKey || !anchorWallet) return;
@@ -49,16 +51,30 @@ const GamesHistory = () => {
         setClosedAccounts(allClosedAccounts)
     }
 
-    const onPlayHederaCLick = async () => {
+    const onLoadHederaGames = async () => {
         if (!hashConnectService) return;
         const playerHederaIdStr = hashConnectService.savedData.pairedAccounts[0]
         const topic = hashConnectService.savedData.topic
         const playerHederaId = AccountId.fromString(playerHederaIdStr)
         console.log(`playerID: ${playerHederaIdStr}`)
-
+        // TODO: provider correct this.
         const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
-        return;
+
+        const contractQueryTx = new ContractCallQuery()
+            .setContractId(HEDERA_CONTRACT_ID)
+            .setGas(50000000)
+            .setFunction("getAllGames", new ContractFunctionParameters())
+            .setQueryPayment(new Hbar(10)); // TODO: how many Hbars exactly needed to be paid
+        const contractQuerySubmit = await contractQueryTx.executeWithSigner(signer);
+        const contractQueryResult = contractQuerySubmit.asBytes();
+        console.log(`contractQueryResult: ${contractQueryResult}`)
+        const hexString = Buffer.from(contractQueryResult).toString('hex');
+        const result = abiCoder.decodeParameters(['address[]', 'uint256[]'], hexString);
+        console.log(result)
+
+        const toReturn = result["0"].map((item: any) => FileId.fromSolidityAddress(item))
+        setHederaClosedGames(toReturn)
     }
 
     const connectToHederaWallet = async () => {
@@ -87,7 +103,12 @@ const GamesHistory = () => {
             <h2>Hedera game history</h2>
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <button onClick={() => { connectToHederaWallet() }} className='basic-button'>Connect to Hedera wallet</button>
-                {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onPlayHederaCLick() }} className='basic-button'>Play with Hedera</button> : <></>}
+                {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onLoadHederaGames() }} className='basic-button'>Load hedera games</button> : <></>}
+                {hederaClosedGames.map((closedGame) => {
+                    return <div key={closedGame.toSolidityAddress()}>
+                        <p>{closedGame.toString()}</p>
+                    </div>
+                })}
             </div>
         </div>
 

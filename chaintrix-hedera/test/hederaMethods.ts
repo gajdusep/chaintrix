@@ -8,13 +8,17 @@ import {
     Client,
     AccountBalanceQuery,
     Status,
+    FileId,
 } from "@hashgraph/sdk";
 import NodeClient from "@hashgraph/sdk/lib/client/NodeClient";
 import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import { Config } from "./config";
-
+import Web3 from "web3";
+// import { AbiCoder } from "web3-eth-abi";
 
 const MAX_GAS = 1000000
+const abiCoder = require("web3-eth-abi");
+// import { abiCoder } from 'web3-eth-abi'
 
 export const scCallBet = async (
     playerClient: NodeClient, playerId: AccountId, contractId: ContractId,
@@ -99,12 +103,14 @@ export const closeGame = async (
     serverClient: Client,
     winnerId: AccountId,
     loserId: AccountId,
-    contractId: ContractId
+    contractId: ContractId,
+    fileId: string
 ): Promise<Status> => {
     const contractParams = new ContractFunctionParameters()
         .addAddress(winnerId.toSolidityAddress())
         .addAddress(loserId.toSolidityAddress())
-        .addAddress(winnerId.toSolidityAddress());
+        .addAddress(winnerId.toSolidityAddress())
+        .addAddress(fileId);
     const contractExecuteTx = new ContractExecuteTransaction()
         .setContractId(contractId)
         .setGas(MAX_GAS)
@@ -116,32 +122,24 @@ export const closeGame = async (
     return contractExecuteRx.status
 }
 
-export const addGame = async (
-    serverClient: Client, gameFileId: string, contractId: ContractId
-): Promise<Status> => {
-    const contractParams = new ContractFunctionParameters()
-        .addString(gameFileId);
-    const contractExecuteTx = new ContractExecuteTransaction()
-        .setContractId(contractId)
-        .setGas(MAX_GAS * 5)
-        .setFunction("addGame", contractParams);
-
-    const contractExecuteSubmit = await contractExecuteTx.execute(serverClient);
-    const contractExecuteRx = await contractExecuteSubmit.getReceipt(serverClient);
-    return contractExecuteRx.status;
-}
-
-export const getGame = async (client: Client, contractId: ContractId): Promise<string> => {
+export const getGames = async (
+    client: Client, contractId: ContractId
+): Promise<Array<FileId>> => {
     const contractQueryTx = new ContractCallQuery()
         .setContractId(contractId)
         .setGas(MAX_GAS)
         .setFunction("getAllGames", new ContractFunctionParameters())
         .setQueryPayment(new Hbar(0.05)); // TODO: how many Hbars exactly needed to be paid
-    console.log('after query creation')
     const contractQuerySubmit = await contractQueryTx.execute(client);
-    console.log('after query execution')
-    const contractQueryResult = contractQuerySubmit.getString();
-    console.log(`after result get: ${contractQueryResult}`)
-    return contractQueryResult
+    const contractQueryResult = contractQuerySubmit.asBytes();
+    const hexString = Buffer.from(contractQueryResult).toString('hex');
+    const result = abiCoder.decodeParameters(['address[]', 'uint256[]'], hexString);
+    console.log(result)
+
+    const toReturn = result["0"].map((item) => FileId.fromSolidityAddress(item))
+
+    console.log(`to return: ${toReturn}`)
+    // return contractQueryResult.toString()
+    return toReturn
 }
 

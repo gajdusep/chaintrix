@@ -78,6 +78,7 @@ export const solanaCloseGame = async (room: GameRoom) => {
     )
     console.log(`arweave file uploaded: ${arweaveFileID}`);
 
+    // call program - close game
     const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
     const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
     const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
@@ -113,6 +114,7 @@ export const solanaCloseGame = async (room: GameRoom) => {
             .rpc({ commitment: 'confirmed' })
         console.log(`solana game closed`)
     } catch (error) {
+        // TODO: what to do with an error!!!
         console.log(`SOLANA ERROR: ${error}`)
     }
 }

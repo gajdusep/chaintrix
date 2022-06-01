@@ -90,7 +90,7 @@ const GameSelect = () => {
         const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
-        const contractExecuteTx = await new ContractExecuteTransaction({ amount: Hbar.fromTinybars(777) })
+        const contractExecuteTx = await new ContractExecuteTransaction({ amount: Hbar.fromTinybars(5555) })
             .setContractId(HEDERA_CONTRACT_ID)
             .setGas(1000000)
             .setFunction("bet", new ContractFunctionParameters().addAddress(playerHederaId.toSolidityAddress()))

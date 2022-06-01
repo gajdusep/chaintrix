@@ -3,7 +3,7 @@ import { getConfig } from "./config";
 import { ContractId, Hbar, HbarUnit } from "@hashgraph/sdk";
 import {
     scCallBet, getContractBalance, scCallAcceptBets, closeGame,
-    getHasPlayerPlacedBet, getOpponentAddress, getServerAddress, getPlayerBalance, addGame, getGame
+    getHasPlayerPlacedBet, getOpponentAddress, getServerAddress, getPlayerBalance, getGames
 } from "./hederaMethods";
 import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import * as assert from "assert";
@@ -13,6 +13,7 @@ import { getChunks, getFileContents, uploadFileToHederaFS } from "./fileHederaMe
 let contractId = null
 const BET_AMOUNT = 5555
 const WRONG_BET_AMOUNT = 100
+const MOCK_ADDRESS = '0000000000000000000000000000000000000000'
 
 const assertHbarDiff = (bigger: Hbar, smaller: Hbar, expected: number) => {
     const biggerTiny = bigger.toBigNumber()
@@ -30,29 +31,6 @@ it("Contract can be deployed", async () => {
     }
 
     console.log(`ContractID: ${contractId}`)
-})
-
-it("Server can save the final game state in the hedera FS", async () => {
-    const originalContents = JSON.stringify({
-        "moves": ["move1", "move2"]
-    })
-    const chunks = getChunks(Buffer.from(originalContents, 'utf-8'), 5000)
-
-    const fileId = await uploadFileToHederaFS(config.serverPrivateKey, config.serverClient, chunks)
-
-    const contentsCheck = await getFileContents(fileId, config.serverClient)
-    assert.equal(originalContents, contentsCheck)
-
-    console.log(`fileId to string: ${fileId.toString()}`)
-
-    await addGame(config.serverClient, fileId.toString(), contractId);
-    console.log(`added game 1`);
-    await addGame(config.serverClient, "string2", contractId);
-    console.log(`added game 2`);
-    await addGame(config.serverClient, "lastString", contractId);
-    console.log(`added game 3`);
-    const savedGameFileId = await getGame(config.serverClient, contractId);
-    console.log(`saved game file id: ${savedGameFileId}`)
 })
 
 it("Player cannot place bet with wrong params", async () => {
@@ -114,13 +92,13 @@ it("Random account cannot close the game", async () => {
     await expect(
         closeGame(
             config.player1Client, // wrong server
-            config.player0Id, config.player1Id, contractId
+            config.player0Id, config.player1Id, contractId, MOCK_ADDRESS
         )
     ).rejects.toThrow('CONTRACT_REVERT_EXECUTED')
 })
 
 it("Nobody can close the game with incorrect parameters", async () => {
-    // game that doesnt exist
+    // game that doesn't exist
 
     // the winner not one of the players
 
@@ -128,13 +106,22 @@ it("Nobody can close the game with incorrect parameters", async () => {
 })
 
 it("Server can close the game", async () => {
+    // mock data uploaded to file on Hedera
+    const originalContents = JSON.stringify({ "moves": ["move1", "move2"] })
+    const chunks = getChunks(Buffer.from(originalContents, 'utf-8'), 5000)
+    const fileId = await uploadFileToHederaFS(config.serverPrivateKey, config.serverClient, chunks)
+    const contentsCheck = await getFileContents(fileId, config.serverClient)
+    assert.equal(originalContents, contentsCheck)
+
     // TODO: contract balance
 
     const pl0BalanceBefore = await getPlayerBalance(config.player0Id, config.serverClient)
     const pl1BalanceBefore = await getPlayerBalance(config.player1Id, config.serverClient)
 
+    // close the game part
     await closeGame(
-        config.serverClient, config.player0Id, config.player1Id, contractId
+        config.serverClient, config.player0Id, config.player1Id, contractId,
+        fileId.toSolidityAddress()
     )
 
     const pl0BalanceAfter = await getPlayerBalance(config.player0Id, config.serverClient)
@@ -143,12 +130,16 @@ it("Server can close the game", async () => {
     assertHbarDiff(pl0BalanceAfter, pl0BalanceBefore, BET_AMOUNT * 2)
     assert.equal(pl1BalanceBefore.toString(HbarUnit.Tinybar), pl1BalanceAfter.toString(HbarUnit.Tinybar))
     assert.equal(await getHasPlayerPlacedBet(config, contractId, config.player0Id), false)
+
+    // check the game file
+    const gameFileIds = await getGames(config.player0Client, contractId)
+    assert.equal(gameFileIds[0].toSolidityAddress(), fileId.toSolidityAddress())
 })
 
 it("Nobody can close the game that is already closed", async () => {
     await expect(closeGame(
         config.serverClient,
         config.player0Id, config.player1Id,
-        contractId
+        contractId, MOCK_ADDRESS
     )).rejects.toThrow('CONTRACT_REVERT_EXECUTED')
 })

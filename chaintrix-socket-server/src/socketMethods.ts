@@ -173,23 +173,27 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     sio.to(joiningPlayer.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
 }
 
-const closeGameSolanaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom) => {
-    await solanaCloseGame(room)
-    const responsePayload: GameFinishedSolanaPayload = {
-        winningPlayerIndex: winnerIndex,
-        transactionHash: ''
-
-    }
-    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
-    // TODO!!!
-    // sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
-}
-
 const closeGameNoBlockchainSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
     const responsePayload: GameFinishedNoBlockchainPayload = {
         winningPlayerIndex: winnerIndex
     }
     sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
+}
+
+const closeGameSolanaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom) => {
+    // TODO: calculate who won and send in the finalization message
+
+    // TODO: game finished and waiting for finalization
+    // sio.to(gameRoomID).emit(..., responsePayload)
+
+    await solanaCloseGame(room)
+    const responsePayload: GameFinishedSolanaPayload = {
+        winningPlayerIndex: winnerIndex,
+        transactionHash: ''
+    }
+    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
+    // TODO!!!
+    // sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
 }
 
 const closeGameHederaSocket = async (
@@ -205,6 +209,7 @@ const closeGameHederaSocket = async (
         winnerAddress = (gameRoom.players[1] as HederaPlayer).address
     }
     await hederaCloseGame(
+        gameRoom,
         getHederaConfig(),
         toSolidity((gameRoom.players[0] as HederaPlayer).address),
         toSolidity((gameRoom.players[1] as HederaPlayer).address),
