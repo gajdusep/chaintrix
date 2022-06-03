@@ -11,7 +11,6 @@ import {
     updateGameStateAfterDeckCardSelected,
     PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
     PlayerPlayedPayload, isFinalPhase,
-    GameStartedPlayerIDPayload,
     calculateLongestPathForColor, GameFinishedNoBlockchainPayload,
     GAME_FINISHED_NO_BLOCKCHAIN, GAME_FINISHED_SOLANA
 } from '../../chaintrix-game-mechanics/dist/index.js';
@@ -31,7 +30,9 @@ export interface ClientGameState {
     sizes: Sizes,
     gameRunningState: GameRunningState,
     lengths: { [color: string]: number },
-    error: string | null
+    error: string | null,
+    initialSeconds: number,
+    secondsRemaining: number
 }
 
 const INITIAL_WIDTH = 500
@@ -45,7 +46,9 @@ const initialState: ClientGameState = {
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT),
     gameRunningState: GameRunningState.NOT_STARTED,
     lengths: {},
-    error: null
+    error: null,
+    initialSeconds: 10,
+    secondsRemaining: 10
 }
 
 const getNewCardView = (state: ClientGameState): Array<Card | null> => {
@@ -74,15 +77,18 @@ export const gameStateSlice = createSlice({
     initialState,
     // The `reducers` field lets us define reducers and generate associated actions
     reducers: {
-        setGameState: (state, action: PayloadAction<{ gameState: GameState }>) => {
+        setGameState: (state, action: PayloadAction<{ gameState: GameState, seconds: number }>) => {
             const gameState = action.payload.gameState;
             state.gameState = gameState;
+            console.log(`hmmmm: ${JSON.stringify(gameState)}`)
             state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
             state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
             state.gameRunningState = GameRunningState.RUNNING;
+            state.initialSeconds = action.payload.seconds;
+            state.secondsRemaining = action.payload.seconds;
         },
-        setPlayerID: (state, action: PayloadAction<GameStartedPlayerIDPayload>) => {
-            state.playerID = action.payload.playerID
+        setPlayerID: (state, action: PayloadAction<number>) => {
+            state.playerID = action.payload
             state.playersCardsView = getNewCardView(state)
         },
         setSocketError: (state, action: PayloadAction<string>) => {
@@ -147,6 +153,13 @@ export const gameStateSlice = createSlice({
             state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
             state.lengths = initialState.lengths
             state.error = null
+        },
+        setSeconds: (state, action: PayloadAction<number | null>) => {
+            if (action.payload == null) {
+                state.secondsRemaining = state.initialSeconds;
+            } else {
+                state.secondsRemaining = action.payload;
+            }
         }
     },
 });
@@ -155,7 +168,7 @@ export const {
     rotateCardInCardView, updateCardView,
     updateStateAfterMove, setGameState,
     onPlayerPlayedSocketEvent, addCardToBoardSocket,
-    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll
+    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll, setSeconds
 } = gameStateSlice.actions;
 
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;
@@ -173,5 +186,6 @@ export const selectError = (state: RootState) => state.gameStateSlice.error;
 export const selectIsCurrentlyPlaying = (state: RootState): boolean => {
     return state.gameStateSlice.playerID == state.gameStateSlice.gameState.currentlyMovingPlayer;
 }
+export const selectSeconds = (state: RootState): number => state.gameStateSlice.secondsRemaining;
 
 export default gameStateSlice.reducer;

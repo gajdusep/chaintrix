@@ -5,8 +5,7 @@ import {
 } from "./types";
 import {
     Card, addCardToBoard, getNewGameState, MoveInfo,
-    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload,
+    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerWantsToPlaySolanaPayload,
     GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload,
     GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, SOCKET_ERROR,
     ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
@@ -14,7 +13,8 @@ import {
     getNumberOfPlayableCards,
     getRandomCardIdFromDeck,
     Move,
-    serializeMoves
+    serializeMoves,
+    GameStartedPayload
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
@@ -72,6 +72,24 @@ const getJoiningPlayerHedera = async (
     }
 }
 
+const INITIAL_TIME = 30
+const SERVER_INITIAL_TIME = INITIAL_TIME + 1
+const getNewTimer = (room: GameRoom, callback: any) => {
+
+    const timer = setInterval(() => {
+        // remainingTime -= 1;
+        room.remainingTime = room.remainingTime - 1
+        console.log(`timer tick: ${room.remainingTime}`)
+        if (room.remainingTime <= 0) {
+            console.log(`timer run out: ${room.remainingTime}`)
+            clearInterval(timer)
+            callback()
+        }
+    }, 1000);
+
+    return timer;
+}
+
 export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     freeRooms: Array<string>, roomObjects: RoomObjects, waitingPlayers: { [socketID: string]: Player },
     blockchainType: BlockchainType,
@@ -108,23 +126,23 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
 
     // there is not already created room, so joining player creates one and joins it
     if (!freeRooms || !freeRooms.length) {
-        const roomID = getNewRoomName();
-        freeRooms.push(roomID);
+        const gameRoomID = getNewRoomName();
+        freeRooms.push(gameRoomID);
         waitingPlayers[socket.id] = joiningPlayer
-        socket.join(roomID);
+        socket.join(gameRoomID);
         socket.emit(SOCKET_CREATED_ROOM_AND_WAITING);
 
-        console.log(`${blockchainType} Room created: created, roomID: ${roomID}, player0: ${JSON.stringify(joiningPlayer)}`);
+        console.log(`${blockchainType} Room created: created, roomID: ${gameRoomID}, player0: ${JSON.stringify(joiningPlayer)}`);
         return;
     }
 
     // get free room, remove it from the free rooms, and join it
-    const roomID = freeRooms[0];
+    const gameRoomID = freeRooms[0];
     freeRooms.shift();
-    socket.join(roomID);
+    socket.join(gameRoomID);
 
     // get the already present player and 
-    let clients = Array.from(sio.sockets.adapter.rooms.get(roomID));
+    let clients = Array.from(sio.sockets.adapter.rooms.get(gameRoomID));
     const waitingPlayerSocketID = clients[0]
     const waitingPlayer = waitingPlayers[waitingPlayerSocketID];
     delete waitingPlayers[waitingPlayerSocketID];
@@ -158,19 +176,23 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     // save a new Room object with all information
     const playersInRoom = [joiningPlayer, waitingPlayer];
     const newGameState = getNewGameState()
-    roomObjects[roomID] = {
+    roomObjects[gameRoomID] = {
         players: playersInRoom,
         gameState: newGameState,
         blockchainType: blockchainType,
         acceptedBetInfo: acceptedBetInfo
     }
+    const room = roomObjects[gameRoomID]
+    room.remainingTime = SERVER_INITIAL_TIME;
+    room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID))
+
     console.log(`${blockchainType} new gameroom created with players: ${JSON.stringify(playersInRoom)}`)
 
-    sio.to(roomID).emit(GAME_STARTED, newGameState)
-    const player0Payload: GameStartedPlayerIDPayload = { playerID: 0 }
-    const player1Payload: GameStartedPlayerIDPayload = { playerID: 1 }
-    sio.to(waitingPlayer.socketID).emit(GAME_STARTED_PLAYER_ID, player0Payload)
-    sio.to(joiningPlayer.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
+    const player0Payload: GameStartedPayload = { playerID: 0, gameState: newGameState, seconds: INITIAL_TIME }
+    const player1Payload: GameStartedPayload = { playerID: 1, gameState: newGameState, seconds: INITIAL_TIME }
+    sio.to(waitingPlayer.socketID).emit(GAME_STARTED, player0Payload)
+    sio.to(joiningPlayer.socketID).emit(GAME_STARTED, player1Payload)
+    // sio.to(gameRoomID).emit(GAME_STARTED, newGameState)
 }
 
 const closeGameNoBlockchainSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
@@ -223,6 +245,34 @@ const closeGameHederaSocket = async (
     // sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
 }
 
+const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID: string) => {
+    // TODO: winner index calculated from the game room data
+    const winnerIndex = 0
+
+    console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
+    // TODO: !!! emit to the room, that the game is over and it's closing the game also on the blockchains
+
+    switch (room.blockchainType) {
+        case BlockchainType.NO_BLOCKCHAIN:
+            await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID)
+            break;
+        case BlockchainType.SOLANA:
+            await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room)
+            break;
+        case BlockchainType.HEDERA:
+            await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room)
+            break;
+        default:
+            break;
+    }
+
+    const clients = await sio.in(gameRoomID).fetchSockets();
+    for (const client of clients) {
+        client.leave(gameRoomID)
+        console.log(`client: ${client.id} left ${gameRoomID}`)
+    }
+}
+
 export const playerPlays = async (
     sio: Server, socket: Socket, roomObjects: RoomObjects,
     payload: PlayerPlaysPayload
@@ -240,36 +290,20 @@ export const playerPlays = async (
         y: payload.y
     }
     room.gameState.moves.push(move)
-    // if game is not over yet
+
+    // game is not over yet
     if (playerMoveResult.newCardId || playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
+        room.remainingTime = SERVER_INITIAL_TIME
+        clearInterval(room.timer)
+        room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID))
+
         sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
         return;
     }
 
     if (playerMoveResult.movedType == MovedType.MOVED_AND_PLAYERS_NO_CARDS) {
-        const winnerIndex = 0
-        console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
-        // TODO: emit to the room, that the game is over and it's closing the game also on the blockchains
-        switch (room.blockchainType) {
-            case BlockchainType.NO_BLOCKCHAIN:
-                await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID)
-                break;
-            case BlockchainType.SOLANA:
-                await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room)
-                break;
-            case BlockchainType.HEDERA:
-                await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room)
-                break;
-            default:
-                break;
-        }
-
-        // leave the rooms
-        const clients = await sio.in(gameRoomID).fetchSockets();
-        for (const client of clients) {
-            client.leave(gameRoomID)
-            console.log(`client: ${client.id} left ${gameRoomID}`)
-        }
+        clearInterval(room.timer)
+        closeGameCallback(room, sio, gameRoomID)
     }
 }
 
@@ -322,8 +356,7 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
 
     return {
         newCardId: newCardID,
-        // movedType: movedType
-        movedType: MovedType.MOVED_AND_PLAYERS_NO_CARDS
+        movedType: movedType
     }
 }
 

@@ -57,6 +57,7 @@ export const sendTransaction = async (
     hashconnectWrapper: HashConnectService,
     trans: Uint8Array, acctToSign: string, return_trans: boolean = false
 ): Promise<MessageTypes.TransactionResponse> => {
+    console.log(`in send transaction`)
     const transaction: MessageTypes.Transaction = {
         topic: hashconnectWrapper.savedData.topic,
         byteArray: trans,
@@ -66,8 +67,10 @@ export const sendTransaction = async (
             returnTransaction: return_trans
         }
     }
-
-    return await hashconnectWrapper.hashconnect.sendTransaction(hashconnectWrapper.savedData.topic, transaction)
+    console.log(`transaction: ${JSON.stringify(transaction)}`)
+    const result = await hashconnectWrapper.hashconnect.sendTransaction(hashconnectWrapper.savedData.topic, transaction)
+    console.log(`result: ${result}`)
+    return result
 }
 
 export const requestAccountInfo = async (hashconnectWrapper: HashConnectService) => {

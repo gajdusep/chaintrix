@@ -21,7 +21,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId, ContractCallQuery, FileId } from "@hashgraph/sdk";
-import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectService'
+import { connectToExtension, HashConnectStatus, sendTransaction } from '../helpers/HashConnectService'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { Link } from 'react-router-dom';
 const abiCoder = require("web3-eth-abi");
@@ -61,12 +61,47 @@ const GamesHistory = () => {
         const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
-        const contractQueryTx = new ContractCallQuery()
+        let contractQueryTx = new ContractCallQuery()
             .setContractId(HEDERA_CONTRACT_ID)
-            .setGas(50000000)
-            .setFunction("getAllGames", new ContractFunctionParameters())
-            .setQueryPayment(new Hbar(10)); // TODO: how many Hbars exactly needed to be paid
-        const contractQuerySubmit = await contractQueryTx.executeWithSigner(signer);
+            // .setGas(5000000)
+            .setGas((new Hbar(0.1)).toTinybars())
+            // .setFunction("getAllGames", new ContractFunctionParameters())
+            .setFunction("getAll", null)
+            .setQueryPayment(new Hbar(0.05))
+        // .setMaxQueryPayment(new Hbar(1));
+        // .setMaxQueryPayment(new Hbar(1));
+        // .setQueryPayment(new Hbar(10)); // TODO: how many Hbars exactly needed to be paid
+        // const contractQuerySubmit = await contractQueryTx.executeWithSigner(signer);
+
+        /** *
+        contractQueryTx = new ContractCallQuery()
+            .setContractId(HEDERA_CONTRACT_ID)
+            // .setGas(5000000)
+            .setGas((new Hbar(0.001)).toTinybars())
+            // .setFunction("getAllGames", new ContractFunctionParameters())
+            .setFunction("getOneGame", null)
+            .setMaxQueryPayment(new Hbar(1));
+        /** */
+
+        /** *
+        contractQueryTx = new ContractCallQuery()
+            .setContractId("0.0.30863001")
+            // .setGas(1_000_000)
+            .setGas((new Hbar(0.01)).toTinybars())
+            .setFunction("getMobileNumber", new ContractFunctionParameters().addString("Alice"))
+            .setMaxQueryPayment(new Hbar(0.00000001));
+        // .setMaxQueryPayment(new Hbar(1));
+        /** */
+        console.log(`contract query tx created`)
+
+        let transactionBytes: Uint8Array = await contractQueryTx.toBytes();
+        console.log(`sending transaction`)
+        let res = await sendTransaction(hashConnectService, transactionBytes, playerHederaIdStr);
+        console.log(`res: ${JSON.stringify(res)}`)
+
+        // const contractQuerySubmit = await contractQueryTx.executeWithSigner(signer);
+
+        return;
         const contractQueryResult = contractQuerySubmit.asBytes();
         console.log(`contractQueryResult: ${contractQueryResult}`)
         const hexString = Buffer.from(contractQueryResult).toString('hex');

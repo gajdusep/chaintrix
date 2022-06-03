@@ -9,7 +9,7 @@ import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import * as assert from "assert";
 import { getChunks, getFileContents, uploadFileToHederaFS } from "./fileHederaMethods";
 
-// let contractId = ContractId.fromString("0.0.34889466")
+// let contractId = ContractId.fromString("0.0.35590667")
 let contractId = null
 const BET_AMOUNT = 5555
 const WRONG_BET_AMOUNT = 100
@@ -24,6 +24,12 @@ const assertHbarDiff = (bigger: Hbar, smaller: Hbar, expected: number) => {
 
 const config = getConfig()
 jest.setTimeout(50_000);
+
+// it("Can load games", async () => {
+//     const gameFileIds = await getGames(config, contractId)
+//     console.log(gameFileIds)
+//     // assert.equal(gameFileIds[0].toSolidityAddress(), fileId.toSolidityAddress())
+// })
 
 it("Contract can be deployed", async () => {
     if (contractId == null) {
@@ -132,7 +138,9 @@ it("Server can close the game", async () => {
     assert.equal(await getHasPlayerPlacedBet(config, contractId, config.player0Id), false)
 
     // check the game file
-    const gameFileIds = await getGames(config.player0Client, contractId)
+    // const gameFileIds = await getGames(config.player0Client, contractId)
+    const gameFileIds = await getGames(config, contractId)
+
     assert.equal(gameFileIds[0].toSolidityAddress(), fileId.toSolidityAddress())
 })
 

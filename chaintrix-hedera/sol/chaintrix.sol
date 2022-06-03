@@ -124,6 +124,10 @@ contract ChaintrixContract {
         games.push(Game(gameFileId));
     }
 
+    function getOneGame() public view returns (address) {
+        return (games[0].fileID);
+    }
+
     function getAllGames()
         public
         view
@@ -143,4 +147,19 @@ contract ChaintrixContract {
 
     // TODO: write a function that will allow server to close bets for single player
     // (this method will be a check that no hbar will be stuck in the contract)
+
+    function getAll()
+        public
+        view
+        returns (address[] memory)
+    {
+        address[] memory addrs = new address[](games.length);
+
+        for (uint256 i = 0; i < games.length; i++) {
+            Game storage game = games[i];
+            addrs[i] = game.fileID;
+        }
+
+        return (addrs);
+    }
 }

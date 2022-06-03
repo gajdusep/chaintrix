@@ -9,6 +9,10 @@ import {
     AccountBalanceQuery,
     Status,
     FileId,
+    PrivateKey,
+    Signer,
+    Wallet,
+    LocalProvider,
 } from "@hashgraph/sdk";
 import NodeClient from "@hashgraph/sdk/lib/client/NodeClient";
 import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
@@ -123,14 +127,22 @@ export const closeGame = async (
 }
 
 export const getGames = async (
-    client: Client, contractId: ContractId
+    // client: Client, privateKey: PrivateKey, contractId: ContractId
+    config: Config, contractId: ContractId
 ): Promise<Array<FileId>> => {
     const contractQueryTx = new ContractCallQuery()
         .setContractId(contractId)
-        .setGas(MAX_GAS)
+        .setGas((new Hbar(0.01)).toTinybars())
         .setFunction("getAllGames", new ContractFunctionParameters())
         .setQueryPayment(new Hbar(0.05)); // TODO: how many Hbars exactly needed to be paid
-    const contractQuerySubmit = await contractQueryTx.execute(client);
+    // const contractQuerySubmit = await contractQueryTx.execute(client);
+    const wallet = new Wallet(
+        config.serverId,
+        config.serverPrivateKey,
+        new LocalProvider()
+    )
+    const contractQuerySubmit = await contractQueryTx.executeWithSigner(wallet);
+
     const contractQueryResult = contractQuerySubmit.asBytes();
     const hexString = Buffer.from(contractQueryResult).toString('hex');
     const result = abiCoder.decodeParameters(['address[]', 'uint256[]'], hexString);

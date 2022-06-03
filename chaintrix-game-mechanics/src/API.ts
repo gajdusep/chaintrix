@@ -19,13 +19,15 @@ export type PlayerWantsToPlayHederaPayload = {
 
 export const GAME_STARTED = 'gameStarted'
 export type GameStartedPayload = {
-    gameState: GameState
+    gameState: GameState,
+    playerID: number,
+    seconds: number
 }
 
-export const GAME_STARTED_PLAYER_ID = 'gameStartedPlayerID'
-export type GameStartedPlayerIDPayload = {
-    playerID: number
-}
+// export const GAME_STARTED_PLAYER_ID = 'gameStartedPlayerID'
+// export type GameStartedPlayerIDPayload = {
+//     playerID: number
+// }
 
 export const PLAYER_PLAYS = 'playerPlays'
 export type PlayerPlaysPayload = {

@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
     GameState, PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload,
+    GameStartedPayload, GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload,
     SOCKET_ERROR
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
     setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState, resetAll
+    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState, resetAll, selectSeconds, setSeconds
 } from '../store/gameStateSlice';
 import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -39,6 +38,23 @@ const GameWrapper = () => {
     // HEDERA VARS
     const hashConnectService = useAppSelector(selectHederaConnectService)
     const hederaStatus = useAppSelector(selectHederaStatus)
+
+    // TIMER
+    const seconds = useAppSelector(selectSeconds)
+    useEffect(() => {
+        let myInterval = setInterval(() => {
+            if (seconds > 0) {
+                dispatch(setSeconds(seconds - 1));
+            }
+            if (seconds === 0) {
+                clearInterval(myInterval)
+            }
+        }, 1000)
+        return () => {
+            clearInterval(myInterval);
+        };
+    });
+
 
     // TODO: move this to the top level component...
     useEffect(() => {
@@ -75,21 +91,17 @@ const GameWrapper = () => {
         runHederaConnectEffect()
 
         dispatch(setOnEvent({
-            event: GAME_STARTED, func: (payload: GameState) => {
+            event: GAME_STARTED, func: (payload: GameStartedPayload) => {
                 console.log(`whyyyyy ${payload}, ${JSON.stringify(payload)}`)
-
-                dispatch(setGameState({ gameState: payload }))
+                dispatch(setGameState({ gameState: payload.gameState, seconds: payload.seconds }))
+                dispatch(setPlayerID(payload.playerID))
             }
         }));
         dispatch(setOnEvent({
             event: PLAYER_PLAYED, func: (payload: PlayerPlayedPayload) => {
                 console.log(`player played!!!: ${JSON.stringify(payload)}`)
                 dispatch(onPlayerPlayedSocketEvent(payload))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: GAME_STARTED_PLAYER_ID, func: (payload: GameStartedPlayerIDPayload) => {
-                dispatch(setPlayerID(payload))
+                dispatch(setSeconds(null))
             }
         }));
         dispatch(setOnEvent({
@@ -125,6 +137,7 @@ const GameWrapper = () => {
                 <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
                     {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
                     <div>Cards in the deck: {gameState.deck.length}</div>
+                    <div><b>SECONDS: {seconds}</b></div>
                 </div>
                 <div>
                     <GameBoard />

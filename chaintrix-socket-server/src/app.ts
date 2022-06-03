@@ -46,15 +46,10 @@ io.on("connection", (socket) => {
     socket.on(PLAYER_PLAYS, (payload: PlayerPlaysPayload) => {
         playerPlays(io, socket, roomObjects, payload)
     });
-
-    // if (interval) {
-    //     clearInterval(interval);
-    // }
-    // interval = setInterval(() => getApiAndEmit(socket), 997);
-    // socket.on("disconnect", () => {
-    //     console.log("Client disconnected");
-    //     clearInterval(interval);
-    // });
+    socket.on('disconnect', () => {
+        // TODO: User disconneted!!!
+        console.log('User disconnected')
+    });
 });
 
 const getApiAndEmit = socket => {
