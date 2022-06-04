@@ -18,6 +18,7 @@ import { Socket } from 'socket.io-client';
 
 export enum GameRunningState {
     NOT_STARTED,
+    BET_CONFIRMED_NOW_WAITING,
     RUNNING,
     FINISHED_AND_WAITING_FOR_FINALIZATION, // TODO: complete this running state!
     FINISHED
@@ -38,10 +39,9 @@ export interface ClientGameState {
 const INITIAL_WIDTH = 500
 const INITIAL_HEIGHT = 600
 
-const newGameState = getNewGameState()
 const initialState: ClientGameState = {
     playerID: -1,
-    gameState: newGameState,
+    gameState: getNewGameState(),
     playersCardsView: [],
     sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT),
     gameRunningState: GameRunningState.NOT_STARTED,
@@ -141,8 +141,15 @@ export const gameStateSlice = createSlice({
                 state.playersCardsView[cardIndex]!.orientation = mod(state.playersCardsView[cardIndex]!.orientation + 1, 6)
             }
         },
+        setGameRunningState: (state, action: PayloadAction<GameRunningState>) => {
+            state.gameRunningState = action.payload;
+        },
         // TODO set finished - solana, hedera, solana
+        // TODO: remove the following two methods..?
         setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
+            state.gameRunningState = GameRunningState.FINISHED;
+        },
+        setGameFinished: (state) => {
             state.gameRunningState = GameRunningState.FINISHED;
         },
         resetAll: (state) => {
@@ -168,7 +175,8 @@ export const {
     rotateCardInCardView, updateCardView,
     updateStateAfterMove, setGameState,
     onPlayerPlayedSocketEvent, addCardToBoardSocket,
-    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll, setSeconds
+    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll, setSeconds,
+    setGameRunningState, setGameFinished
 } = gameStateSlice.actions;
 
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;

@@ -2,7 +2,8 @@ import { useState } from 'react';
 import {
     PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload,
     PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA,
-    IDL
+    IDL,
+    BlockchainType
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
@@ -13,7 +14,8 @@ import { Connection } from '@solana/web3.js';
 import { HEDERA_CONTRACT_ID, LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
 import {
     selectGameState, selectPlayerID, selectGameRunningState, selectLengths,
-    selectError
+    selectError,
+    GameRunningState
 } from '../store/gameStateSlice';
 import { selectSocketClient } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -22,9 +24,12 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId } from "@hashgraph/sdk";
 import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectService'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
+import { setBlockchainType } from '../store/blockchainStateSlice';
 
 const GameSelect = () => {
+    const dispatch = useAppDispatch();
     const socketClient = useAppSelector(selectSocketClient);
+    const gameRunningState = useAppSelector(selectGameRunningState)
 
     // SOLANA VARS
     const wallet = useWallet();
@@ -36,6 +41,7 @@ const GameSelect = () => {
     const hederaStatus = useAppSelector(selectHederaStatus)
 
     const onPlayNoBCCLick = () => {
+        dispatch(setBlockchainType(BlockchainType.NO_BLOCKCHAIN));
         socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
     }
 
@@ -44,7 +50,6 @@ const GameSelect = () => {
         if (!socketClient) return;
         // TODO: error text
         if (!wallet || !wallet.publicKey || !anchorWallet) return;
-
 
         const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
         const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
@@ -77,6 +82,7 @@ const GameSelect = () => {
             betPDA: betAccountPDA.toBase58(),
             playerAddress: wallet.publicKey.toBase58()
         }
+        dispatch(setBlockchainType(BlockchainType.SOLANA));
         socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);
     }
 
@@ -109,14 +115,23 @@ const GameSelect = () => {
         const payload: PlayerWantsToPlayHederaPayload = {
             playerAddress: playerHederaIdStr
         }
-        socketClient.emit(PLAYER_WANTS_TO_PLAY_HEDERA, payload);
 
-        return;
+        dispatch(setBlockchainType(BlockchainType.HEDERA));
+        socketClient.emit(PLAYER_WANTS_TO_PLAY_HEDERA, payload);
     }
 
     const connectToHederaWallet = async () => {
         if (!hashConnectService) return;
         await connectToExtension(hashConnectService);
+    }
+
+    if (gameRunningState == GameRunningState.BET_CONFIRMED_NOW_WAITING) {
+        return (
+            <div>
+                <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
+                <div>Bet confirmed, waiting for oponents</div>
+            </div>
+        )
     }
 
     return (

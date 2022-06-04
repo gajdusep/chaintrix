@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import {
     GameState, PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
     GameStartedPayload, GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload,
-    SOCKET_ERROR
+    SOCKET_ERROR,
+    SOCKET_CREATED_ROOM_AND_WAITING
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
 import {
-    setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState, resetAll, selectSeconds, setSeconds
+    selectGameRunningState, selectLengths, GameRunningState,
+    selectError, selectGameState, resetAll, selectSeconds, setSeconds
 } from '../store/gameStateSlice';
-import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import OponentsBanner from './OponentsBanner';
@@ -24,6 +24,7 @@ import { ParallaxProvider } from 'react-scroll-parallax';
 import Background from './Background';
 import ErrorComponent from './ErrorComponent';
 import MovePhaseBanner from './MovePhaseBanner';
+import { selectBCState } from '../store/blockchainStateSlice';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
@@ -31,9 +32,7 @@ const GameWrapper = () => {
     const gameRunningState = useAppSelector(selectGameRunningState)
     const pathLengths = useAppSelector(selectLengths)
     const error = useAppSelector(selectError);
-
-    // SOCKET
-    // const socketConnected = useAppSelector(selectSocketConnected);
+    const blockchainState = useAppSelector(selectBCState);
 
     // HEDERA VARS
     const hashConnectService = useAppSelector(selectHederaConnectService)
@@ -89,35 +88,6 @@ const GameWrapper = () => {
             dispatch(initHederaAsync())
         }
         runHederaConnectEffect()
-
-        dispatch(setOnEvent({
-            event: GAME_STARTED, func: (payload: GameStartedPayload) => {
-                console.log(`whyyyyy ${payload}, ${JSON.stringify(payload)}`)
-                dispatch(setGameState({ gameState: payload.gameState, seconds: payload.seconds }))
-                dispatch(setPlayerID(payload.playerID))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: PLAYER_PLAYED, func: (payload: PlayerPlayedPayload) => {
-                console.log(`player played!!!: ${JSON.stringify(payload)}`)
-                dispatch(onPlayerPlayedSocketEvent(payload))
-                dispatch(setSeconds(null))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: GAME_FINISHED_NO_BLOCKCHAIN, func: (payload: GameFinishedNoBlockchainPayload) => {
-                dispatch(setGameFinishedNoBlockchain(payload))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: SOCKET_ERROR, func: (payload) => {
-                dispatch(setSocketError(payload))
-            }
-        }));
-        // TODO: game finished - solana, hedera
-        // socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
-
-        // TODO: SOCKET_CREATED_ROOM_AND_WAITING
     }, []);
 
     const colors = ['R', 'B', 'G', 'Y']
@@ -134,10 +104,11 @@ const GameWrapper = () => {
                 width: `100%`,
                 justifyContent: 'center'
             }}>
-                <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
+                <div style={{ width: 150, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
                     {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
                     <div>Cards in the deck: {gameState.deck.length}</div>
-                    <div><b>SECONDS: {seconds}</b></div>
+                    <div>SECONDS: <b>{seconds}</b></div>
+                    <div>BC TYPE: <b>{blockchainState.blockchainType}</b></div>
                 </div>
                 <div>
                     <GameBoard />
@@ -149,9 +120,13 @@ const GameWrapper = () => {
         </div>
     )
 
-    if (gameRunningState == GameRunningState.FINISHED) return (
+    if (
+        gameRunningState == GameRunningState.FINISHED ||
+        gameRunningState == GameRunningState.FINISHED_AND_WAITING_FOR_FINALIZATION
+    ) return (
         <div style={{ display: 'flex', width: `auto`, flexDirection: 'column', justifyContent: 'center' }}>
-            <div>Game finished</div>
+            <div>Game finished - gameRunningState: {gameRunningState}</div>
+            <div>{JSON.stringify(blockchainState.gameResult)}</div>
             <button onClick={() => { dispatch(resetAll()) }}>OK, reset</button>
         </div>
     )

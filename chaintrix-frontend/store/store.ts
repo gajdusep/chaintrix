@@ -1,4 +1,5 @@
 import { configureStore, ThunkAction, Action } from '@reduxjs/toolkit';
+import blockchainStateSlice from './blockchainStateSlice';
 import counterReducer from './counterSlice';
 import gameStateSlice from './gameStateSlice';
 import hederaSlice from './hederaSlice';
@@ -11,6 +12,7 @@ export const store = configureStore({
     }),
     reducer: {
         counter: counterReducer,
+        blockchainStateSlice: blockchainStateSlice,
         gameStateSlice: gameStateSlice,
         socketSlice: socketSlice,
         hederaSlice: hederaSlice

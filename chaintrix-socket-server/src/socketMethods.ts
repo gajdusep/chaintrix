@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import {
     Player, SolanaPlayer, NoBlockchainPlayer,
-    GameRoom, BlockchainType, HederaPlayer, AcceptedBetInfo
+    GameRoom, HederaPlayer, AcceptedBetInfo
 } from "./types";
 import {
     Card, addCardToBoard, getNewGameState, MoveInfo,
@@ -14,7 +14,11 @@ import {
     getRandomCardIdFromDeck,
     Move,
     serializeMoves,
-    GameStartedPayload
+    GameStartedPayload,
+    BlockchainType,
+    GAME_FINISHED_AND_WAITING_FOR_FINALIZATION,
+    GameFinishedGenericPayload,
+    GameClosedReason
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
@@ -72,7 +76,7 @@ const getJoiningPlayerHedera = async (
     }
 }
 
-const INITIAL_TIME = 30
+const INITIAL_TIME = 10
 const SERVER_INITIAL_TIME = INITIAL_TIME + 1
 const getNewTimer = (room: GameRoom, callback: any) => {
 
@@ -184,7 +188,7 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     }
     const room = roomObjects[gameRoomID]
     room.remainingTime = SERVER_INITIAL_TIME;
-    room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID))
+    room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID, GameClosedReason.TIMEOUT))
 
     console.log(`${blockchainType} new gameroom created with players: ${JSON.stringify(playersInRoom)}`)
 
@@ -195,37 +199,50 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     // sio.to(gameRoomID).emit(GAME_STARTED, newGameState)
 }
 
-const closeGameNoBlockchainSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
+const closeGameNoBlockchainSocket = async (
+    winnerIndex: number, sio: Server, gameRoomID: string,
+    gameClosedReason: GameClosedReason
+) => {
     const responsePayload: GameFinishedNoBlockchainPayload = {
-        winningPlayerIndex: winnerIndex
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
     }
     sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
 }
 
-const closeGameSolanaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom) => {
-    // TODO: calculate who won and send in the finalization message
+const closeGameSolanaSocket = async (
+    winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom,
+    gameClosedReason: GameClosedReason
+) => {
+    // send an information to a client that the game is closed
+    const finishedAndWaitingPayload: GameFinishedGenericPayload = {
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
+    }
+    sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
 
-    // TODO: game finished and waiting for finalization
-    // sio.to(gameRoomID).emit(..., responsePayload)
-
+    // finalize solana transactions
     await solanaCloseGame(room)
     const responsePayload: GameFinishedSolanaPayload = {
-        winningPlayerIndex: winnerIndex,
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason,
         transactionHash: ''
     }
-    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
-    // TODO!!!
-    // sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
+    sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
 }
 
 const closeGameHederaSocket = async (
-    winnerIndex: number, sio: Server, gameRoomID: string, gameRoom: GameRoom
+    winnerIndex: number, sio: Server, gameRoomID: string, gameRoom: GameRoom,
+    gameClosedReason: GameClosedReason
 ) => {
-    // TODO: calculate who won and send in the finalization message
+    // send an information to a client that the game is closed
+    const finishedAndWaitingPayload: GameFinishedGenericPayload = {
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
+    }
+    sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
 
-    // TODO: game finished and waiting for finalization
-    // sio.to(gameRoomID).emit(..., responsePayload)
-
+    // finalize hedera transactions
     let winnerAddress = (gameRoom.players[0] as HederaPlayer).address
     if (winnerIndex == 1) {
         winnerAddress = (gameRoom.players[1] as HederaPlayer).address
@@ -238,14 +255,14 @@ const closeGameHederaSocket = async (
         winnerAddress
     )
     const responsePayload: GameFinishedHederaPayload = {
-        winningPlayerIndex: winnerIndex
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
     }
-    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
-    // TODO: !!!
-    // sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
+    sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
 }
 
-const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID: string) => {
+const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID: string, gameClosedReason: GameClosedReason) => {
+    // TODO: wasTimeout implement logic - winner index automatically
     // TODO: winner index calculated from the game room data
     const winnerIndex = 0
 
@@ -254,13 +271,13 @@ const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID: string
 
     switch (room.blockchainType) {
         case BlockchainType.NO_BLOCKCHAIN:
-            await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID)
+            await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID, gameClosedReason)
             break;
         case BlockchainType.SOLANA:
-            await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room)
+            await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
             break;
         case BlockchainType.HEDERA:
-            await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room)
+            await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
             break;
         default:
             break;
@@ -295,7 +312,7 @@ export const playerPlays = async (
     if (playerMoveResult.newCardId || playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
         room.remainingTime = SERVER_INITIAL_TIME
         clearInterval(room.timer)
-        room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID))
+        room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID, GameClosedReason.TIMEOUT))
 
         sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
         return;
@@ -303,7 +320,7 @@ export const playerPlays = async (
 
     if (playerMoveResult.movedType == MovedType.MOVED_AND_PLAYERS_NO_CARDS) {
         clearInterval(room.timer)
-        closeGameCallback(room, sio, gameRoomID)
+        closeGameCallback(room, sio, gameRoomID, GameClosedReason.ALL_CARDS_USED)
     }
 }
 

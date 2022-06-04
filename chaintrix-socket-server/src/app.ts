@@ -7,13 +7,13 @@ import {
     PLAYER_WANTS_TO_PLAY_HEDERA, PLAYER_WANTS_TO_PLAY_SOLANA,
     PlayerPlaysPayload,
     PlayerWantsToPlaySolanaPayload,
-    PlayerWantsToPlayHederaPayload
+    PlayerWantsToPlayHederaPayload, BlockchainType
 } from "../../chaintrix-game-mechanics/dist";
 import { getArweaveConfig } from "./Arweave";
 import {
     playerPlays, joinOrCreateRoom
 } from './SocketMethods'
-import { BlockchainType, HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
+import { HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
 
 require('dotenv').config()
 const app = express();
