@@ -204,7 +204,7 @@ const GameBoard = () => {
                     )
                 }
             })}
-        </div >
+        </div>
     )
 }
 

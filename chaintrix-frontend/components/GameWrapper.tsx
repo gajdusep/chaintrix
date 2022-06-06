@@ -34,10 +34,6 @@ const GameWrapper = () => {
     const error = useAppSelector(selectError);
     const blockchainState = useAppSelector(selectBCState);
 
-    // HEDERA VARS
-    const hashConnectService = useAppSelector(selectHederaConnectService)
-    const hederaStatus = useAppSelector(selectHederaStatus)
-
     // TIMER
     const seconds = useAppSelector(selectSeconds)
     useEffect(() => {
@@ -53,42 +49,6 @@ const GameWrapper = () => {
             clearInterval(myInterval);
         };
     });
-
-
-    // TODO: move this to the top level component...
-    useEffect(() => {
-        // TODO: if hedera status == PAIRED..?
-
-        console.log(`hedera status changed: ${hederaStatus}`)
-        // dispatch(setUpHederaEvents())
-        if (!hashConnectService) return;
-        // dispatch(setUpHederaEvents())
-        hashConnectService.hashconnect.foundExtensionEvent.on((data) => {
-            console.log("Found extension", data);
-            dispatch(addAvailableExtension({ data: data }))
-        })
-        hashConnectService.hashconnect.pairingEvent.on((data) => {
-            if (hashConnectService == null) return;
-
-            console.log("Paired with wallet", data);
-            // console.log(`And after paired, the signer is: ${}`)
-            // state.status = HashConnectStatus.PAIRED
-            // setStatus(state.hashConnecteService?, HashConnectStatus.PAIRED)
-
-            dispatch(setPairedData({ pairedWalletData: data.metadata, accountsIds: data.accountIds }))
-
-            // TODO: save data in localstorage
-            // saveDataInLocalstorage(hashconnectWrapper);
-        });
-
-    }, [hederaStatus])
-
-    useEffect((): any => {
-        const runHederaConnectEffect = async () => {
-            dispatch(initHederaAsync())
-        }
-        runHederaConnectEffect()
-    }, []);
 
     const colors = ['R', 'B', 'G', 'Y']
 
@@ -132,7 +92,7 @@ const GameWrapper = () => {
     )
 
     return (
-        <>
+        <div>
             <div style={{
                 position: 'absolute', width: `100%`,
                 // minHeight: `100%`,
@@ -151,7 +111,7 @@ const GameWrapper = () => {
                 <Description />
                 <div style={{ height: 100 }}></div>
             </div>
-        </>
+        </div>
     )
 }
 

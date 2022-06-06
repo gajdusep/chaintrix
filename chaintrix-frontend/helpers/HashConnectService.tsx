@@ -131,44 +131,8 @@ export const initHashconnect = async (hashconnectWrapper: HashConnectService): P
         console.log(`CHANGED TO PAIRED?: ${hashconnectWrapper.status}`)
     }
 
-    setUpEvents(hashconnectWrapper);
+    // setUpEvents(hashconnectWrapper);
     return hashconnectWrapper;
-}
-
-export const setUpEvents = (hashconnectWrapper: HashConnectService) => {
-    hashconnectWrapper.hashconnect.foundExtensionEvent.on((data) => {
-        console.log("Found extension", data);
-        hashconnectWrapper.availableExtensions.push(data);
-    })
-
-    // this.hashconnect.additionalAccountResponseEvent.on((data) => {
-    //     console.log("Received account info", data);
-
-    //     data.accountIds.forEach(id => {
-    //         if(this.saveData.pairedAccounts.indexOf(id) == -1)
-    //             this.saveData.pairedAccounts.push(id);
-    //     })
-    // })
-
-    hashconnectWrapper.hashconnect.pairingEvent.on((data) => {
-        console.log("Paired with wallet", data);
-        setStatus(hashconnectWrapper, HashConnectStatus.PAIRED)
-
-        hashconnectWrapper.savedData.pairedWalletData = data.metadata;
-
-        data.accountIds.forEach(id => {
-            if (hashconnectWrapper.savedData.pairedAccounts.indexOf(id) == -1)
-                hashconnectWrapper.savedData.pairedAccounts.push(id);
-        })
-
-        saveDataInLocalstorage(hashconnectWrapper);
-    });
-
-
-    hashconnectWrapper.hashconnect.transactionEvent.on((data) => {
-        //this will not be common to be used in a dapp
-        console.log("transaction event callback");
-    });
 }
 
 export const clearPairings = (hashconnectWrapper: HashConnectService) => {

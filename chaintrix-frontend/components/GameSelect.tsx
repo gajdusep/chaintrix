@@ -13,9 +13,7 @@ import { Program } from "@project-serum/anchor";
 import { Connection } from '@solana/web3.js';
 import { HEDERA_CONTRACT_ID, LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
 import {
-    selectGameState, selectPlayerID, selectGameRunningState, selectLengths,
-    selectError,
-    GameRunningState
+    selectGameRunningState, GameRunningState, setGameRunningState
 } from '../store/gameStateSlice';
 import { selectSocketClient } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -25,6 +23,19 @@ import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId
 import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectService'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { setBlockchainType } from '../store/blockchainStateSlice';
+import { ToastContainer, toast } from 'react-toastify';
+
+const toastError = () => {
+    toast.error('We are unable to make your bet work.', {
+        position: toast.POSITION.BOTTOM_RIGHT,
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+    });
+}
 
 const GameSelect = () => {
     const dispatch = useAppDispatch();
@@ -64,19 +75,26 @@ const GameSelect = () => {
 
         const player0 = anchor.web3.Keypair.generate();
 
-        const tx = await program.methods.bet(betAccountPDABump, seed)
-            .accounts({
-                baseAccount: betAccountPDA,
-                player: wallet.publicKey,
-                // player: player0.publicKey,
-                systemProgram: anchor.web3.SystemProgram.programId,
-            })
-            .signers([])
-            .rpc({ commitment: 'max' });
-        // .rpc({});
+        dispatch(setGameRunningState(GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION))
 
-        const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
-        console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
+        try {
+            const tx = await program.methods.bet(betAccountPDABump, seed)
+                .accounts({
+                    baseAccount: betAccountPDA,
+                    player: wallet.publicKey,
+                    // player: player0.publicKey,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                })
+                .signers([])
+                .rpc({ commitment: 'confirmed' });
+
+            const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
+            console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
+        } catch (error) {
+            toastError()
+            dispatch(setGameRunningState(GameRunningState.NOT_STARTED))
+            return;
+        }
 
         const payload: PlayerWantsToPlaySolanaPayload = {
             betPDA: betAccountPDA.toBase58(),
@@ -96,6 +114,7 @@ const GameSelect = () => {
         const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
+        dispatch(setGameRunningState(GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION))
         const contractExecuteTx = await new ContractExecuteTransaction({ amount: Hbar.fromTinybars(5555) })
             .setContractId(HEDERA_CONTRACT_ID)
             .setGas(1000000)
@@ -105,6 +124,13 @@ const GameSelect = () => {
         console.log(`signer: ${signer.getAccountId().toString()}`)
         const response = await contractExecuteTx.executeWithSigner(signer);
 
+        if (!response) {
+            toastError()
+            dispatch(setGameRunningState(GameRunningState.NOT_STARTED))
+            return;
+        }
+
+        // TODO: catch error
         console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
         const sec = response.transactionId.validStart?.seconds.low;
         const nano = response.transactionId.validStart?.nanos.low;
@@ -125,6 +151,15 @@ const GameSelect = () => {
         await connectToExtension(hashConnectService);
     }
 
+    if (gameRunningState == GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION) {
+        return (
+            <div>
+                <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
+                <div>Please confirm your bet with your wallet and wait for the confirmation.</div>
+            </div>
+        )
+    }
+
     if (gameRunningState == GameRunningState.BET_CONFIRMED_NOW_WAITING) {
         return (
             <div>
@@ -135,9 +170,9 @@ const GameSelect = () => {
     }
 
     return (
-        <div
-        //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }}
-        >
+        <div>
+            {/* //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }} */}
+
             <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
             <div>Begin with selecting your blockchain:</div>
             <div>

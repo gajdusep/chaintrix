@@ -2,22 +2,16 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppThunk } from './store';
 import { fetchCount } from './counterAPI';
 import {
-    Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
-    getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition, GameState,
-    checkValidity, getNewGameState,
-    getBoardHeight, getBoardWidth, addCardToBoard, mod,
-    getStateAfterMove,
-    updateGameStateAfterDeckCardSelected,
-    PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
-    PlayerPlayedPayload, isFinalPhase,
-    calculateLongestPathForColor, GameFinishedNoBlockchainPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GAME_FINISHED_SOLANA
+    Sizes, calculateSizes, CardNullable, Card, GameState, getNewGameState,
+    getBoardHeight, getBoardWidth, addCardToBoard, mod, getStateAfterMove,
+    updateGameStateAfterDeckCardSelected, PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
+    PlayerPlayedPayload, calculateLongestPathForColor, GameFinishedNoBlockchainPayload,
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { Socket } from 'socket.io-client';
 
 export enum GameRunningState {
     NOT_STARTED,
+    BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION,
     BET_CONFIRMED_NOW_WAITING,
     RUNNING,
     FINISHED_AND_WAITING_FOR_FINALIZATION, // TODO: complete this running state!

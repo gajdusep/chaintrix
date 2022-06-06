@@ -37,7 +37,8 @@ const MovePhaseBanner = () => {
 
     return (
         <div style={{ textAlign: 'center', padding: 10, }}>
-            <b>{infoWho}</b>{info}
+            <b>{infoWho}</b>
+            <div>{info}</div>
         </div>
     )
 }
