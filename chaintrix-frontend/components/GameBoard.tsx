@@ -74,55 +74,51 @@ const GameBoard = () => {
         }
     }
 
-    const canPlaceFieldType = (tileFieldType: BoardFieldType): boolean => {
+    const cannotPlaceFieldType = (tileFieldType: BoardFieldType): boolean => {
         return tileFieldType == BoardFieldType.GUARDED || tileFieldType == BoardFieldType.UNREACHABLE || tileFieldType == BoardFieldType.CARD
     }
 
-    const eventDrag = (e: DraggableEvent, data: DraggableData, index: number) => {
-        // if (!board) return;
-        playerTilesMoving[index] = true;
-        // setControlledPosition({ x: data.x, y: data.y })
+    const canPlace = (x: number, xx: number, y: number, yy: number, cardIndex: number, boardIndex: number): boolean => {
+        return Math.abs(x - xx) < sizes.maxDist && Math.abs(y - yy) < sizes.maxDist &&
+            !cannotPlaceFieldType(gameState.board.boardFieldsTypes[hexPositions[boardIndex].ijPosition.x][hexPositions[boardIndex].ijPosition.y]) &&
+            playersCardsView[cardIndex] != null &&
+            getValidityCheck(playersCardsView[cardIndex]!, hexPositions[boardIndex].ijPosition.x, hexPositions[boardIndex].ijPosition.y)
+    }
+
+    const eventDrag = (e: DraggableEvent, data: DraggableData, cardIndex: number) => {
+        playerTilesMoving[cardIndex] = true;
         const translatedData = translateDraggableData(data)
         setTileHovered(null)
         for (let i = 0; i < hexPositions.length; i++) {
             const element = hexPositions[i].xyPosition;
             const x = translatedData.x
             const y = translatedData.y
-            if (Math.abs(x - element.x) < sizes.maxDist && Math.abs(y - element.y) < sizes.maxDist) {
-                const tileFieldType = gameState.board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
-                if (canPlaceFieldType(tileFieldType)) return;
-
-                const cardToAdd = playersCardsView[index]
-                if (cardToAdd == null) return;
-                if (!getValidityCheck(cardToAdd, hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)) return;
+            if (canPlace(x, element.x, y, element.y, cardIndex, i)) {
                 setTileHovered(hexPositions[i].ijPosition)
-                return;
             }
         }
     };
 
-    const eventStop = (e: DraggableEvent, data: DraggableData, index: number) => {
+    const eventStop = (e: DraggableEvent, data: DraggableData, cardIndex: number) => {
         setTileHovered(null)
         const translatedData = translateDraggableData(data)
-        if (!playerTilesMoving[index]) {
-            dispatch(rotateCardInCardView({ cardIndex: index }))
+        if (!playerTilesMoving[cardIndex]) {
+            dispatch(rotateCardInCardView({ cardIndex: cardIndex }))
             return;
         }
 
-        playerTilesMoving[index] = false;
+        playerTilesMoving[cardIndex] = false;
         for (let i = 0; i < hexPositions.length; i++) {
             const element = hexPositions[i].xyPosition;
             const x = translatedData.x
             const y = translatedData.y
-            if (Math.abs(x - element.x) < sizes.maxDist && Math.abs(y - element.y) < sizes.maxDist) {
-                const tileFieldType = gameState.board.boardFieldsTypes[hexPositions[i].ijPosition.x][hexPositions[i].ijPosition.y]
-                if (canPlaceFieldType(tileFieldType)) return;
-
-                const cardToAdd = playersCardsView[index]
-                if (cardToAdd == null) return;
-                if (!getValidityCheck(cardToAdd, hexPositions[i].ijPosition.x, hexPositions[i].ijPosition.y)) return;
-
-                dispatch(addCardToBoardSocket({ socketClient: socketClient, card: cardToAdd, x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y }))
+            if (canPlace(x, element.x, y, element.y, cardIndex, i)) {
+                dispatch(addCardToBoardSocket({
+                    socketClient: socketClient,
+                    card: playersCardsView[cardIndex]!,
+                    x: hexPositions[i].ijPosition.x, y: hexPositions[i].ijPosition.y
+                }))
+                return;
             }
         }
     };
@@ -138,6 +134,8 @@ const GameBoard = () => {
         'G': styles.greenPlayer,
         'Y': styles.yellowPlayer,
     }
+
+    // TODO: if the game is finished, forbid moving (if someone disables overlay element)
 
     return (
         <div
@@ -162,7 +160,6 @@ const GameBoard = () => {
                             highlighted={isHighlighted(i, j)}
                             boardFieldType={gameState.board.boardFieldsTypes[i][j]}
                         />
-                        {/* <p style={{ zIndex: 1000, position: 'absolute', left: `10px`, color: 'white' }}>Another div - obligatory svg</p> */}
                     </div>
                 })
             })}

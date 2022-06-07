@@ -18,7 +18,9 @@ import {
     BlockchainType,
     GAME_FINISHED_AND_WAITING_FOR_FINALIZATION,
     GameFinishedGenericPayload,
-    GameClosedReason
+    GameClosedReason,
+    mod,
+    calculateLongestPathForColor
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
@@ -262,13 +264,23 @@ const closeGameHederaSocket = async (
 }
 
 const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID: string, gameClosedReason: GameClosedReason) => {
-    // TODO: wasTimeout implement logic - winner index automatically
-    // TODO: winner index calculated from the game room data
-    const winnerIndex = 0
+    let winnerIndex = 0
+    if (gameClosedReason == GameClosedReason.TIMEOUT) {
+        winnerIndex = mod(room.gameState.currentlyMovingPlayer + 1, 2)
+    }
+    else if (gameClosedReason == GameClosedReason.ALL_CARDS_USED) {
+        const player0Length = calculateLongestPathForColor(room.gameState.board, room.gameState.playersStates[0].color)
+        const player1Length = calculateLongestPathForColor(room.gameState.board, room.gameState.playersStates[1].color)
+        // TODO: draw
+
+        if (player0Length == player1Length) {
+
+        } else {
+            winnerIndex = player0Length > player1Length ? 0 : 1;
+        }
+    }
 
     console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
-    // TODO: !!! emit to the room, that the game is over and it's closing the game also on the blockchains
-
     switch (room.blockchainType) {
         case BlockchainType.NO_BLOCKCHAIN:
             await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID, gameClosedReason)
@@ -308,13 +320,13 @@ export const playerPlays = async (
     }
     room.gameState.moves.push(move)
 
+    sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
+
     // game is not over yet
     if (playerMoveResult.newCardId || playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
         room.remainingTime = SERVER_INITIAL_TIME
         clearInterval(room.timer)
         room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID, GameClosedReason.TIMEOUT))
-
-        sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
         return;
     }
 

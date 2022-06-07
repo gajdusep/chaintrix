@@ -36,6 +36,11 @@ a {
     border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
 .select-wrapper {
     z-index: 100;
     width: 500px;
@@ -45,4 +50,46 @@ a {
     justify-content: center;
     align-items: center;
     justify-items: center;
+    position: relative;
+}
+
+.game-board-wrapper {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: center;
+}
+
+.parallax-wrapper {
+    position: absolute;
+    width: 100%;
+    top: 0px;
+    left: 0px;
+    right: 0px;
+    margin: 0px;
+    bottom: auto;
+    overflow-x: clip;
+}
+
+.finished-wrapper {
+    z-index: 100000000;
+    background-color: rgba(255, 255, 255, 0.7);
+    position: fixed;
+    display: flex;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.inner-finished-wrapper {
+    width: 500px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
