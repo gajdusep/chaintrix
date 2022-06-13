@@ -14,16 +14,16 @@ const GameTileSpace = (
     let emptyFieldImg = ''
     switch (props.boardFieldType) {
         case BoardFieldType.FREE:
-            emptyFieldImg = '/Tile_green.svg'
+            emptyFieldImg = '/Tile_free.svg'
             break;
         case BoardFieldType.GUARDED:
-            emptyFieldImg = '/Tile_red.svg'
+            emptyFieldImg = '/Tile_guarded.svg'
             break;
         case BoardFieldType.OBLIGATORY:
-            emptyFieldImg = '/Tile_grey.svg'
+            emptyFieldImg = '/Tile_obligatory.svg'
             break;
         case BoardFieldType.UNREACHABLE:
-            emptyFieldImg = '/Tile_black.svg'
+            emptyFieldImg = '/Tile_unreachable.svg'
             break;
         default:
             emptyFieldImg = '/Nothing.svg'
@@ -32,7 +32,7 @@ const GameTileSpace = (
     if (props.highlighted) {
         return <img className='dont-drag-image'
             draggable='false'
-            src={`/emptyTiles/Tile_empty.svg`} width={props.width} height={props.height} />
+            src={`/emptyTiles/Tile_highlighted.svg`} width={props.width} height={props.height} />
     }
 
     if (!props.card) {
@@ -49,13 +49,15 @@ const GameTileSpace = (
             draggable='false'
             style={{ transform: `rotate(${(props.card.orientation % 6) * 60}deg)` }}
         />
-        <p style={{
+        {/* <p style={{
             position: 'absolute', color: 'black',
             padding: 0, margin: 0,
             marginTop: -props.height / 2 - 20,
             marginLeft: props.width / 2 - 20,
             backgroundColor: 'pink'
-        }}>{props.card.cardID}, {props.card.orientation}</p>
+        }}>
+            {props.card.cardID}, {props.card.orientation}
+        </p> */}
     </div>
 }
 

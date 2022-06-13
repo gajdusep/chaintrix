@@ -3,9 +3,9 @@ import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 
 import { useEffect, useState } from 'react';
 import GameTileSpace from './GameTileSpace'
 import {
-    BoardFieldType, getTilePosition, getHexPositions, calculatePlayersTilesPositions,
+    BoardFieldType, getHexPositions, getCardViewPositions,
     Coords, Card, HexPosition, checkValidityWithMovePhase,
-    getObligatoryPlayersCards,
+    getObligatoryPlayersCards, getHexPositionFromIndeces,
     isFinalPhase
 } from '../../chaintrix-game-mechanics/dist/index.js';
 // } from 'chaintrix-game-mechanics';
@@ -35,7 +35,7 @@ const GameBoard = () => {
     const [hexPositions, setHexPositions] = useState<Array<HexPosition>>(() => getHexPositions(gameState.board, sizes))
     const [playerTilesMoving, setPlayerTilesMoving] = React.useState(Array(6).fill(false));
     const containerRef = React.useRef(null)
-    const [controlledPositions, setControlledPositions] = useState<Array<Coords>>(() => calculatePlayersTilesPositions(sizes));
+    const [cardViewPositions, setCardViewPositions] = useState<Array<Coords>>(() => getCardViewPositions(sizes));
     const [cachedValidityChecks, setCachedValidityChecks] = useState<ValidityChecks>({});
 
     const getValidityCheck = (card: Card, posX: number, posY: number) => {
@@ -64,7 +64,7 @@ const GameBoard = () => {
 
     useEffect(() => {
         setHexPositions(getHexPositions(gameState.board, sizes))
-        setControlledPositions(calculatePlayersTilesPositions(sizes));
+        setCardViewPositions(getCardViewPositions(sizes));
     }, [sizes])
 
     const translateDraggableData = (data: DraggableData): Coords => {
@@ -85,10 +85,17 @@ const GameBoard = () => {
             getValidityCheck(playersCardsView[cardIndex]!, hexPositions[boardIndex].ijPosition.x, hexPositions[boardIndex].ijPosition.y)
     }
 
+    const setTileMovingHelper = (index: number, moving: boolean) => {
+        let items = [...playerTilesMoving]
+        items[index] = moving
+        setPlayerTilesMoving(items)
+    }
+
     const eventDrag = (e: DraggableEvent, data: DraggableData, cardIndex: number) => {
-        playerTilesMoving[cardIndex] = true;
+        setTileMovingHelper(cardIndex, true);
         const translatedData = translateDraggableData(data)
         setTileHovered(null)
+
         for (let i = 0; i < hexPositions.length; i++) {
             const element = hexPositions[i].xyPosition;
             const x = translatedData.x
@@ -107,7 +114,7 @@ const GameBoard = () => {
             return;
         }
 
-        playerTilesMoving[cardIndex] = false;
+        setTileMovingHelper(cardIndex, false);
         for (let i = 0; i < hexPositions.length; i++) {
             const element = hexPositions[i].xyPosition;
             const x = translatedData.x
@@ -151,7 +158,11 @@ const GameBoard = () => {
                 return object.map((object2, j) => {
                     return <div key={`${i}-${j}`} className={styles.hex}
                         draggable='false'
-                        style={{ top: getTilePosition(i, j, gameState.board.parity, sizes).x, left: getTilePosition(i, j, gameState.board.parity, sizes).y }}>
+                        style={{
+                            top: getHexPositionFromIndeces(i, j, gameState.board.parity, sizes).x,
+                            left: getHexPositionFromIndeces(i, j, gameState.board.parity, sizes).y
+                        }}
+                    >
                         {/* <img className='dont-drag-image'
                             draggable='false'
                             src={`/emptyTiles/Tile_obligatory_border.svg`} width={sizes.svgWidth} height={sizes.svgHeight}
@@ -164,10 +175,14 @@ const GameBoard = () => {
                 })
             })}
             <div className={styles.currentPlayersCardsWrapper + " " + classByColorMapping[gameState.playersStates[playerID].color]}
-                style={{ height: `${sizes.size * 2}px` }}
+                // style={{ height: `${sizes.size * 2}px` }}
+                style={{ height: `${sizes.cardViewHeight}px` }}
             />
             <div className={styles.currentPlayerCardsOverdiv}
-                style={{ visibility: isCurrentlyPlaying ? 'hidden' : 'visible', height: `${sizes.size * 2}px` }} />
+                style={{
+                    visibility: isCurrentlyPlaying ? 'hidden' : 'visible',
+                    height: `${sizes.cardViewHeight}px`
+                }} />
             {playersCardsView.map((element, index) => {
                 return element != null && <Draggable
                     key={index}
@@ -175,10 +190,13 @@ const GameBoard = () => {
                     onDrag={(e, data) => { eventDrag(e, data, index) }}
                     onStop={(e, data) => { eventStop(e, data, index) }}
                     // nodeRef={nodeRef}
-                    position={controlledPositions[index]}
+                    position={cardViewPositions[index]}
                 >
                     <div style={{ zIndex: 100000, position: 'absolute', cursor: 'pointer' }}>
-                        <GameTileSpace card={element} width={sizes.svgWidth} height={sizes.svgHeight}
+                        <GameTileSpace card={element}
+                            width={!playerTilesMoving[index] ? sizes.cardViewTileWidth : sizes.svgWidth}
+                            height={!playerTilesMoving[index] ? sizes.cardViewTileHeight : sizes.svgHeight}
+                            // width={sizes.svgWidth} height={sizes.svgHeight}
                             highlighted={false} boardFieldType={BoardFieldType.CARD}
                         />
                     </div>
@@ -189,11 +207,16 @@ const GameBoard = () => {
                     return (
                         <div className={styles.hex}
                             draggable='false'
-                            style={{ top: calculatePlayersTilesPositions(sizes)[index].y, left: calculatePlayersTilesPositions(sizes)[index].x }}>
+                            // style={{ top: getCardViewPositions(sizes)[index].y, left: getCardViewPositions(sizes)[index].x }}
+                            style={{ top: cardViewPositions[index].y, left: cardViewPositions[index].x }}
+                        >
                             <div>
                                 <img className='dont-drag-image'
                                     draggable='false'
-                                    src={`/emptyTiles/Tile_obligatory_border.svg`} width={sizes.svgWidth} height={sizes.svgHeight}
+                                    src={`/emptyTiles/Tile_obligatory_border.svg`}
+                                    // width={sizes.svgWidth} height={sizes.svgHeight}
+                                    width={sizes.cardViewTileWidth}
+                                    height={sizes.cardViewTileHeight}
                                     style={{ position: 'absolute' }}
                                 />
                             </div>

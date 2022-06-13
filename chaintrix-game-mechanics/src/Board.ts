@@ -1,5 +1,5 @@
 import { Card, CardNullable, Coords } from "./CustomTypes";
-import { CARDS } from "./Constants";
+import { CARDS, INIT_BOARD_HEIGHT, INIT_BOARD_WIDTH } from "./Constants";
 import {
     flipParity, mod, getRotatedCard, create2DArray
 } from "./methods";
@@ -16,12 +16,9 @@ export interface Board {
 }
 
 export const getNewBoard = (): Board => {
-    const initHeight = 3;
-    const initWidth = 3;
-
     const board = {
         parity: 0,
-        boardCards: create2DArray<CardNullable>(null, initHeight, initWidth),
+        boardCards: create2DArray<CardNullable>(null, INIT_BOARD_HEIGHT, INIT_BOARD_WIDTH),
         boardFieldsTypes: []
     }
     const newBoardFieldTypes = calculateBoardFieldsTypes(board, false)

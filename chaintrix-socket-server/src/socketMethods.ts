@@ -26,6 +26,7 @@ import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMeth
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
 import { toSolidityAddress } from "@hashgraph/sdk/lib/EntityIdHelper";
 import { json } from "stream/consumers";
+import { INITIAL_TIME, SERVER_INITIAL_TIME } from "./Constants";
 // } from 'chaintrix-game-mechanics';
 
 type RoomObjects = { [key: string]: GameRoom }
@@ -78,8 +79,6 @@ const getJoiningPlayerHedera = async (
     }
 }
 
-const INITIAL_TIME = 10
-const SERVER_INITIAL_TIME = INITIAL_TIME + 1
 const getNewTimer = (room: GameRoom, callback: any) => {
 
     const timer = setInterval(() => {

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.7.0 <0.9.0;
 
+// TODO: public vs external
+
 contract ChaintrixContract {
     struct Bet {
         address opponentAddress;
@@ -78,7 +80,7 @@ contract ChaintrixContract {
     }
 
     // write to acceptedBets
-    function acceptBets(address player0, address player1) public isServer {
+    function acceptBets(address player0, address player1) external isServer {
         require(player0 != player1, "players cannot be the same");
         require(isAddressNotEmpty(player0));
         require(isAddressNotEmpty(player1));
@@ -104,7 +106,7 @@ contract ChaintrixContract {
         address payable player1,
         address payable winner,
         address gameFileId
-    ) public isServer {
+    ) external isServer {
         require(player0 != player1, "players cannot be the same");
         // TODO: check that in playerBets, the keys of player0 and player1 fit well
         require(
@@ -124,12 +126,12 @@ contract ChaintrixContract {
         games.push(Game(gameFileId));
     }
 
-    function getOneGame() public view returns (address) {
+    function getOneGame() external view returns (address) {
         return (games[0].fileID);
     }
 
     function getAllGames()
-        public
+        external
         view
         returns (address[] memory, uint256[] memory)
     {
@@ -148,11 +150,7 @@ contract ChaintrixContract {
     // TODO: write a function that will allow server to close bets for single player
     // (this method will be a check that no hbar will be stuck in the contract)
 
-    function getAll()
-        public
-        view
-        returns (address[] memory)
-    {
+    function getAll() external view returns (address[] memory) {
         address[] memory addrs = new address[](games.length);
 
         for (uint256 i = 0; i < games.length; i++) {

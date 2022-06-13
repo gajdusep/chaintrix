@@ -86,11 +86,12 @@ const GameSelect = () => {
                     systemProgram: anchor.web3.SystemProgram.programId,
                 })
                 .signers([])
-                .rpc({ commitment: 'confirmed' });
+                .rpc({ commitment: 'finalized' });
 
             const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
             console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
         } catch (error) {
+            console.log(error)
             toastError()
             dispatch(setGameRunningState(GameRunningState.NOT_STARTED))
             return;

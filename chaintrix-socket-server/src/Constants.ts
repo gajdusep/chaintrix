@@ -6,3 +6,5 @@ export const LOCALHOST_SOLANA_ENDPOINT = 'http://127.0.0.1:8899'
 
 export const HEDERA_CONTRACT_ID = new ContractId(34819868)
 
+export const INITIAL_TIME = 50
+export const SERVER_INITIAL_TIME = INITIAL_TIME + 1

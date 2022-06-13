@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppThunk, store } from './store';
 import socketIOClient, { Socket } from "socket.io-client";
-import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
+import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT, PRODUCTION_SOCKET_ENDPOINT } from '../helpers/Constants';
 import { GameFinishedGenericPayload, GameFinishedHederaPayload, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload, GameStartedPayload, GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, GAME_FINISHED_HEDERA, GAME_FINISHED_NO_BLOCKCHAIN, GAME_FINISHED_SOLANA, GAME_STARTED, PlayerPlayedPayload, PLAYER_PLAYED, SOCKET_CREATED_ROOM_AND_WAITING, SOCKET_ERROR } from '../../chaintrix-game-mechanics/dist';
 import { GameRunningState, onPlayerPlayedSocketEvent, setGameFinishedNoBlockchain, setGameRunningState, setGameState, setPlayerID, setSeconds, setSocketError } from './gameStateSlice';
 import { setGameResult, setHederaResult, setSolanaResult } from './blockchainStateSlice';
@@ -11,6 +11,8 @@ export interface SocketState {
 }
 
 const socketClient = socketIOClient(LOCALHOST_SOCKET_ENDPOINT);
+// const socketClient = socketIOClient(PRODUCTION_SOCKET_ENDPOINT);
+
 socketClient.on(PLAYER_PLAYED, (payload: PlayerPlayedPayload) => {
     console.log(`player played!!!: ${JSON.stringify(payload)}`)
     store.dispatch(onPlayerPlayedSocketEvent(payload))
