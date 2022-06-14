@@ -4,7 +4,7 @@ import {
     flipParity, mod, getRotatedCard, create2DArray
 } from "./methods";
 import { BoardFieldType } from "./CustomTypes";
-import { MovePhase } from "./Game";
+import { Move, MovePhase } from "./Game";
 
 export type BoardFieldType2DArray = Array<Array<BoardFieldType>>;
 export type BoardCards2DArray = Array<Array<CardNullable>>;
@@ -24,6 +24,15 @@ export const getNewBoard = (): Board => {
     const newBoardFieldTypes = calculateBoardFieldsTypes(board, false)
     newBoardFieldTypes[1][1] = BoardFieldType.FREE
     return addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
+}
+
+export const getBoardFromMoves = (moves: Array<Move>): Board => {
+    let board = getNewBoard()
+    for (let i = 0; i < moves.length; i++) {
+        const move = moves[i];
+        board = addCardToBoard(board, move.playedCard, move.x, move.y)
+    }
+    return board
 }
 
 export const addNewBoardFieldTypesToBoard = (board: Board, newBoardFieldTypes: BoardFieldType2DArray): Board => {

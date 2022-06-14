@@ -42,6 +42,24 @@ export const serializeMoves = (moves: Array<Move>): string => {
     return JSON.stringify(moves.map(item => serializeMove(item)));
 }
 
+export const deserializeMoves = (s: string): Array<Move> => {
+    const parsed = JSON.parse(s)
+    const moves: Array<Move> = []
+    for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i]
+        moves.push({
+            playedCard: {
+                cardID: item.p.id,
+                orientation: item.p.or,
+            },
+            x: item.x,
+            y: item.y,
+            newCardID: item.n
+        })
+    }
+    return moves;
+}
+
 export interface GameState {
     playersStates: Array<PlayerState>
     moves: Array<Move>
