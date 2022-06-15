@@ -53,6 +53,21 @@ export const getBoardWidth = (board: Board): number => {
     return board.boardCards[0].length;
 }
 
+export const calculateSimplifiedFieldsTypes = (board: Board, finalPhase: boolean): BoardFieldType2DArray => {
+    const height = getBoardHeight(board)
+    const width = getBoardWidth(board)
+
+    const boardFieldsTypes = create2DArray<BoardFieldType>(BoardFieldType.UNREACHABLE, height, width)
+    // find all cards
+    for (let i = 0; i < height; i++) {
+        for (let j = 0; j < width; j++) {
+            if (board.boardCards[i][j] == null) continue;
+            boardFieldsTypes[i][j] = BoardFieldType.CARD
+        }
+    }
+    return boardFieldsTypes;
+}
+
 export const calculateBoardFieldsTypes = (board: Board, finalPhase: boolean): BoardFieldType2DArray => {
     const height = getBoardHeight(board)
     const width = getBoardWidth(board)
@@ -416,4 +431,18 @@ export const getNumberOfObligatoryCards = (obligatoryCards: Array<Array<Coords>>
         if (obligatoryCards[i].length > 0) obligatoryCardsNo += 1;
     }
     return obligatoryCardsNo;
+}
+
+export const cutBorders = (board: Board): Board => {
+    board.boardCards.splice(0, 1)
+    board.boardCards.splice(board.boardCards.length - 1, 1)
+    for (let i = 0; i < board.boardCards.length; i++) {
+        const row = board.boardCards[i];
+        row.splice(0, 1)
+        row.splice(row.length - 1, 1)
+    }
+    board.parity = mod(board.parity + 1, 2)
+    const newBoardFieldTypes = calculateSimplifiedFieldsTypes(board, false)
+    const boardResult = addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
+    return boardResult;
 }

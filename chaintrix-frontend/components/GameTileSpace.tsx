@@ -5,7 +5,8 @@ type GameTileSpaceProps = {
     height: number,
     highlighted: boolean,
     card: CardNullable,
-    boardFieldType: BoardFieldType
+    boardFieldType: BoardFieldType,
+    showOnlyCards?: boolean
 }
 
 const GameTileSpace = (
@@ -37,6 +38,9 @@ const GameTileSpace = (
         </div>
     }
 
+    if (props.showOnlyCards != null && props.showOnlyCards) {
+        return <></>;
+    }
 
 
     let emptyFieldImg = ''

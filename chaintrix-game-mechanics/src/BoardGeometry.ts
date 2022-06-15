@@ -2,9 +2,13 @@ import { Coords, HexPosition } from "./CustomTypes";
 import { Board, getBoardHeight, getBoardWidth } from "./Board";
 
 export type Sizes = {
+    /** distance from the center to any vertex */
     size: number,
+    /** vertical distance between two adjacent hexagons' centers */
     h: number,
+    /** horizontal distance between two adjacent hexagons' centers */
     w: number,
+    /** maximal distance to take into account in drag and drop feature */
     maxDist: number,
     svgWidth: number,
     svgHeight: number,
@@ -16,16 +20,27 @@ export type Sizes = {
 }
 
 export const calculateSizes = (
-    tilesPerWidth: number, tilesPerHeight: number, boardWidth: number, boardHeight: number, cardViewHeight: number
+    tilesPerWidth: number, tilesPerHeight: number,
+    boardWidth: number, boardHeight: number,
+    cardViewHeight: number, includeCardView: boolean = true
 ): Sizes => {
-    const thWidth = boardWidth / 6
+    const cardViewSize = boardWidth / 6
+    const maxDist = 20
 
-    const potentialHeightSize = (boardHeight - thWidth) / ((1.5 + tilesPerHeight) * 3 / 2)
-    const potentialWidthSize = boardWidth / (1.5 + tilesPerWidth * Math.sqrt(3))
-    console.log(`${potentialWidthSize}, ${potentialHeightSize}`)
-    const size = Math.min(potentialHeightSize, potentialWidthSize)
+    // potential height calculations
+    let boardHeightToCalculateSize = includeCardView ? boardHeight - cardViewSize : boardHeight;
+    boardHeightToCalculateSize -= maxDist
+    const sizeMaybeByHeight = 2 * boardHeightToCalculateSize / (3 * (tilesPerHeight - 1) + 4)
 
-    return {
+    // potential width calculations
+    const boardWidthToCalculateSize = boardWidth - maxDist
+    const tileWidthMaybe = boardWidthToCalculateSize / (tilesPerWidth + 0.5)
+    const sizeMaybeByWidth = tileWidthMaybe / Math.sqrt(3)
+
+    console.log(`by height: ${sizeMaybeByHeight}, by width ${sizeMaybeByWidth}`)
+    const size = Math.min(sizeMaybeByHeight, sizeMaybeByWidth)
+
+    const sizes: Sizes = {
         size: size,
         h: 2 * size * 3 / 4,
         w: Math.sqrt(3) * size,
@@ -34,10 +49,11 @@ export const calculateSizes = (
         svgWidth: size * 2,
         boardWidth: boardWidth,
         boardHeight: boardHeight,
-        cardViewHeight: thWidth,
-        cardViewTileHeight: thWidth,
-        cardViewTileWidth: thWidth
+        cardViewHeight: cardViewSize,
+        cardViewTileHeight: cardViewSize,
+        cardViewTileWidth: cardViewSize
     }
+    return sizes
 }
 
 export const getCardViewPositions = (sizes: Sizes): Array<Coords> => {

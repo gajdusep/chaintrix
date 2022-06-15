@@ -103,8 +103,6 @@ export const gameStateSlice = createSlice({
             state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT)
         },
         onPlayerPlayedSocketEvent: (state, action: PayloadAction<PlayerPlayedPayload>) => {
-            console.log(`in game state slice: ${JSON.stringify(action.payload)}`)
-
             if (!isCardInBoard(state.gameState.board, action.payload.playedCard.cardID)) {
                 state.gameState.board = addCardToBoard(state.gameState.board, action.payload.playedCard, action.payload.x, action.payload.y)
                 state.sizes = calculateSizes(getBoardWidth(state.gameState.board), getBoardHeight(state.gameState.board), INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT)

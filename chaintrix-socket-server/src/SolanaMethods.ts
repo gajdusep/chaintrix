@@ -70,7 +70,7 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
     return acceptedBetsPDA;
 }
 
-export const solanaCloseGame = async (room: GameRoom) => {
+export const solanaCloseGame = async (room: GameRoom, winnerIndex: number) => {
     // upload game to arweave
     const arweaveConfig = getArweaveConfig()
     const arweaveFileID = await uploadGameMovesToArweave(
@@ -100,7 +100,7 @@ export const solanaCloseGame = async (room: GameRoom) => {
     console.log(`in solana close: ${acceptedBetAccount}, ${player0Address}, ${player1Address}, ${localWallet.publicKey.toBase58()}`)
 
     try {
-        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, 1, arweaveFileID)
+        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, winnerIndex, arweaveFileID)
             .accounts({
                 acceptedBetsAccount: acceptedBetAccount,
                 player0: player0Address,

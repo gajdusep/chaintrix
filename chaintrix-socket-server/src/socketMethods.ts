@@ -223,7 +223,7 @@ const closeGameSolanaSocket = async (
     sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
 
     // finalize solana transactions
-    await solanaCloseGame(room)
+    await solanaCloseGame(room, winnerIndex)
     const responsePayload: GameFinishedSolanaPayload = {
         winnerIndex: winnerIndex,
         gameClosedReason: gameClosedReason,

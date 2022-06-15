@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Board, calculateSizes, deserializeMoves, getBoardFromMoves, getBoardHeight, getBoardWidth, getHexPositionFromIndeces, Sizes } from '../../chaintrix-game-mechanics/dist';
+import { Board, calculateSizes, cutBorders, deserializeMoves, getBoardFromMoves, getBoardHeight, getBoardWidth, getHexPositionFromIndeces, Sizes } from '../../chaintrix-game-mechanics/dist';
 import GameTileSpace from './GameTileSpace';
 import styles from '../components/GameBoard.module.css'
 
@@ -21,17 +21,19 @@ const ClosedGameView = (props: ClosedGameProps) => {
             try {
                 let response = await fetch(`https://arweave.net/${props.arweave}`)
                 response = await response.json()
-                console.log(`fetched ${JSON.stringify(response)}`)
+                // console.log(`fetched ${JSON.stringify(response)}`)
 
-                const newBoard = getBoardFromMoves(deserializeMoves(JSON.stringify(response)))
-                console.log(newBoard.boardCards)
+                let newBoard = getBoardFromMoves(deserializeMoves(JSON.stringify(response)))
+                newBoard = cutBorders(newBoard)
                 const newSizes: Sizes = calculateSizes(
                     getBoardWidth(newBoard), getBoardHeight(newBoard),
-                    WIDTH, HEIGHT, 0
+                    WIDTH, HEIGHT, 0, false
                 )
                 setBoard(newBoard)
                 setSizes(newSizes)
             } catch (error) {
+                // TODO: warn user that this game is invalid...
+                console.log(error)
             }
         }
 
@@ -71,6 +73,7 @@ const ClosedGameView = (props: ClosedGameProps) => {
                             >
                                 <GameTileSpace card={object2} width={sizes.svgWidth} height={sizes.svgHeight}
                                     highlighted={false} boardFieldType={board.boardFieldsTypes[i][j]}
+                                    showOnlyCards={true}
                                 />
                             </div>
                         })

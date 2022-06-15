@@ -54,9 +54,7 @@ const GameBoard = () => {
         return isValid;
     }
 
-
     useEffect(() => {
-        console.log(`calculating obligatory cards, reset validity checks`)
         setCachedValidityChecks({})
         const finalPhase = isFinalPhase(gameState)
         setPlayersObligatoryCardsView(getObligatoryPlayersCards(gameState.board, playersCardsView, finalPhase))
