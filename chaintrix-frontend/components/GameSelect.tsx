@@ -24,20 +24,11 @@ import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectSer
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { setBlockchainType } from '../store/blockchainStateSlice';
 import { ToastContainer, toast } from 'react-toastify';
+import { toastError } from '../helpers/ToastHelper';
 
-const toastError = () => {
-    toast.error('We are unable to make your bet work.', {
-        position: toast.POSITION.BOTTOM_RIGHT,
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-    });
-}
-
+const CANNOT_BET_ERROR_MESSAGE = 'We are unable to make your bet work.'
 const GameSelect = () => {
+
     const dispatch = useAppDispatch();
     const socketClient = useAppSelector(selectSocketClient);
     const gameRunningState = useAppSelector(selectGameRunningState)
@@ -92,7 +83,7 @@ const GameSelect = () => {
             console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
         } catch (error) {
             console.log(error)
-            toastError()
+            toastError(CANNOT_BET_ERROR_MESSAGE)
             dispatch(setGameRunningState(GameRunningState.NOT_STARTED))
             return;
         }
@@ -126,7 +117,7 @@ const GameSelect = () => {
         const response = await contractExecuteTx.executeWithSigner(signer);
 
         if (!response) {
-            toastError()
+            toastError(CANNOT_BET_ERROR_MESSAGE)
             dispatch(setGameRunningState(GameRunningState.NOT_STARTED))
             return;
         }
@@ -154,18 +145,20 @@ const GameSelect = () => {
 
     if (gameRunningState == GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION) {
         return (
-            <div>
+            <div className='flex-column center-items'>
                 <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
-                <div>Please confirm your bet with your wallet and wait for the confirmation.</div>
+                <div>Please confirm your bet with your wallet and wait for the confirmation. Don't leave this page!</div>
+                <div className='lds-ring lds-ring-blue-color'><div></div><div></div><div></div><div></div></div>
             </div>
         )
     }
 
     if (gameRunningState == GameRunningState.BET_CONFIRMED_NOW_WAITING) {
         return (
-            <div>
+            <div className='flex-column center-items'>
                 <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
-                <div>Bet confirmed, waiting for oponents</div>
+                <div>Bet confirmed, waiting for oponents. Don't leave this page!</div>
+                <div className='lds-ring lds-ring-red-color'><div></div><div></div><div></div><div></div></div>
             </div>
         )
     }

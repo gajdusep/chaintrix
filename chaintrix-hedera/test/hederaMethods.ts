@@ -105,15 +105,16 @@ export const getOpponentAddress = async (contractId: ContractId, playerAccountId
 
 export const closeGame = async (
     serverClient: Client,
-    winnerId: AccountId,
-    loserId: AccountId,
+    player0Id: AccountId,
+    player1Id: AccountId,
+    winnerIndex: number,
     contractId: ContractId,
     fileId: string
 ): Promise<Status> => {
     const contractParams = new ContractFunctionParameters()
-        .addAddress(winnerId.toSolidityAddress())
-        .addAddress(loserId.toSolidityAddress())
-        .addAddress(winnerId.toSolidityAddress())
+        .addAddress(player0Id.toSolidityAddress())
+        .addAddress(player1Id.toSolidityAddress())
+        .addUint256(winnerIndex)
         .addAddress(fileId);
     const contractExecuteTx = new ContractExecuteTransaction()
         .setContractId(contractId)

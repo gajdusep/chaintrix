@@ -15,6 +15,7 @@ import ErrorComponent from './ErrorComponent';
 import MovePhaseBanner from './MovePhaseBanner';
 import { selectBCState } from '../store/blockchainStateSlice';
 import GameFinished from './GameFinished';
+import { toastError } from '../helpers/ToastHelper';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
@@ -40,11 +41,13 @@ const GameWrapper = () => {
         };
     });
 
-    const colors = ['R', 'B', 'G', 'Y']
+    useEffect(() => {
+        if (error != null) {
+            toastError(error)
+        }
+    }, [error])
 
-    if (error) return (
-        <ErrorComponent />
-    )
+    const colors = ['R', 'B', 'G', 'Y']
 
     const isGameFinished = (): boolean => {
         return gameRunningState == GameRunningState.FINISHED ||

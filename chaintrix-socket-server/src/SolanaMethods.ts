@@ -73,6 +73,7 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
 export const solanaCloseGame = async (room: GameRoom, winnerIndex: number) => {
     // upload game to arweave
     const arweaveConfig = getArweaveConfig()
+    // TODO: TRY CATCH HERE!!!!
     const arweaveFileID = await uploadGameMovesToArweave(
         arweaveConfig, Buffer.from(serializeMoves(room.gameState.moves), 'utf-8')
     )

@@ -14,13 +14,21 @@ contract ChaintrixContract {
     }
 
     uint256 betAmount;
+    uint256 treasuryAmount;
     address payable server;
+    address payable treasury;
     mapping(address => Bet) public playerBets;
     Game[] games;
 
-    constructor(uint256 _betAmount) {
+    constructor(
+        uint256 _betAmount,
+        uint256 _treasuryAmount,
+        address _treasury
+    ) {
         server = payable(msg.sender);
         betAmount = _betAmount;
+        treasuryAmount = _treasuryAmount;
+        treasury = payable(_treasury);
     }
 
     modifier isServer() {
@@ -49,12 +57,12 @@ contract ChaintrixContract {
             playerBets[playerAddress].opponentAddress == address(0);
     }
 
-    function isAddressNotEmpty(address addressToCheck)
+    function isAddressEmpty(address addressToCheck)
         internal
         pure
         returns (bool)
     {
-        return addressToCheck != address(0);
+        return addressToCheck == address(0);
     }
 
     function isOpponentCorrect(address player, address opponent)
@@ -66,6 +74,8 @@ contract ChaintrixContract {
             playerBets[player].isSet == true &&
             playerBets[player].opponentAddress == opponent;
     }
+
+    // TODO: close bet without playing
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
@@ -82,8 +92,8 @@ contract ChaintrixContract {
     // write to acceptedBets
     function acceptBets(address player0, address player1) external isServer {
         require(player0 != player1, "players cannot be the same");
-        require(isAddressNotEmpty(player0));
-        require(isAddressNotEmpty(player1));
+        require(!isAddressEmpty(player0));
+        require(!isAddressEmpty(player1));
         require(playerBets[player0].isSet == true, "player0 has not bet");
         require(playerBets[player1].isSet == true, "player1 has not bet");
         require(
@@ -104,25 +114,38 @@ contract ChaintrixContract {
     function closeGame(
         address payable player0,
         address payable player1,
-        address payable winner,
+        uint256 winnerIndex,
         address gameFileId
     ) external isServer {
         require(player0 != player1, "players cannot be the same");
-        // TODO: check that in playerBets, the keys of player0 and player1 fit well
         require(
-            winner == player0 || winner == player1,
-            "winner is not one of the players"
+            winnerIndex == 0 || winnerIndex == 0 || winnerIndex == 255,
+            "winner index incorrect"
         );
-        require(isAddressNotEmpty(player0));
-        require(isAddressNotEmpty(player1));
+        require(!isAddressEmpty(player0));
+        require(!isAddressEmpty(player1));
         require(isOpponentCorrect(player0, player1));
         require(isOpponentCorrect(player1, player0));
 
         playerBets[player0] = Bet(address(0), false);
         playerBets[player1] = Bet(address(0), false);
 
-        // TODO: check the order of actions
-        winner.transfer(2 * betAmount);
+        uint256 winnerPrice = 2 * betAmount - treasuryAmount;
+
+        if (winnerIndex == 0) {
+            // Player 0 won
+            player0.transfer(winnerPrice);
+            treasury.transfer(treasuryAmount);
+        } else if (winnerIndex == 1) {
+            // Player 1 won
+            player1.transfer(winnerPrice);
+            treasury.transfer(treasuryAmount);
+        } else {
+            // It's a draw
+            player0.transfer(betAmount);
+            player1.transfer(betAmount);
+        }
+
         games.push(Game(gameFileId));
     }
 

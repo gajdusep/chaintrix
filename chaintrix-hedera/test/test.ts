@@ -9,9 +9,14 @@ import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import * as assert from "assert";
 import { getChunks, getFileContents, uploadFileToHederaFS } from "./fileHederaMethods";
 
+const config = getConfig()
+jest.setTimeout(50_000);
+
 // let contractId = ContractId.fromString("0.0.35590667")
 let contractId = null
 const BET_AMOUNT = 5555
+const TREASURY_ACCOUNT = config.player2Id.toSolidityAddress()
+const TREASURY_AMOUNT = 500
 const WRONG_BET_AMOUNT = 100
 const MOCK_ADDRESS = '0000000000000000000000000000000000000000'
 
@@ -22,8 +27,6 @@ const assertHbarDiff = (bigger: Hbar, smaller: Hbar, expected: number) => {
     assert.equal(div, expected)
 }
 
-const config = getConfig()
-jest.setTimeout(50_000);
 
 // it("Can load games", async () => {
 //     const gameFileIds = await getGames(config, contractId)
@@ -33,7 +36,7 @@ jest.setTimeout(50_000);
 
 it("Contract can be deployed", async () => {
     if (contractId == null) {
-        contractId = await deploy(config, BET_AMOUNT)
+        contractId = await deploy(config, BET_AMOUNT, TREASURY_AMOUNT, TREASURY_ACCOUNT)
     }
 
     console.log(`ContractID: ${contractId}`)
@@ -98,7 +101,7 @@ it("Random account cannot close the game", async () => {
     await expect(
         closeGame(
             config.player1Client, // wrong server
-            config.player0Id, config.player1Id, contractId, MOCK_ADDRESS
+            config.player0Id, config.player1Id, 0, contractId, MOCK_ADDRESS
         )
     ).rejects.toThrow('CONTRACT_REVERT_EXECUTED')
 })
@@ -125,15 +128,17 @@ it("Server can close the game", async () => {
     const pl1BalanceBefore = await getPlayerBalance(config.player1Id, config.serverClient)
 
     // close the game part
+    const winnerIndex = 0
     await closeGame(
-        config.serverClient, config.player0Id, config.player1Id, contractId,
+        config.serverClient, config.player0Id, config.player1Id, winnerIndex, contractId,
         fileId.toSolidityAddress()
     )
 
     const pl0BalanceAfter = await getPlayerBalance(config.player0Id, config.serverClient)
     const pl1BalanceAfter = await getPlayerBalance(config.player1Id, config.serverClient)
 
-    assertHbarDiff(pl0BalanceAfter, pl0BalanceBefore, BET_AMOUNT * 2)
+    // TODO: assert treasury balance
+    assertHbarDiff(pl0BalanceAfter, pl0BalanceBefore, BET_AMOUNT * 2 - TREASURY_AMOUNT)
     assert.equal(pl1BalanceBefore.toString(HbarUnit.Tinybar), pl1BalanceAfter.toString(HbarUnit.Tinybar))
     assert.equal(await getHasPlayerPlacedBet(config, contractId, config.player0Id), false)
 
@@ -147,7 +152,11 @@ it("Server can close the game", async () => {
 it("Nobody can close the game that is already closed", async () => {
     await expect(closeGame(
         config.serverClient,
-        config.player0Id, config.player1Id,
+        config.player0Id, config.player1Id, 0,
         contractId, MOCK_ADDRESS
     )).rejects.toThrow('CONTRACT_REVERT_EXECUTED')
 })
+
+
+// TODO: test draw - close game 255
+// TODO: test close bet without playing
