@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-chaintrix_solana = "2Gv4zT6tX8jhkECtsDiSdmUaNxFkZSnrLerS1AzK7uxs"
+chaintrix_solana = "Agi74KZH6XY5fKPycWtg9X5g4RgfPZpNNmKodLCXDA7q"
 
 [registry]
 url = "https://anchor.projectserum.com"

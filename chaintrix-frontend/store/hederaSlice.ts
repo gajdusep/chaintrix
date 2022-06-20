@@ -1,10 +1,8 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RootState, AppThunk } from './store';
-import socketIOClient, { Socket } from "socket.io-client";
-import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOCKET_ENDPOINT, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
+import { RootState, AppThunk, store } from './store';
 import {
     getNewHashConnectService, HashConnectService,
-    initHashconnect, getSavedData, SavedData, HashConnectStatus, setUpEvents
+    SavedData, HashConnectStatus
 } from '../helpers/HashConnectService';
 import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect';
 
@@ -24,6 +22,9 @@ const initialState: HederaState = {
 export const initHederaAsync = createAsyncThunk(
     'hedera/initHederaService',
     async (_, thunkAPI) => {
+
+        console.log(`INIT HEDERA ASYNC`)
+
         // const hashconnectWrapper = (thunkAPI.getState() as RootState).hederaSlice.hashConnecteService
         const hashconnectWrapper = getNewHashConnectService()
 
@@ -42,6 +43,27 @@ export const initHederaAsync = createAsyncThunk(
             pairingString: pairingString,
             pairedAccounts: []
         }
+
+        hashconnectWrapper.hashconnect.foundExtensionEvent.on((data) => {
+            console.log("Found extension", data);
+            store.dispatch(addAvailableExtension({ data: data }))
+        });
+
+        hashconnectWrapper.hashconnect.pairingEvent.on((data) => {
+            console.log("Paired with wallet", data);
+            // console.log(`And after paired, the signer is: ${}`)
+            // state.status = HashConnectStatus.PAIRED
+            // setStatus(state.hashConnecteService?, HashConnectStatus.PAIRED)
+            store.dispatch(setPairedData({ pairedWalletData: data.metadata, accountsIds: data.accountIds }))
+            // TODO: save data in localstorage
+            // saveDataInLocalstorage(hashconnectWrapper);
+        });
+
+        hashconnectWrapper.hashconnect.transactionEvent.on((data) => {
+            //this will not be common to be used in a dapp
+            console.log("transaction event callback");
+        });
+
 
         hashconnectWrapper.hashconnect.findLocalWallets();
         return { 'wrapper': hashconnectWrapper, 'data': savedData }

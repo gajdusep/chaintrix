@@ -1,5 +1,7 @@
 
 id.json
+.env
+arweave-key.json
 
 .anchor
 .DS_Store

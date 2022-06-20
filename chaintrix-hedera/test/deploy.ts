@@ -1,72 +1,31 @@
 
-import { FileCreateTransaction, FileAppendTransaction, ContractCreateTransaction, ContractId } from "@hashgraph/sdk";
+import { FileCreateTransaction, FileAppendTransaction, ContractCreateTransaction, ContractId, ContractFunctionParameters } from "@hashgraph/sdk";
 import * as fs from "fs";
 import { Config } from "./config";
+import { getChunks, uploadFileToHederaFS } from "./fileHederaMethods";
 
-function chunkString(str, length) {
-    return str.match(new RegExp('.{1,' + length + '}', 'g'));
-}
-
-const getChunks = (buf: Buffer, maxBytes) => {
-    const partialResult = chunkString(buf.toString(), maxBytes);
-    const result = []
-    for (let i = 0; i < partialResult.length; i++) {
-        const element = partialResult[i];
-        result.push(Buffer.from(element))
-        // console.log('------------------')
-        // console.log(element)
-    }
-    return result
-}
-
-export const deploy = async (config: Config): Promise<ContractId> => {
+export const deploy = async (
+    config: Config, BET_AMOUNT: number,
+    TREASURY_AMOUNT: number, TREASURY_ACCOUNT: string
+): Promise<ContractId> => {
     // Import the compiled contract bytecode
     const contractBytecode = fs.readFileSync("./sol/chaintrix_sol_ChaintrixContract.bin");
     const serverClient = config.serverClient;
 
     const chunks = getChunks(contractBytecode, 5000);
-
-    // Create a file on Hedera and store the bytecode
-    const fileCreateTx = new FileCreateTransaction()
-        .setContents(chunks[0])
-        .setKeys([config.serverPrivateKey])
-        .freezeWith(config.serverClient);
-    const fileCreateSign = await fileCreateTx.sign(config.serverPrivateKey);
-    const fileCreateSubmit = await fileCreateSign.execute(serverClient);
-    const fileCreateRx = await fileCreateSubmit.getReceipt(serverClient);
-    const bytecodeFileId = fileCreateRx.fileId;
-    console.log(`- The bytecode file ID is: ${bytecodeFileId} \n`);
-
-    for (let i = 1; i < chunks.length; i++) {
-        const chunkToAppend = chunks[i];
-        //Create the transaction
-        const transaction = await new FileAppendTransaction()
-            .setFileId(bytecodeFileId)
-            .setContents(chunkToAppend)
-            // .setMaxTransactionFee(new Hbar(2))
-            .freezeWith(config.serverClient);
-
-        //Sign with the file private key
-        // const signTx = await transaction.sign(fileKey);
-        const signTx = await transaction.sign(config.serverPrivateKey);
-        const txResponse = await signTx.execute(serverClient);
-        const receipt = await txResponse.getReceipt(serverClient);
-        const transactionStatus = receipt.status;
-        console.log("The transaction consensus status is " + transactionStatus);
-    }
-
+    const bytecodeFileId = await uploadFileToHederaFS(config.serverPrivateKey, config.serverClient, chunks);
 
     // Instantiate the smart contract
+    const contractCreateParams = new ContractFunctionParameters()
+        .addUint256(BET_AMOUNT)
+        .addUint256(TREASURY_AMOUNT)
+        .addAddress(TREASURY_ACCOUNT);
     const contractInstantiateTx = new ContractCreateTransaction()
         .setBytecodeFileId(bytecodeFileId)
-        .setGas(1 * 1000 * 1000);
-    // .setConstructorParameters();
+        .setGas(1 * 1000 * 1000)
+        .setConstructorParameters(contractCreateParams);
     const contractInstantiateSubmit = await contractInstantiateTx.execute(serverClient);
     const contractInstantiateRx = await contractInstantiateSubmit.getReceipt(serverClient);
     const contractId = contractInstantiateRx.contractId;
-    const contractAddress = contractId.toSolidityAddress();
-    console.log(`- The smart contract ID is: ${contractId}`);
-    console.log(`- The smart contract ID in Solidity format is: ${contractAddress}`);
-
     return contractId;
 }

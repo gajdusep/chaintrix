@@ -1,6 +1,10 @@
-import { AccountId, PrivateKey, Client, Hbar, ContractCallQuery, ContractFunctionParameters, ContractId, ContractExecuteTransaction, AccountBalanceQuery } from "@hashgraph/sdk";
-import { PlayerWantsToPlayHederaPayload } from "../../chaintrix-game-mechanics/dist";
+import {
+    AccountId, PrivateKey, Client, Hbar, ContractCallQuery, ContractFunctionParameters,
+    ContractId, ContractExecuteTransaction, AccountBalanceQuery, FileCreateTransaction, FileId
+} from "@hashgraph/sdk";
+import { PlayerWantsToPlayHederaPayload, serializeMoves } from "../../chaintrix-game-mechanics/dist";
 import { HEDERA_CONTRACT_ID } from "./Constants";
+import { GameRoom } from "./types";
 
 require("dotenv").config();
 
@@ -62,12 +66,31 @@ export const acceptBetsHedera = async (
     console.log(`Contract acceptBets call status: ${contractExecuteRx.status}`);
 }
 
+const uploadFileHedera = async (
+    config: HederaConfig,
+    contents: string
+): Promise<FileId> => {
+    const fileCreateTx = new FileCreateTransaction()
+        .setContents(contents)
+        .setKeys([config.serverPrivateKey])
+        .freezeWith(config.serverClient);
+    const fileCreateSign = await fileCreateTx.sign(config.serverPrivateKey);
+    const fileCreateSubmit = await fileCreateSign.execute(config.serverClient);
+    const fileCreateRx = await fileCreateSubmit.getReceipt(config.serverClient);
+    const fileId = fileCreateRx.fileId;
+    return fileId
+}
+
 export const hederaCloseGame = async (
+    room: GameRoom,
     config: HederaConfig,
     player0Address: string,
     player1Address: string,
     winnerAddress: string
 ) => {
+    const movesContents = serializeMoves(room.gameState.moves)
+    const fileId = uploadFileHedera(config, movesContents)
+
     const contractParams = new ContractFunctionParameters()
         .addAddress(player0Address)
         .addAddress(player1Address)

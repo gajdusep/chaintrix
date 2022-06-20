@@ -13,11 +13,24 @@ pub struct Bet<'info> {
         init, 
         seeds = [b"seed".as_ref(), &seed], 
         bump, payer = player, space = BetAccount::LEN)]
-    pub base_account: Account<'info, BetAccount>,
+    pub bet_account: Account<'info, BetAccount>,
     #[account(mut)]
     pub player: Signer<'info>,
     pub system_program: Program<'info, System>
 }
+
+#[derive(Accounts)]
+pub struct CloseBetWithoutPlaying<'info> {
+    #[account(mut)]
+    pub bet_account: Account<'info, BetAccount>,
+    /// CHECK: if player 1 wins, solana will be transfered to him
+    #[account(mut)]
+    pub player: AccountInfo<'info>,
+    #[account(mut, address = Pubkey::from_str(SERVER_PUBKEY).unwrap())]
+    pub server: Signer<'info>,
+    pub system_program: Program<'info, System>
+}
+
 
 #[derive(Accounts)]
 #[instruction(bump:u8, seed: Vec<u8>)]

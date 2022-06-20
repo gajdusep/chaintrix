@@ -1,3 +1,8 @@
+export const DECK_SIZE = 56
+
+export const INIT_BOARD_WIDTH = 3
+export const INIT_BOARD_HEIGHT = 3
+
 export const COLORS: { [id: string]: any } = {
     "R": {
         name: "red",

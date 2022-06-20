@@ -15,34 +15,29 @@ Hedera private keys:
 
 `chaintrix-hedera` - `.env`
 
-## Architecture
+Arweave key
 
-What does a server check?
+`chaintrix-socket-server` - `arweave-key.json`
 
-- validity of the move
-- 
+## Solana
 
-What information must be broadcasted from the socket to the room?
+### Solana Account Model 
 
-- after move info contains:
-    - playerID, card (cardID, orientation)
-    - newCard
-    - newPhase and currently playing player
+![Solana account model](/README/images/solana/SolanaAccountModel.png)
 
-- time remaining
+### Solana Architecture
 
-## Steps
+![Solana architecture](/README/images/solana/ArchitecturesSolana.png)
 
-- client0: want to join
-- client1: want to join
-- server: 
-    - ok, send [GameState, playerID] (gameStarted)
-{repeat
-- client0: 
-    - send [Card, positions x,y] (playMove) - update the state directly in browser, if later receives errorMove, reset the state
-- server
-    - ok: confirm and broadcast [Card, position, new phase] (afterPlayMove)
-    - notok: illegal move, send current state / end game / whatever (errorMove)
-    - ok and finished: calculate winner, send [winner, ...] (gameEnded)
-}
+### Solana Flow
+
+![Solana flow](/README/images/solana/solanaFlow.png)
+
+## Hedera
+
+### Hedera architecture
+
+![Hedera architecture](/README/images/hedera/ArchitecturesHedera.png)
+
+### Hedera model
 

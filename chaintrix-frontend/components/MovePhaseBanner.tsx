@@ -1,29 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-    GameState, PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload,
-    SOCKET_ERROR
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
-import {
-    setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState, selectSizes, selectPlayerID, selectIsCurrentlyPlaying
-} from '../store/gameStateSlice';
-import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
+import { selectGameState, selectSizes, selectPlayerID, selectIsCurrentlyPlaying } from '../store/gameStateSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
-import OponentsBanner from './OponentsBanner';
-import GameBoard from './GameBoard';
-import {
-    selectHederaConnectService, selectHederaStatus,
-    initHederaAsync, addAvailableExtension, setPairedData
-} from '../store/hederaSlice';
-import GameSelect from './GameSelect';
-import Description from './Description';
-import { ParallaxProvider } from 'react-scroll-parallax';
-import Background from './Background';
-import ErrorComponent from './ErrorComponent';
 
 const MovePhaseBanner = () => {
     const dispatch = useAppDispatch();
@@ -59,7 +37,8 @@ const MovePhaseBanner = () => {
 
     return (
         <div style={{ textAlign: 'center', padding: 10, }}>
-            <b>{infoWho}</b>{info}
+            <b>{infoWho}</b>
+            <div>{info}</div>
         </div>
     )
 }
