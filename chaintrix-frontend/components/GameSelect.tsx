@@ -71,7 +71,7 @@ const GameSelect = () => {
         try {
             const tx = await program.methods.bet(betAccountPDABump, seed)
                 .accounts({
-                    baseAccount: betAccountPDA,
+                    betAccount: betAccountPDA,
                     player: wallet.publicKey,
                     // player: player0.publicKey,
                     systemProgram: anchor.web3.SystemProgram.programId,
