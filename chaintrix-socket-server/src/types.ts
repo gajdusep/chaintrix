@@ -1,19 +1,16 @@
 import {
+    BlockchainType,
     GameState
 } from "../../chaintrix-game-mechanics/dist"
 // } from 'chaintrix-game-mechanics';
-
-export enum BlockchainType {
-    SOLANA = 'Solana',
-    HEDERA = 'Hedera',
-    NO_BLOCKCHAIN = 'NoBlockchain'
-}
 
 export type GameRoom = {
     players: Array<Player>,
     blockchainType: BlockchainType,
     gameState: GameState,
-    acceptedBetInfo?: AcceptedBetInfo
+    acceptedBetInfo?: AcceptedBetInfo,
+    timer?: ReturnType<typeof setInterval>,
+    remainingTime?: number
 }
 
 interface GenericPlayer {

@@ -2,23 +2,17 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppThunk } from './store';
 import { fetchCount } from './counterAPI';
 import {
-    Board, BoardFieldType, Sizes, calculateSizes, getTilePosition,
-    getHexPositions, calculatePlayersTilesPositions, Coords,
-    CardNullable, Card, HexPosition, GameState,
-    checkValidity, getNewGameState,
-    getBoardHeight, getBoardWidth, addCardToBoard, mod,
-    getStateAfterMove,
-    updateGameStateAfterDeckCardSelected,
-    PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
-    PlayerPlayedPayload, isFinalPhase,
-    GameStartedPlayerIDPayload,
-    calculateLongestPathForColor, GameFinishedNoBlockchainPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GAME_FINISHED_SOLANA
+    Sizes, calculateSizes, CardNullable, Card, GameState, getNewGameState,
+    getBoardHeight, getBoardWidth, addCardToBoard, mod, getStateAfterMove,
+    updateGameStateAfterDeckCardSelected, PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
+    PlayerPlayedPayload, calculateLongestPathForColor, GameFinishedNoBlockchainPayload, INIT_BOARD_HEIGHT, INIT_BOARD_WIDTH,
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { Socket } from 'socket.io-client';
 
 export enum GameRunningState {
     NOT_STARTED,
+    BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION,
+    BET_CONFIRMED_NOW_WAITING,
     RUNNING,
     FINISHED_AND_WAITING_FOR_FINALIZATION, // TODO: complete this running state!
     FINISHED
@@ -31,21 +25,25 @@ export interface ClientGameState {
     sizes: Sizes,
     gameRunningState: GameRunningState,
     lengths: { [color: string]: number },
-    error: string | null
+    error: string | null,
+    initialSeconds: number,
+    secondsRemaining: number
 }
 
-const INITIAL_WIDTH = 500
+const INITIAL_WIDTH = 600
 const INITIAL_HEIGHT = 600
+const CARDVIEW_HEIGHT = 150
 
-const newGameState = getNewGameState()
 const initialState: ClientGameState = {
     playerID: -1,
-    gameState: newGameState,
+    gameState: getNewGameState(),
     playersCardsView: [],
-    sizes: calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT),
+    sizes: calculateSizes(INIT_BOARD_WIDTH, INIT_BOARD_HEIGHT, INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT),
     gameRunningState: GameRunningState.NOT_STARTED,
     lengths: {},
-    error: null
+    error: null,
+    initialSeconds: 10,
+    secondsRemaining: 10
 }
 
 const getNewCardView = (state: ClientGameState): Array<Card | null> => {
@@ -74,15 +72,19 @@ export const gameStateSlice = createSlice({
     initialState,
     // The `reducers` field lets us define reducers and generate associated actions
     reducers: {
-        setGameState: (state, action: PayloadAction<{ gameState: GameState }>) => {
+        setGameState: (state, action: PayloadAction<{ gameState: GameState, seconds: number }>) => {
             const gameState = action.payload.gameState;
+            const newBoard = action.payload.gameState.board
             state.gameState = gameState;
+            console.log(`hmmmm: ${JSON.stringify(gameState)}`)
             state.playersCardsView = gameState.playersStates[gameState.currentlyMovingPlayer].cards
-            state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+            state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT)
             state.gameRunningState = GameRunningState.RUNNING;
+            state.initialSeconds = action.payload.seconds;
+            state.secondsRemaining = action.payload.seconds;
         },
-        setPlayerID: (state, action: PayloadAction<GameStartedPlayerIDPayload>) => {
-            state.playerID = action.payload.playerID
+        setPlayerID: (state, action: PayloadAction<number>) => {
+            state.playerID = action.payload
             state.playersCardsView = getNewCardView(state)
         },
         setSocketError: (state, action: PayloadAction<string>) => {
@@ -98,14 +100,12 @@ export const gameStateSlice = createSlice({
             action.payload.socketClient.emit(PLAYER_PLAYS, playerPlaysPayload)
             const newBoard = addCardToBoard(state.gameState.board, action.payload.card, action.payload.x, action.payload.y)
             state.gameState.board = newBoard
-            state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT)
+            state.sizes = calculateSizes(getBoardWidth(newBoard), getBoardHeight(newBoard), INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT)
         },
         onPlayerPlayedSocketEvent: (state, action: PayloadAction<PlayerPlayedPayload>) => {
-            console.log(`in game state slice: ${JSON.stringify(action.payload)}`)
-
             if (!isCardInBoard(state.gameState.board, action.payload.playedCard.cardID)) {
                 state.gameState.board = addCardToBoard(state.gameState.board, action.payload.playedCard, action.payload.x, action.payload.y)
-                state.sizes = calculateSizes(getBoardWidth(state.gameState.board), getBoardHeight(state.gameState.board), INITIAL_WIDTH, INITIAL_HEIGHT)
+                state.sizes = calculateSizes(getBoardWidth(state.gameState.board), getBoardHeight(state.gameState.board), INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT)
             }
 
             state.gameState = getStateAfterMove(
@@ -135,8 +135,15 @@ export const gameStateSlice = createSlice({
                 state.playersCardsView[cardIndex]!.orientation = mod(state.playersCardsView[cardIndex]!.orientation + 1, 6)
             }
         },
+        setGameRunningState: (state, action: PayloadAction<GameRunningState>) => {
+            state.gameRunningState = action.payload;
+        },
         // TODO set finished - solana, hedera, solana
+        // TODO: remove the following two methods..?
         setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
+            state.gameRunningState = GameRunningState.FINISHED;
+        },
+        setGameFinished: (state) => {
             state.gameRunningState = GameRunningState.FINISHED;
         },
         resetAll: (state) => {
@@ -144,9 +151,16 @@ export const gameStateSlice = createSlice({
             state.gameState = initialState.gameState
             state.playerID = initialState.playerID
             state.playersCardsView = initialState.playersCardsView
-            state.sizes = calculateSizes(3, 3, INITIAL_WIDTH, INITIAL_HEIGHT)
+            state.sizes = calculateSizes(getBoardWidth(initialState.gameState.board), getBoardHeight(initialState.gameState.board), INITIAL_WIDTH, INITIAL_HEIGHT, CARDVIEW_HEIGHT)
             state.lengths = initialState.lengths
             state.error = null
+        },
+        setSeconds: (state, action: PayloadAction<number | null>) => {
+            if (action.payload == null) {
+                state.secondsRemaining = state.initialSeconds;
+            } else {
+                state.secondsRemaining = action.payload;
+            }
         }
     },
 });
@@ -155,7 +169,8 @@ export const {
     rotateCardInCardView, updateCardView,
     updateStateAfterMove, setGameState,
     onPlayerPlayedSocketEvent, addCardToBoardSocket,
-    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll
+    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll, setSeconds,
+    setGameRunningState, setGameFinished
 } = gameStateSlice.actions;
 
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;
@@ -173,5 +188,6 @@ export const selectError = (state: RootState) => state.gameStateSlice.error;
 export const selectIsCurrentlyPlaying = (state: RootState): boolean => {
     return state.gameStateSlice.playerID == state.gameStateSlice.gameState.currentlyMovingPlayer;
 }
+export const selectSeconds = (state: RootState): number => state.gameStateSlice.secondsRemaining;
 
 export default gameStateSlice.reducer;

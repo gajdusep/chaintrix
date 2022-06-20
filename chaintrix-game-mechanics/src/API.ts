@@ -1,6 +1,17 @@
 import { Card } from "./CustomTypes"
 import { GameState } from "./Game"
 
+export enum BlockchainType {
+    SOLANA = 'Solana',
+    HEDERA = 'Hedera',
+    NO_BLOCKCHAIN = 'NoBlockchain'
+}
+
+export enum GameClosedReason {
+    TIMEOUT = "time ran out",
+    ALL_CARDS_USED = "all cards were played."
+}
+
 export const PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN = 'playerWantsToPlayNoBlockchain'
 // export type PlayerWantsToPlayNoBlockchain = {
 
@@ -19,13 +30,15 @@ export type PlayerWantsToPlayHederaPayload = {
 
 export const GAME_STARTED = 'gameStarted'
 export type GameStartedPayload = {
-    gameState: GameState
+    gameState: GameState,
+    playerID: number,
+    seconds: number
 }
 
-export const GAME_STARTED_PLAYER_ID = 'gameStartedPlayerID'
-export type GameStartedPlayerIDPayload = {
-    playerID: number
-}
+// export const GAME_STARTED_PLAYER_ID = 'gameStartedPlayerID'
+// export type GameStartedPlayerIDPayload = {
+//     playerID: number
+// }
 
 export const PLAYER_PLAYS = 'playerPlays'
 export type PlayerPlaysPayload = {
@@ -43,8 +56,11 @@ export type PlayerPlayedPayload = {
     newCardID: string
 }
 
-type GameFinishedGenericPayload = {
-    winningPlayerIndex: number,
+export const GAME_FINISHED_AND_WAITING_FOR_FINALIZATION = 'gameFinishedWaitingFinalization';
+
+export type GameFinishedGenericPayload = {
+    winnerIndex: number,
+    gameClosedReason: GameClosedReason
 }
 
 export const GAME_FINISHED_NO_BLOCKCHAIN = 'gameFinishedNoBlockchain'

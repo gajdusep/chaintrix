@@ -2,7 +2,7 @@
   <clipPath id="H">
     <path d="M-82.272413-47.5V47.5L0 95 82.272413 47.5V-47.5L0-95Z"/>
   </clipPath>
-  <path d="M0-99 85.736515-49.5V49.5L0 99-85.736515 49.5V-49.5Z" fill="#ff0000"/>
+  <path d="M0-99 85.736515-49.5V49.5L0 99-85.736515 49.5V-49.5Z" fill="#e1fcfc"/>
   <g clip-path="url(#H)" fill="none">    
   </g>
 </svg>

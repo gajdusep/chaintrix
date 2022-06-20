@@ -70,14 +70,16 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
     return acceptedBetsPDA;
 }
 
-export const solanaCloseGame = async (room: GameRoom) => {
+export const solanaCloseGame = async (room: GameRoom, winnerIndex: number) => {
     // upload game to arweave
     const arweaveConfig = getArweaveConfig()
+    // TODO: TRY CATCH HERE!!!!
     const arweaveFileID = await uploadGameMovesToArweave(
         arweaveConfig, Buffer.from(serializeMoves(room.gameState.moves), 'utf-8')
     )
     console.log(`arweave file uploaded: ${arweaveFileID}`);
 
+    // call program - close game
     const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
     const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
     const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
@@ -99,7 +101,7 @@ export const solanaCloseGame = async (room: GameRoom) => {
     console.log(`in solana close: ${acceptedBetAccount}, ${player0Address}, ${player1Address}, ${localWallet.publicKey.toBase58()}`)
 
     try {
-        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, 1, arweaveFileID)
+        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, winnerIndex, arweaveFileID)
             .accounts({
                 acceptedBetsAccount: acceptedBetAccount,
                 player0: player0Address,
@@ -113,6 +115,7 @@ export const solanaCloseGame = async (room: GameRoom) => {
             .rpc({ commitment: 'confirmed' })
         console.log(`solana game closed`)
     } catch (error) {
+        // TODO: what to do with an error!!!
         console.log(`SOLANA ERROR: ${error}`)
     }
 }

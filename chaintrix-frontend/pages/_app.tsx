@@ -1,8 +1,6 @@
 import '../styles/globals.css'
 import type { AppProps } from 'next/app'
-import { useMemo } from "react";
-import { clusterApiUrl } from "@solana/web3.js";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { useEffect, useMemo, useState } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
@@ -11,29 +9,34 @@ import {
 } from '@solana/wallet-adapter-wallets';
 import { Provider } from 'react-redux';
 import { store } from '../store/store';
+import { LOCALHOST_SOLANA_ENDPOINT, PRODUCTION_SOLANA_ENDPOINT } from '../helpers/Constants';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
 
-const MyApp = ({ Component, pageProps }: AppProps) => {
-  // const endpoint = useMemo(() => 'https://solana-api.projectserum.com', []);
-  const endpoint = useMemo(() => 'http://127.0.0.1:8899', []);
+const AppWrapper = ({ Component, pageProps }: AppProps) => {
+  // const endpoint = useMemo(() => PRODUCTION_SOLANA_ENDPOINT, []);
+  const endpoint = useMemo(() => LOCALHOST_SOLANA_ENDPOINT, []);
 
   const wallets = useMemo(
     () => [
       new PhantomWalletAdapter(),
-      // new SolflareWalletAdapter({ })
+      new SolflareWalletAdapter({})
     ],
     []
   );
+
+  // to avoid NextJS server/client render error message
+  const [isSSR, setIsSSR] = useState(true);
+  useEffect(() => {
+    setIsSSR(false);
+  }, []);
 
   return (
     <Provider store={store}>
       <ConnectionProvider endpoint={endpoint}>
         <WalletProvider wallets={wallets} autoConnect={false}>
-
           <WalletModalProvider>
-            {typeof window === 'undefined' ? null : <Component {...pageProps} />}
-            {/* <Component  {...pageProps} /> */}
+            {!isSSR && <Component {...pageProps} />}
           </WalletModalProvider>
         </WalletProvider>
       </ConnectionProvider>
@@ -41,4 +44,4 @@ const MyApp = ({ Component, pageProps }: AppProps) => {
   );
 }
 
-export default MyApp
+export default AppWrapper

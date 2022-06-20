@@ -1,12 +1,11 @@
 import { Server, Socket } from "socket.io";
 import {
     Player, SolanaPlayer, NoBlockchainPlayer,
-    GameRoom, BlockchainType, HederaPlayer, AcceptedBetInfo
+    GameRoom, HederaPlayer, AcceptedBetInfo
 } from "./types";
 import {
     Card, addCardToBoard, getNewGameState, MoveInfo,
-    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload, PlayerWantsToPlaySolanaPayload,
+    getStateAfterMove, GAME_STARTED, PlayerPlaysPayload, PLAYER_PLAYED, PlayerWantsToPlaySolanaPayload,
     GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload,
     GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, SOCKET_ERROR,
     ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING, SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
@@ -14,12 +13,20 @@ import {
     getNumberOfPlayableCards,
     getRandomCardIdFromDeck,
     Move,
-    serializeMoves
+    serializeMoves,
+    GameStartedPayload,
+    BlockchainType,
+    GAME_FINISHED_AND_WAITING_FOR_FINALIZATION,
+    GameFinishedGenericPayload,
+    GameClosedReason,
+    mod,
+    calculateLongestPathForColor
 } from '../../chaintrix-game-mechanics/dist/index.js';
 import { acceptBetsSolana, checkBetAccount, solanaCloseGame } from "./SolanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseGame, toSolidity } from "./HederaMethods";
 import { toSolidityAddress } from "@hashgraph/sdk/lib/EntityIdHelper";
 import { json } from "stream/consumers";
+import { INITIAL_TIME, SERVER_INITIAL_TIME } from "./Constants";
 // } from 'chaintrix-game-mechanics';
 
 type RoomObjects = { [key: string]: GameRoom }
@@ -72,6 +79,22 @@ const getJoiningPlayerHedera = async (
     }
 }
 
+const getNewTimer = (room: GameRoom, callback: any) => {
+
+    const timer = setInterval(() => {
+        // remainingTime -= 1;
+        room.remainingTime = room.remainingTime - 1
+        console.log(`timer tick: ${room.remainingTime}`)
+        if (room.remainingTime <= 0) {
+            console.log(`timer run out: ${room.remainingTime}`)
+            clearInterval(timer)
+            callback()
+        }
+    }, 1000);
+
+    return timer;
+}
+
 export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     freeRooms: Array<string>, roomObjects: RoomObjects, waitingPlayers: { [socketID: string]: Player },
     blockchainType: BlockchainType,
@@ -108,23 +131,23 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
 
     // there is not already created room, so joining player creates one and joins it
     if (!freeRooms || !freeRooms.length) {
-        const roomID = getNewRoomName();
-        freeRooms.push(roomID);
+        const gameRoomID = getNewRoomName();
+        freeRooms.push(gameRoomID);
         waitingPlayers[socket.id] = joiningPlayer
-        socket.join(roomID);
+        socket.join(gameRoomID);
         socket.emit(SOCKET_CREATED_ROOM_AND_WAITING);
 
-        console.log(`${blockchainType} Room created: created, roomID: ${roomID}, player0: ${JSON.stringify(joiningPlayer)}`);
+        console.log(`${blockchainType} Room created: created, roomID: ${gameRoomID}, player0: ${JSON.stringify(joiningPlayer)}`);
         return;
     }
 
     // get free room, remove it from the free rooms, and join it
-    const roomID = freeRooms[0];
+    const gameRoomID = freeRooms[0];
     freeRooms.shift();
-    socket.join(roomID);
+    socket.join(gameRoomID);
 
     // get the already present player and 
-    let clients = Array.from(sio.sockets.adapter.rooms.get(roomID));
+    let clients = Array.from(sio.sockets.adapter.rooms.get(gameRoomID));
     const waitingPlayerSocketID = clients[0]
     const waitingPlayer = waitingPlayers[waitingPlayerSocketID];
     delete waitingPlayers[waitingPlayerSocketID];
@@ -158,64 +181,124 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     // save a new Room object with all information
     const playersInRoom = [joiningPlayer, waitingPlayer];
     const newGameState = getNewGameState()
-    roomObjects[roomID] = {
+    roomObjects[gameRoomID] = {
         players: playersInRoom,
         gameState: newGameState,
         blockchainType: blockchainType,
         acceptedBetInfo: acceptedBetInfo
     }
+    const room = roomObjects[gameRoomID]
+    room.remainingTime = SERVER_INITIAL_TIME;
+    room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID, GameClosedReason.TIMEOUT))
+
     console.log(`${blockchainType} new gameroom created with players: ${JSON.stringify(playersInRoom)}`)
 
-    sio.to(roomID).emit(GAME_STARTED, newGameState)
-    const player0Payload: GameStartedPlayerIDPayload = { playerID: 0 }
-    const player1Payload: GameStartedPlayerIDPayload = { playerID: 1 }
-    sio.to(waitingPlayer.socketID).emit(GAME_STARTED_PLAYER_ID, player0Payload)
-    sio.to(joiningPlayer.socketID).emit(GAME_STARTED_PLAYER_ID, player1Payload)
+    const player0Payload: GameStartedPayload = { playerID: 0, gameState: newGameState, seconds: INITIAL_TIME }
+    const player1Payload: GameStartedPayload = { playerID: 1, gameState: newGameState, seconds: INITIAL_TIME }
+    sio.to(waitingPlayer.socketID).emit(GAME_STARTED, player0Payload)
+    sio.to(joiningPlayer.socketID).emit(GAME_STARTED, player1Payload)
+    // sio.to(gameRoomID).emit(GAME_STARTED, newGameState)
 }
 
-const closeGameSolanaSocket = async (winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom) => {
-    await solanaCloseGame(room)
-    const responsePayload: GameFinishedSolanaPayload = {
-        winningPlayerIndex: winnerIndex,
-        transactionHash: ''
-
-    }
-    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
-    // TODO!!!
-    // sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
-}
-
-const closeGameNoBlockchainSocket = async (winnerIndex: number, sio: Server, gameRoomID: string) => {
+const closeGameNoBlockchainSocket = async (
+    winnerIndex: number, sio: Server, gameRoomID: string,
+    gameClosedReason: GameClosedReason
+) => {
     const responsePayload: GameFinishedNoBlockchainPayload = {
-        winningPlayerIndex: winnerIndex
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
     }
     sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
+}
+
+const closeGameSolanaSocket = async (
+    winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom,
+    gameClosedReason: GameClosedReason
+) => {
+    // send an information to a client that the game is closed
+    const finishedAndWaitingPayload: GameFinishedGenericPayload = {
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
+    }
+    sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
+
+    // finalize solana transactions
+    await solanaCloseGame(room, winnerIndex)
+    const responsePayload: GameFinishedSolanaPayload = {
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason,
+        transactionHash: ''
+    }
+    sio.to(gameRoomID).emit(GAME_FINISHED_SOLANA, responsePayload)
 }
 
 const closeGameHederaSocket = async (
-    winnerIndex: number, sio: Server, gameRoomID: string, gameRoom: GameRoom
+    winnerIndex: number, sio: Server, gameRoomID: string, gameRoom: GameRoom,
+    gameClosedReason: GameClosedReason
 ) => {
-    // TODO: calculate who won and send in the finalization message
+    // send an information to a client that the game is closed
+    const finishedAndWaitingPayload: GameFinishedGenericPayload = {
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
+    }
+    sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
 
-    // TODO: game finished and waiting for finalization
-    // sio.to(gameRoomID).emit(..., responsePayload)
-
+    // finalize hedera transactions
     let winnerAddress = (gameRoom.players[0] as HederaPlayer).address
     if (winnerIndex == 1) {
         winnerAddress = (gameRoom.players[1] as HederaPlayer).address
     }
     await hederaCloseGame(
+        gameRoom,
         getHederaConfig(),
         toSolidity((gameRoom.players[0] as HederaPlayer).address),
         toSolidity((gameRoom.players[1] as HederaPlayer).address),
         winnerAddress
     )
     const responsePayload: GameFinishedHederaPayload = {
-        winningPlayerIndex: winnerIndex
+        winnerIndex: winnerIndex,
+        gameClosedReason: gameClosedReason
     }
-    sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
-    // TODO: !!!
-    // sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
+    sio.to(gameRoomID).emit(GAME_FINISHED_HEDERA, responsePayload)
+}
+
+const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID: string, gameClosedReason: GameClosedReason) => {
+    let winnerIndex = 0
+    if (gameClosedReason == GameClosedReason.TIMEOUT) {
+        winnerIndex = mod(room.gameState.currentlyMovingPlayer + 1, 2)
+    }
+    else if (gameClosedReason == GameClosedReason.ALL_CARDS_USED) {
+        const player0Length = calculateLongestPathForColor(room.gameState.board, room.gameState.playersStates[0].color)
+        const player1Length = calculateLongestPathForColor(room.gameState.board, room.gameState.playersStates[1].color)
+        // TODO: draw
+
+        if (player0Length == player1Length) {
+
+        } else {
+            winnerIndex = player0Length > player1Length ? 0 : 1;
+        }
+    }
+
+    console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
+    switch (room.blockchainType) {
+        case BlockchainType.NO_BLOCKCHAIN:
+            await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID, gameClosedReason)
+            break;
+        case BlockchainType.SOLANA:
+            await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
+            break;
+        case BlockchainType.HEDERA:
+            await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
+            break;
+        default:
+            break;
+    }
+
+    const clients = await sio.in(gameRoomID).fetchSockets();
+    for (const client of clients) {
+        client.leave(gameRoomID)
+        console.log(`client: ${client.id} left ${gameRoomID}`)
+    }
 }
 
 export const playerPlays = async (
@@ -235,36 +318,20 @@ export const playerPlays = async (
         y: payload.y
     }
     room.gameState.moves.push(move)
-    // if game is not over yet
+
+    sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
+
+    // game is not over yet
     if (playerMoveResult.newCardId || playerMoveResult.movedType == MovedType.MOVED_AND_DECK_EMPTY) {
-        sio.to(gameRoomID).emit(PLAYER_PLAYED, move)
+        room.remainingTime = SERVER_INITIAL_TIME
+        clearInterval(room.timer)
+        room.timer = getNewTimer(room, () => closeGameCallback(room, sio, gameRoomID, GameClosedReason.TIMEOUT))
         return;
     }
 
     if (playerMoveResult.movedType == MovedType.MOVED_AND_PLAYERS_NO_CARDS) {
-        const winnerIndex = 0
-        console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
-        // TODO: emit to the room, that the game is over and it's closing the game also on the blockchains
-        switch (room.blockchainType) {
-            case BlockchainType.NO_BLOCKCHAIN:
-                await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID)
-                break;
-            case BlockchainType.SOLANA:
-                await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room)
-                break;
-            case BlockchainType.HEDERA:
-                await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room)
-                break;
-            default:
-                break;
-        }
-
-        // leave the rooms
-        const clients = await sio.in(gameRoomID).fetchSockets();
-        for (const client of clients) {
-            client.leave(gameRoomID)
-            console.log(`client: ${client.id} left ${gameRoomID}`)
-        }
+        clearInterval(room.timer)
+        closeGameCallback(room, sio, gameRoomID, GameClosedReason.ALL_CARDS_USED)
     }
 }
 
@@ -317,8 +384,7 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
 
     return {
         newCardId: newCardID,
-        // movedType: movedType
-        movedType: MovedType.MOVED_AND_PLAYERS_NO_CARDS
+        movedType: movedType
     }
 }
 

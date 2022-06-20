@@ -1,30 +1,21 @@
 import { useEffect, useState } from 'react';
 import {
-    GameState, PLAYER_PLAYED, GAME_STARTED, PlayerPlayedPayload,
-    GAME_STARTED_PLAYER_ID, GameStartedPlayerIDPayload,
-    GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload,
-    SOCKET_ERROR
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
-import {
-    setGameState, onPlayerPlayedSocketEvent,
-    setPlayerID, selectGameRunningState, selectLengths, GameRunningState, setGameFinishedNoBlockchain, setSocketError, selectError, selectGameState, resetAll
+    selectGameRunningState, selectLengths, GameRunningState,
+    selectError, selectGameState, selectSeconds, setSeconds
 } from '../store/gameStateSlice';
-import { selectSocketConnected, setOnEvent } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import OponentsBanner from './OponentsBanner';
 import GameBoard from './GameBoard';
-import {
-    selectHederaConnectService, selectHederaStatus,
-    initHederaAsync, addAvailableExtension, setPairedData
-} from '../store/hederaSlice';
 import GameSelect from './GameSelect';
 import Description from './Description';
 import { ParallaxProvider } from 'react-scroll-parallax';
 import Background from './Background';
 import ErrorComponent from './ErrorComponent';
 import MovePhaseBanner from './MovePhaseBanner';
+import { selectBCState } from '../store/blockchainStateSlice';
+import GameFinished from './GameFinished';
+import { toastError } from '../helpers/ToastHelper';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
@@ -32,124 +23,63 @@ const GameWrapper = () => {
     const gameRunningState = useAppSelector(selectGameRunningState)
     const pathLengths = useAppSelector(selectLengths)
     const error = useAppSelector(selectError);
+    const blockchainState = useAppSelector(selectBCState);
 
-    // SOCKET
-    // const socketConnected = useAppSelector(selectSocketConnected);
-
-    // HEDERA VARS
-    const hashConnectService = useAppSelector(selectHederaConnectService)
-    const hederaStatus = useAppSelector(selectHederaStatus)
+    // TIMER
+    const seconds = useAppSelector(selectSeconds)
+    useEffect(() => {
+        let myInterval = setInterval(() => {
+            if (seconds > 0) {
+                dispatch(setSeconds(seconds - 1));
+            }
+            if (seconds === 0) {
+                clearInterval(myInterval)
+            }
+        }, 1000)
+        return () => {
+            clearInterval(myInterval);
+        };
+    });
 
     useEffect(() => {
-        // TODO: if hedera status == PAIRED..?
-
-        console.log(`hedera status changed: ${hederaStatus}`)
-        // dispatch(setUpHederaEvents())
-        if (!hashConnectService) return;
-        // dispatch(setUpHederaEvents())
-        hashConnectService.hashconnect.foundExtensionEvent.on((data) => {
-            console.log("Found extension", data);
-            dispatch(addAvailableExtension({ data: data }))
-        })
-        hashConnectService.hashconnect.pairingEvent.on((data) => {
-            if (hashConnectService == null) return;
-
-            console.log("Paired with wallet", data);
-            // console.log(`And after paired, the signer is: ${}`)
-            // state.status = HashConnectStatus.PAIRED
-            // setStatus(state.hashConnecteService?, HashConnectStatus.PAIRED)
-
-            dispatch(setPairedData({ pairedWalletData: data.metadata, accountsIds: data.accountIds }))
-
-            // TODO: save data in localstorage
-            // saveDataInLocalstorage(hashconnectWrapper);
-        });
-
-    }, [hederaStatus])
-
-    useEffect((): any => {
-        const runHederaConnectEffect = async () => {
-            dispatch(initHederaAsync())
+        if (error != null) {
+            toastError(error)
         }
-        runHederaConnectEffect()
-
-        dispatch(setOnEvent({
-            event: GAME_STARTED, func: (payload: GameState) => {
-                console.log(`whyyyyy ${payload}, ${JSON.stringify(payload)}`)
-
-                dispatch(setGameState({ gameState: payload }))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: PLAYER_PLAYED, func: (payload: PlayerPlayedPayload) => {
-                console.log(`player played!!!: ${JSON.stringify(payload)}`)
-                dispatch(onPlayerPlayedSocketEvent(payload))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: GAME_STARTED_PLAYER_ID, func: (payload: GameStartedPlayerIDPayload) => {
-                dispatch(setPlayerID(payload))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: GAME_FINISHED_NO_BLOCKCHAIN, func: (payload: GameFinishedNoBlockchainPayload) => {
-                dispatch(setGameFinishedNoBlockchain(payload))
-            }
-        }));
-        dispatch(setOnEvent({
-            event: SOCKET_ERROR, func: (payload) => {
-                dispatch(setSocketError(payload))
-            }
-        }));
-        // TODO: game finished - solana, hedera
-        // socketClient.emit(PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, {});
-
-    }, []);
+    }, [error])
 
     const colors = ['R', 'B', 'G', 'Y']
 
-    if (error) return (
-        <ErrorComponent />
-    )
-
-    if (gameRunningState == GameRunningState.RUNNING) return (
-        <div className='glass' style={{ display: 'flex', flexDirection: 'column' }} >
-            <MovePhaseBanner />
-            <div style={{
-                display: 'flex', flexDirection: 'row',
-                width: `100%`,
-                justifyContent: 'center'
-            }}>
-                <div style={{ width: 100, display: 'flex', flexDirection: 'column', backgroundColor: 'white', border: `3px solid black` }}>
-                    {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
-                    <div>Cards in the deck: {gameState.deck.length}</div>
-                </div>
-                <div>
-                    <GameBoard />
-                </div>
-                <div>
-                    <OponentsBanner />
+    const isGameFinished = (): boolean => {
+        return gameRunningState == GameRunningState.FINISHED ||
+            gameRunningState == GameRunningState.FINISHED_AND_WAITING_FOR_FINALIZATION;
+    }
+    const isGameRunning = (): boolean => { return gameRunningState == GameRunningState.RUNNING }
+    if (isGameRunning() || isGameFinished()) return (
+        <div>
+            {isGameFinished() && <GameFinished />}
+            <div className='glass flex-column' style={{ position: 'relative' }}>
+                {isGameRunning() && <MovePhaseBanner />}
+                <div className='game-board-wrapper'>
+                    <div className='flex-column' style={{ width: 150, backgroundColor: 'white', border: `3px solid black` }}>
+                        {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
+                        <div>Cards in the deck: {gameState.deck.length}</div>
+                        <div>SECONDS: <b>{seconds}</b></div>
+                        <div>BC TYPE: <b>{blockchainState.blockchainType}</b></div>
+                    </div>
+                    <div>
+                        <GameBoard />
+                    </div>
+                    <div>
+                        <OponentsBanner />
+                    </div>
                 </div>
             </div>
         </div>
     )
 
-    if (gameRunningState == GameRunningState.FINISHED) return (
-        <div style={{ display: 'flex', width: `auto`, flexDirection: 'column', justifyContent: 'center' }}>
-            <div>Game finished</div>
-            <button onClick={() => { dispatch(resetAll()) }}>OK, reset</button>
-        </div>
-    )
-
     return (
-        <>
-            <div style={{
-                position: 'absolute', width: `100%`,
-                // minHeight: `100%`,
-                top: 0, left: 0, right: 0, margin: 0, bottom: 'auto',
-                overflowX: 'clip'
-                // overflowX: 'hidden'
-            }}>
+        <div>
+            <div className='parallax-wrapper'>
                 <ParallaxProvider>
                     <Background />
                 </ParallaxProvider>
@@ -161,7 +91,7 @@ const GameWrapper = () => {
                 <Description />
                 <div style={{ height: 100 }}></div>
             </div>
-        </>
+        </div>
     )
 }
 

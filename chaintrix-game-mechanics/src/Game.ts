@@ -5,10 +5,8 @@ import {
     getObligatoryPlayersCards, getNumberOfObligatoryCards, getNumberOfPlayableCards, calculateBoardFieldsTypes, addNewBoardFieldTypesToBoard
 } from "./Board";
 import { Card, CardNullable, Coords } from "./CustomTypes";
-import { COLORS, CARDS } from "./Constants";
+import { COLORS, CARDS, DECK_SIZE } from "./Constants";
 import { getRandomCard, mod } from "./methods";
-
-export const DECK_SIZE = 14
 
 export type PlayerState = {
     color: string,
@@ -42,6 +40,24 @@ export const serializeMove = (move: Move): object => {
 
 export const serializeMoves = (moves: Array<Move>): string => {
     return JSON.stringify(moves.map(item => serializeMove(item)));
+}
+
+export const deserializeMoves = (s: string): Array<Move> => {
+    const parsed = JSON.parse(s)
+    const moves: Array<Move> = []
+    for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i]
+        moves.push({
+            playedCard: {
+                cardID: item.p.id,
+                orientation: item.p.or,
+            },
+            x: item.x,
+            y: item.y,
+            newCardID: item.n
+        })
+    }
+    return moves;
 }
 
 export interface GameState {
