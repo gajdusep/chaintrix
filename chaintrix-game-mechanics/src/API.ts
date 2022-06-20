@@ -83,3 +83,5 @@ export const SOCKET_ERROR = 'error'
 export const ALREADY_IN_ROOM_ERROR_MSG = 'You are already in a game room.'
 export const SOLANA_BET_ACCOUNT_ERROR_MSG = 'We were unable to verify the bet on Solana blockchain.'
 export const HEDERA_BET_ERROR_MSG = 'The bet was not placed correctly.'
+
+export const ITS_A_DRAW_CONSTANT = 255;

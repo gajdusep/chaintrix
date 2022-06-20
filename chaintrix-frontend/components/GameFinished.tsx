@@ -1,18 +1,33 @@
 import { useEffect, useState } from 'react';
 import {
-    selectGameRunningState, resetAll, GameRunningState,
+    selectGameRunningState, resetAll, GameRunningState, selectGameState, selectPlayerID,
 } from '../store/gameStateSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import { selectBCState } from '../store/blockchainStateSlice';
+import { mod, ITS_A_DRAW_CONSTANT } from '../../chaintrix-game-mechanics/dist';
 
 const GameFinished = () => {
     const dispatch = useAppDispatch();
     const gameRunningState = useAppSelector(selectGameRunningState)
     const blockchainState = useAppSelector(selectBCState);
+    const playerID = useAppSelector(selectPlayerID);
     return (
         <div className='finished-wrapper'>
             <div className='inner-finished-wrapper'>
+                {blockchainState.gameResult != null &&
+                    <div>
+                        {blockchainState.gameResult.winnerIndex == playerID &&
+                            <div>YOU WON!</div>
+                        }
+                        {blockchainState.gameResult.winnerIndex == mod(playerID + 1, 2) &&
+                            <div>You lost...</div>
+                        }
+                        {blockchainState.gameResult.winnerIndex == ITS_A_DRAW_CONSTANT &&
+                            <div>It's a draw!</div>
+                        }
+                    </div>
+                }
                 <div>Game finished - gameRunningState: {gameRunningState}</div>
                 <div>{JSON.stringify(blockchainState.gameResult)}</div>
                 {gameRunningState == GameRunningState.FINISHED_AND_WAITING_FOR_FINALIZATION &&
