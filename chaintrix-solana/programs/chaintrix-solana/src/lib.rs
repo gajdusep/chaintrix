@@ -8,6 +8,7 @@ mod account;
 mod context;
 
 const BET_AMOUNT: u64 = LAMPORTS_PER_SOL / 10; // 0.1 sol
+const TREASURY_AMOUNT: u64 = LAMPORTS_PER_SOL / 100;
 
 declare_id!("Agi74KZH6XY5fKPycWtg9X5g4RgfPZpNNmKodLCXDA7q");
 
@@ -16,35 +17,48 @@ pub mod chaintrix_solana {
     use super::*;
 
     pub fn bet(ctx: Context<Bet>, bump: u8, seed: Vec<u8>) -> Result<()> {
-        let base_account: &mut Account<BetAccount> = &mut ctx.accounts.base_account;
-        base_account.bump = bump;
-        base_account.player = ctx.accounts.player.key();
+        let bet_account: &mut Account<BetAccount> = &mut ctx.accounts.bet_account;
+        let player_account = &mut ctx.accounts.player;
+
+        bet_account.bump = bump;
+        bet_account.player = player_account.key();
 
         let ix = anchor_lang::solana_program::system_instruction::transfer(
             &ctx.accounts.player.key(),
-            &ctx.accounts.base_account.key(),
+            &ctx.accounts.bet_account.key(),
             BET_AMOUNT,
         );
         anchor_lang::solana_program::program::invoke(
             &ix,
             &[
                 ctx.accounts.player.to_account_info(),
-                ctx.accounts.base_account.to_account_info(),
+                ctx.accounts.bet_account.to_account_info(),
             ],
         )?;
 
         Ok(())
     }
 
-    // TODO: do this a functions to check both player0 and player1
-    // TODO: check that player0 and player1 are not the same!!!
+    pub fn close_bet_without_playing(ctx: Context<CloseBetWithoutPlaying>) -> Result<()> {
+        let bet_account = &mut ctx.accounts.bet_account;
+        let player = &mut ctx.accounts.player;
+
+        if bet_account.player != player.key() {
+            return Err(ErrorCode::WrongAccounts.into());
+        }
+
+        let amount_to_return = bet_account.to_account_info().lamports();
+        **bet_account.to_account_info().lamports.borrow_mut() = 0;
+        **player.to_account_info().lamports.borrow_mut() += amount_to_return;
+        Ok(())
+    }
+
     pub fn accept_bets(ctx: Context<AcceptBets>, bump: u8, seed: Vec<u8>) -> Result<()> {
         let accepted_bets_account: &mut Account<AcceptedBetsAccount> =
             &mut ctx.accounts.accepted_bets_account;
         let player0_bet_account: &mut Account<BetAccount> = &mut ctx.accounts.player0_bet_account;
         let player1_bet_account: &mut Account<BetAccount> = &mut ctx.accounts.player1_bet_account;
         let server: &mut Signer = &mut ctx.accounts.server;
-        // msg!("server: {:?}", server.to_account_info().lamports());
 
         let rent = Rent::default();
         let rent_amount = player0_bet_account.to_account_info().lamports() - BET_AMOUNT;
@@ -72,13 +86,9 @@ pub mod chaintrix_solana {
         **player0_bet_account.to_account_info().lamports.borrow_mut() = 0;
         **player1_bet_account.to_account_info().lamports.borrow_mut() = 0;
 
-        // msg!("server: {:?}", server.to_account_info().lamports());
-        // return Err(error!(ErrorCode::Debugging));
         Ok(())
     }
 
-    // TODO: check in the beginnig if both players are in the account
-    // TODO: check remaning sols in accepted_bets_account
     pub fn close_game_with_winner(
         ctx: Context<CloseGameWithWinner>,
         bump: u8,
@@ -90,23 +100,38 @@ pub mod chaintrix_solana {
             return Err(ErrorCode::ArweaveIDWrong.into());
         }
 
-        let accepted_bets_account = &mut ctx.accounts.accepted_bets_account;
-        let game_closed_account = &mut ctx.accounts.game_closed_account;
+        if winner != 0 && winner != 1 && winner != 255 {
+            return Err(ErrorCode::WrongParameters.into());
+        }
 
+        let accepted_bets_account = &mut ctx.accounts.accepted_bets_account;
         let player0 = &mut ctx.accounts.player0;
         let player1 = &mut ctx.accounts.player1;
+        if accepted_bets_account.player0 != player0.key()
+            || accepted_bets_account.player1 != player1.key()
+        {
+            return Err(ErrorCode::CloseGameWrongAccounts.into());
+        }
 
+        let game_closed_account = &mut ctx.accounts.game_closed_account;
         let treasury = &mut ctx.accounts.treasury;
 
-        let winners_amount = accepted_bets_account.to_account_info().lamports();
+        let lamports_to_split = accepted_bets_account.to_account_info().lamports();
+        let lamports_winner = lamports_to_split - TREASURY_AMOUNT;
         **accepted_bets_account
             .to_account_info()
             .lamports
             .borrow_mut() = 0;
-        if winner == 0 && accepted_bets_account.player0 == player0.key() {
-            **player0.to_account_info().lamports.borrow_mut() += winners_amount;
-        } else if winner == 1 && accepted_bets_account.player1 == player1.key() {
-            **player1.to_account_info().lamports.borrow_mut() += winners_amount;
+
+        if winner == 0 {
+            **player0.to_account_info().lamports.borrow_mut() += lamports_winner;
+            **treasury.to_account_info().lamports.borrow_mut() += TREASURY_AMOUNT;
+        } else if winner == 1 {
+            **player1.to_account_info().lamports.borrow_mut() += lamports_winner;
+            **treasury.to_account_info().lamports.borrow_mut() += TREASURY_AMOUNT;
+        } else if winner == 255 {
+            **player0.to_account_info().lamports.borrow_mut() += lamports_to_split / 2;
+            **player1.to_account_info().lamports.borrow_mut() += lamports_to_split / 2;
         }
 
         game_closed_account.player0 = player0.key();
@@ -123,8 +148,12 @@ pub mod chaintrix_solana {
 pub enum ErrorCode {
     #[msg("The bet account doesn't have enough lamports")]
     BetAccountNotEnoughLamports,
-    #[msg("Just debugging")]
-    Debugging,
+    #[msg("Accounts do not fit")]
+    WrongAccounts,
+    #[msg("Wrong parameters")]
+    WrongParameters,
     #[msg("Arweave ID must have 43 chars")]
     ArweaveIDWrong,
+    #[msg("Closing bets: the accounts are not coresponding to playing accounts")]
+    CloseGameWrongAccounts,
 }
