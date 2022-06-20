@@ -6,7 +6,7 @@ export type ChaintrixSolana = {
             "name": "bet",
             "accounts": [
                 {
-                    "name": "baseAccount",
+                    "name": "betAccount",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -31,6 +31,32 @@ export type ChaintrixSolana = {
                     "type": "bytes"
                 }
             ]
+        },
+        {
+            "name": "closeBetWithoutPlaying",
+            "accounts": [
+                {
+                    "name": "betAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "player",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "server",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
         },
         {
             "name": "acceptBets",
@@ -205,13 +231,23 @@ export type ChaintrixSolana = {
         },
         {
             "code": 6001,
-            "name": "Debugging",
-            "msg": "Just debugging"
+            "name": "WrongAccounts",
+            "msg": "Accounts do not fit"
         },
         {
             "code": 6002,
+            "name": "WrongParameters",
+            "msg": "Wrong parameters"
+        },
+        {
+            "code": 6003,
             "name": "ArweaveIDWrong",
             "msg": "Arweave ID must have 43 chars"
+        },
+        {
+            "code": 6004,
+            "name": "CloseGameWrongAccounts",
+            "msg": "Closing bets: the accounts are not coresponding to playing accounts"
         }
     ]
 };
@@ -224,7 +260,7 @@ export const IDL: ChaintrixSolana = {
             "name": "bet",
             "accounts": [
                 {
-                    "name": "baseAccount",
+                    "name": "betAccount",
                     "isMut": true,
                     "isSigner": false
                 },
@@ -249,6 +285,32 @@ export const IDL: ChaintrixSolana = {
                     "type": "bytes"
                 }
             ]
+        },
+        {
+            "name": "closeBetWithoutPlaying",
+            "accounts": [
+                {
+                    "name": "betAccount",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "player",
+                    "isMut": true,
+                    "isSigner": false
+                },
+                {
+                    "name": "server",
+                    "isMut": true,
+                    "isSigner": true
+                },
+                {
+                    "name": "systemProgram",
+                    "isMut": false,
+                    "isSigner": false
+                }
+            ],
+            "args": []
         },
         {
             "name": "acceptBets",
@@ -423,13 +485,23 @@ export const IDL: ChaintrixSolana = {
         },
         {
             "code": 6001,
-            "name": "Debugging",
-            "msg": "Just debugging"
+            "name": "WrongAccounts",
+            "msg": "Accounts do not fit"
         },
         {
             "code": 6002,
+            "name": "WrongParameters",
+            "msg": "Wrong parameters"
+        },
+        {
+            "code": 6003,
             "name": "ArweaveIDWrong",
             "msg": "Arweave ID must have 43 chars"
+        },
+        {
+            "code": 6004,
+            "name": "CloseGameWrongAccounts",
+            "msg": "Closing bets: the accounts are not coresponding to playing accounts"
         }
     ]
 };
