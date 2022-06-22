@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import {
     IDL
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
@@ -121,8 +120,8 @@ const GamesHistory = () => {
 
 
     const onLoadHederaGames = async () => {
-        await load1()
-        // await load2()
+        // await load1()
+        await load2()
         // await load3()
 
         return

@@ -3,8 +3,7 @@ import GameTileSpace from './GameTileSpace'
 import { useAppSelector } from '../store/hooks';
 import {
     BoardFieldType, mod
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes,
     selectPlayerID

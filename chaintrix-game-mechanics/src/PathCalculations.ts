@@ -1,7 +1,8 @@
 import { CARDS } from "./Constants";
-import { Board, getBoardHeight, getBoardWidth, getNeighborCoords } from "./Board";
 import { create2DArray, create2DArrayOfObjects, mod } from "./methods";
 import { Coords } from "./CustomTypes";
+import { Board, getBoardHeight, getBoardWidth } from "./board/Board";
+import { getNeighborCoords } from "./board/Neighbors";
 
 enum VisitState {
     NOTVISITED,

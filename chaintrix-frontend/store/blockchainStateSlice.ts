@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppThunk } from './store';
 import {
     BlockchainType, GameClosedReason, GameFinishedGenericPayload, GameFinishedHederaPayload, GameFinishedSolanaPayload
-} from '../../chaintrix-game-mechanics/dist/index.js';
+} from 'chaintrix-game-mechanics';
 
 interface SolanaState {
     opponentAddress: string,

@@ -4,8 +4,7 @@ import {
     PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA,
     IDL,
     BlockchainType
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { randomBytes } from 'crypto';
 import * as anchor from "@project-serum/anchor";

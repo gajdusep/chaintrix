@@ -1,4 +1,4 @@
-import { Coords, HexPosition } from "./CustomTypes";
+import { Coords, HexPosition } from "../CustomTypes";
 import { Board, getBoardHeight, getBoardWidth } from "./Board";
 
 export type Sizes = {

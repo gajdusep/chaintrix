@@ -5,7 +5,9 @@ import {
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import { selectBCState } from '../store/blockchainStateSlice';
-import { mod, ITS_A_DRAW_CONSTANT } from '../../chaintrix-game-mechanics/dist';
+import {
+    mod, ITS_A_DRAW_CONSTANT
+} from 'chaintrix-game-mechanics';
 
 const GameFinished = () => {
     const dispatch = useAppDispatch();
