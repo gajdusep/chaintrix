@@ -1,8 +1,8 @@
 import {
     BlockchainType,
     GameState
-} from "../../chaintrix-game-mechanics/dist"
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
+// } from '../../chaintrix-game-mechanics';
 
 export type GameRoom = {
     players: Array<Player>,
@@ -11,6 +11,13 @@ export type GameRoom = {
     acceptedBetInfo?: AcceptedBetInfo,
     timer?: ReturnType<typeof setInterval>,
     remainingTime?: number
+}
+
+export enum MovedType {
+    MOVED,
+    MOVED_AND_DECK_EMPTY,
+    MOVED_AND_PLAYERS_NO_CARDS,
+    ILLEGAL_MOVE
 }
 
 interface GenericPlayer {

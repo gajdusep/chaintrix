@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Board, calculateSizes, cutBorders, deserializeMoves, getBoardFromMoves, getBoardHeight, getBoardWidth, getHexPositionFromIndeces, Sizes } from '../../chaintrix-game-mechanics/dist';
+import {
+    Board, calculateSizes, cutBorders, deserializeMoves,
+    getBoardFromMoves, getBoardHeight, getBoardWidth, getHexPositionFromIndeces, Sizes
+} from 'chaintrix-game-mechanics';
 import GameTileSpace from './GameTileSpace';
 import styles from '../components/GameBoard.module.css'
 

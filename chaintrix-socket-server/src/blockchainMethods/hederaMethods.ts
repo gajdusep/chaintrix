@@ -2,12 +2,14 @@ import {
     AccountId, PrivateKey, Client, Hbar, ContractCallQuery, ContractFunctionParameters,
     ContractId, ContractExecuteTransaction, AccountBalanceQuery, FileCreateTransaction, FileId
 } from "@hashgraph/sdk";
-import { PlayerWantsToPlayHederaPayload, serializeMoves } from "../../chaintrix-game-mechanics/dist";
-import { HEDERA_CONTRACT_ID } from "./Constants";
-import { GameRoom } from "./types";
+import {
+    PlayerWantsToPlayHederaPayload, serializeMoves
+} from 'chaintrix-game-mechanics';
+// } from '../../../chaintrix-game-mechanics/dist';
+import { HEDERA_CONTRACT_ID } from "../constants";
+import { GameRoom } from "../types";
 
 require("dotenv").config();
-
 
 export type HederaConfig = {
     serverId: AccountId,

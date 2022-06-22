@@ -1,4 +1,6 @@
-import { BoardFieldType, CardNullable } from '../../chaintrix-game-mechanics/dist/index';
+import {
+    BoardFieldType, CardNullable
+} from 'chaintrix-game-mechanics';
 
 type GameTileSpaceProps = {
     width: number,

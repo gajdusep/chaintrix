@@ -1,19 +1,18 @@
 import styles from '../components/GameBoard.module.css'
-import Draggable, { DraggableData, DraggableEvent, DraggableEventHandler } from 'react-draggable'; // The default
+import Draggable, { DraggableData, DraggableEvent } from 'react-draggable'; // The default
 import { useEffect, useState } from 'react';
 import GameTileSpace from './GameTileSpace'
 import {
     BoardFieldType, getHexPositions, getCardViewPositions,
-    Coords, Card, HexPosition, checkValidityWithMovePhase,
+    Coords, Card, HexPosition, isMoveValidWithMovePhase,
     getObligatoryPlayersCards, getHexPositionFromIndeces,
     isFinalPhase
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes, selectPlayersCardsView,
     rotateCardInCardView, addCardToBoardSocket, selectPlayerID, selectIsCurrentlyPlaying
 } from '../store/gameStateSlice';
-import { selectSocketClient, setOnEvent } from '../store/socketSlice';
+import { selectSocketClient } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 
@@ -45,7 +44,7 @@ const GameBoard = () => {
         }
         cachedValidityChecks[card.cardID] = {}
         const finalPhase = isFinalPhase(gameState)
-        const isValid = checkValidityWithMovePhase(
+        const isValid = isMoveValidWithMovePhase(
             gameState.board, card,
             posX, posY,
             gameState.currentlyMovingPhase, gameState.playersStates[playerID].cards, finalPhase

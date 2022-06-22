@@ -1,11 +1,14 @@
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
-import { SolanaPlayer, GameRoom, SolanaAcceptedBetInfo } from "./types";
+import { SolanaPlayer, GameRoom, SolanaAcceptedBetInfo } from "../types";
 import { randomBytes } from "crypto";
-import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "./Constants";
-import { ChaintrixSolana, IDL, PlayerWantsToPlaySolanaPayload, serializeMoves } from "../../chaintrix-game-mechanics/dist";
-import { getArweaveConfig, uploadGameMovesToArweave } from "./Arweave";
+import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "../constants";
+import {
+    ChaintrixSolana, IDL, PlayerWantsToPlaySolanaPayload, serializeMoves
+} from 'chaintrix-game-mechanics';
+// } from '../../../chaintrix-game-mechanics/dist';
+import { getArweaveConfig, uploadGameMovesToArweave } from "../arweave";
 
 const BET_ACCOUNT_SIZE = 41
 const ACCEPTED_BETS_ACCOUNT_SIZE = 73

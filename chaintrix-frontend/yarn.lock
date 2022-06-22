@@ -2427,12 +2427,10 @@ caseless@~0.12.0:
   resolved "https://registry.yarnpkg.com/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"
   integrity sha512-4tYFyifaFfGacoiObjJegolkwSU4xQNGbVgUiNYVUxbQ2x2lUsFvY4hVgVzGiIe6WLOPqycWXA40l+PWsxthUw==
 
-chaintrix-game-mechanics@^1.0.12:
-  version "1.0.12"
-  resolved "https://registry.yarnpkg.com/chaintrix-game-mechanics/-/chaintrix-game-mechanics-1.0.12.tgz#7748acd7c7ccf6d8c601c6ebbcbf06f7b21abd33"
-  integrity sha512-C33o3H5DCDbiNgpLA4Q0gCJFZ4gsZEdeG3/iYnG4f+rFyCWOAH2GNogzQSChnwsIzU5om9AaRjKWsIO/DEEMmg==
-  dependencies:
-    typescript "^4.6.3"
+chaintrix-game-mechanics@^1.0.16:
+  version "1.0.16"
+  resolved "https://registry.yarnpkg.com/chaintrix-game-mechanics/-/chaintrix-game-mechanics-1.0.16.tgz#6dc2bbc30721f7aa35d8fca8ad1cebcae9fdfc7e"
+  integrity sha512-EgF+iFZ8vt5MxA7dpHOZ2aZAcnqMBdkyMwumNQORa0nPQoNtdaPifoVFXPrNUsu/IyPbZJOwmNlNSeVb88+jmg==
 
 chalk@^2.0.0:
   version "2.4.2"
@@ -7067,7 +7065,7 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@^4.6.2, typescript@^4.6.3:
+typescript@^4.6.2:
   version "4.7.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.7.3.tgz#8364b502d5257b540f9de4c40be84c98e23a129d"
   integrity sha512-WOkT3XYvrpXx4vMMqlD+8R8R37fZkjyLGlxavMc4iB8lrl8L0DeTcHbYgw/v0N/z9wAFsgBhcsF0ruoySS22mA==

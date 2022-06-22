@@ -6,7 +6,7 @@ import {
     getBoardHeight, getBoardWidth, addCardToBoard, mod, getStateAfterMove,
     updateGameStateAfterDeckCardSelected, PLAYER_PLAYS, PlayerPlaysPayload, isCardInBoard,
     PlayerPlayedPayload, calculateLongestPathForColor, GameFinishedNoBlockchainPayload, INIT_BOARD_HEIGHT, INIT_BOARD_WIDTH,
-} from '../../chaintrix-game-mechanics/dist/index.js';
+} from 'chaintrix-game-mechanics';
 import { Socket } from 'socket.io-client';
 
 export enum GameRunningState {

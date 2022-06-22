@@ -177,7 +177,7 @@ contract ChaintrixContract {
         address[] memory addrs = new address[](games.length);
 
         for (uint256 i = 0; i < games.length; i++) {
-            Game storage game = games[i];
+            Game memory game = games[i];
             addrs[i] = game.fileID;
         }
 

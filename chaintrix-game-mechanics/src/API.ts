@@ -81,6 +81,9 @@ export const SOCKET_CREATED_ROOM_AND_WAITING = 'You created a room. Waiting for 
 
 export const SOCKET_ERROR = 'error'
 export const ALREADY_IN_ROOM_ERROR_MSG = 'You are already in a game room.'
+export const WRONG_PLAYER_ERROR_MSG = 'It is not your move now.'
+export const WRONG_CARD_ERROR_MSG = 'Wrong card.'
+export const WRONG_MOVE_ERROR_MSG = 'Wrong move.'
 export const SOLANA_BET_ACCOUNT_ERROR_MSG = 'We were unable to verify the bet on Solana blockchain.'
 export const HEDERA_BET_ERROR_MSG = 'The bet was not placed correctly.'
 

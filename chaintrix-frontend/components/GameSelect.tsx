@@ -4,8 +4,7 @@ import {
     PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA,
     IDL,
     BlockchainType
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
 import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { randomBytes } from 'crypto';
 import * as anchor from "@project-serum/anchor";
@@ -71,7 +70,7 @@ const GameSelect = () => {
         try {
             const tx = await program.methods.bet(betAccountPDABump, seed)
                 .accounts({
-                    baseAccount: betAccountPDA,
+                    betAccount: betAccountPDA,
                     player: wallet.publicKey,
                     // player: player0.publicKey,
                     systemProgram: anchor.web3.SystemProgram.programId,
@@ -147,7 +146,7 @@ const GameSelect = () => {
         return (
             <div className='flex-column center-items'>
                 <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
-                <div>Please confirm your bet with your wallet and wait for the confirmation. Don't leave this page!</div>
+                <div>Please confirm your bet with your wallet and wait for the confirmation. DO NOT leave this page!</div>
                 <div className='lds-ring lds-ring-blue-color'><div></div><div></div><div></div><div></div></div>
             </div>
         )
@@ -157,7 +156,7 @@ const GameSelect = () => {
         return (
             <div className='flex-column center-items'>
                 <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
-                <div>Bet confirmed, waiting for oponents. Don't leave this page!</div>
+                <div>Bet confirmed, waiting for oponents. DO NOT leave this page!</div>
                 <div className='lds-ring lds-ring-red-color'><div></div><div></div><div></div><div></div></div>
             </div>
         )

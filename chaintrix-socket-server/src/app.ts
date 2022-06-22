@@ -2,17 +2,15 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import {
-    MoveInfo,
     PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_PLAYS,
     PLAYER_WANTS_TO_PLAY_HEDERA, PLAYER_WANTS_TO_PLAY_SOLANA,
     PlayerPlaysPayload,
     PlayerWantsToPlaySolanaPayload,
     PlayerWantsToPlayHederaPayload, BlockchainType
-} from "../../chaintrix-game-mechanics/dist";
-import { getArweaveConfig } from "./Arweave";
-import {
-    playerPlays, joinOrCreateRoom
-} from './SocketMethods'
+} from 'chaintrix-game-mechanics';
+// } from '../../chaintrix-game-mechanics';
+import { joinOrCreateRoom } from "./socketMethods/joinGame";
+import { playerPlays } from "./socketMethods/playerMove";
 import { HederaPlayer, NoBlockchainPlayer, Player, SolanaPlayer } from "./types";
 
 require('dotenv').config()
@@ -58,5 +56,6 @@ const getApiAndEmit = socket => {
     socket.emit("FromAPI", response);
 };
 
-const port = 4001
+// const port = 4001
+const port = 8080
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));

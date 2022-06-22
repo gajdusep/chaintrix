@@ -1,12 +1,11 @@
 
 
-import {
-    Board, getNewBoard,
-    getObligatoryPlayersCards, getNumberOfObligatoryCards, getNumberOfPlayableCards, calculateBoardFieldsTypes, addNewBoardFieldTypesToBoard
-} from "./Board";
+import { Board, getNewBoard, addNewBoardFieldTypesToBoard } from "./board/Board";
 import { Card, CardNullable, Coords } from "./CustomTypes";
 import { COLORS, CARDS, DECK_SIZE } from "./Constants";
 import { getRandomCard, mod } from "./methods";
+import { calculateBoardFieldsTypes } from "./board/BoardFieldTypes";
+import { getNumberOfObligatoryCards, getNumberOfPlayableCards, getObligatoryPlayersCards } from "./board/AddCardToBoard";
 
 export type PlayerState = {
     color: string,
@@ -99,7 +98,7 @@ export const updateGameStateAfterDeckCardSelected = (
     const pl0Index = gameState.playersStates[0].cards.findIndex((value) => value?.cardID == playedCardID)
     const pl1Index = gameState.playersStates[1].cards.findIndex((value) => value?.cardID == playedCardID)
 
-    console.log(`in updating game state after deck select: ${newCardID}, ${JSON.stringify(gameState.deck)}`)
+    // console.log(`in updating game state after deck select: ${newCardID}, ${JSON.stringify(gameState.deck)}`)
     let newCard = null
     if (newCardID != null) {
         const deckCardIndex = gameState.deck.findIndex((value) => value == newCardID)

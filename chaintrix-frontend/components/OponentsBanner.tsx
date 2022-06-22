@@ -3,8 +3,7 @@ import GameTileSpace from './GameTileSpace'
 import { useAppSelector } from '../store/hooks';
 import {
     BoardFieldType, mod
-} from '../../chaintrix-game-mechanics/dist/index.js';
-// } from 'chaintrix-game-mechanics';
+} from 'chaintrix-game-mechanics';
 import {
     selectGameState, selectSizes,
     selectPlayerID
@@ -39,17 +38,19 @@ const OponentsBanner = () => {
             }}
             className={classByColorMapping[gameState.playersStates[mod(playerID + 1, 2)].color]}
         >
-            <div className='glass'>Oponent's cards</div>
+            <div className='glass'>Oponent&apos;s cards</div>
             {gameState.playersStates[mod(playerID + 1, 2)].cards.map((element, index) => {
                 return (
-                    <div style={{
-                        zIndex: 10000000,
-                        cursor: 'pointer',
-                        flex: `1 auto`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
+                    <div
+                        key={index}
+                        style={{
+                            zIndex: 10000000,
+                            cursor: 'pointer',
+                            flex: `1 auto`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
                         <GameTileSpace card={element}
                             // width={sizes.svgWidth} height={sizes.svgHeight}
                             width={100}
