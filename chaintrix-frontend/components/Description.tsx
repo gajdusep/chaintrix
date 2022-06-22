@@ -1,13 +1,8 @@
 import React from 'react'
-import { Link } from 'react-router-dom';
 
 const Description = () => {
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <Link to='/games'>
-                <h2>History of matches</h2>
-            </Link>
             <div>Chaintrix is online blockchain version of the <a href='https://en.wikipedia.org/wiki/Tantrix' target="_blank" rel="noopener noreferrer">Tantrix</a> board game.</div>
             <h2>How does it work?</h2>
             <div>Play Tantrix with other online players.</div>

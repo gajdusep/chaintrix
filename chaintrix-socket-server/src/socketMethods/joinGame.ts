@@ -156,7 +156,8 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
 
     const player0Payload: GameStartedPayload = { playerID: 0, gameState: newGameState, seconds: INITIAL_TIME }
     const player1Payload: GameStartedPayload = { playerID: 1, gameState: newGameState, seconds: INITIAL_TIME }
-    sio.to(waitingPlayer.socketID).emit(GAME_STARTED, player0Payload)
-    sio.to(joiningPlayer.socketID).emit(GAME_STARTED, player1Payload)
+
+    if (waitingPlayer) sio.to(waitingPlayer.socketID).emit(GAME_STARTED, player0Payload)
+    if (joiningPlayer) sio.to(joiningPlayer.socketID).emit(GAME_STARTED, player1Payload)
     // sio.to(gameRoomID).emit(GAME_STARTED, newGameState)
 }

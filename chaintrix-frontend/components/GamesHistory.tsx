@@ -136,38 +136,38 @@ const GamesHistory = () => {
     }
 
     return (
-        <div
-        //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }}
-        >
-            <Link to='/'>Homepage</Link>
-            <h1 style={{ textAlign: 'center' }}>Game history</h1>
-            <h2>Solana game history</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', maxWidth: `500px` }}>
-                <WalletMultiButton />
-                {wallet && anchorWallet ? <button onClick={() => onLoadAllSolana()} className='basic-button'>Load and write to console</button> : <></>}
-                <div>
-                    {closedAccounts.map((closedAccount) => {
-                        return <ClosedGameView key={closedAccount.account.arweave}
-                            arweave={closedAccount.account.arweave}
-                            winnerIndex={closedAccount.account.winnerIndex}
-                            player0={closedAccount.account.player0}
-                            player1={closedAccount.account.player1}
-                        />
+        <div style={{ maxWidth: `500px` }}>
+            <div className='flex-column center-items select-wrapper glass'>
+                <Link to='/'>Homepage</Link>
+                <div style={{ height: 100 }}></div>
+                <h1 style={{ textAlign: 'center' }}>Game history</h1>
+                <h2>Solana game history</h2>
+                <div style={{ display: 'flex', flexDirection: 'column', maxWidth: `500px` }}>
+                    <WalletMultiButton />
+                    {wallet && anchorWallet ? <button onClick={() => onLoadAllSolana()} className='basic-button'>Load and write to console</button> : <></>}
+                    <div>
+                        {closedAccounts.map((closedAccount) => {
+                            return <ClosedGameView key={closedAccount.account.arweave}
+                                arweave={closedAccount.account.arweave}
+                                winnerIndex={closedAccount.account.winnerIndex}
+                                player0={closedAccount.account.player0}
+                                player1={closedAccount.account.player1}
+                            />
+                        })}
+                    </div>
+                </div>
+                <h2>Hedera game history</h2>
+                <div style={{ display: 'flex', flexDirection: 'row' }}>
+                    <button onClick={() => { connectToHederaWallet() }} className='basic-button'>Connect to Hedera wallet</button>
+                    {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onLoadHederaGames() }} className='basic-button'>Load hedera games</button> : <></>}
+                    {hederaClosedGames.map((closedGame) => {
+                        return <div key={closedGame.toSolidityAddress()}>
+                            <p>{closedGame.toString()}</p>
+                        </div>
                     })}
                 </div>
             </div>
-            <h2>Hedera game history</h2>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
-                <button onClick={() => { connectToHederaWallet() }} className='basic-button'>Connect to Hedera wallet</button>
-                {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onLoadHederaGames() }} className='basic-button'>Load hedera games</button> : <></>}
-                {hederaClosedGames.map((closedGame) => {
-                    return <div key={closedGame.toSolidityAddress()}>
-                        <p>{closedGame.toString()}</p>
-                    </div>
-                })}
-            </div>
         </div>
-
     )
 }
 

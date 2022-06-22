@@ -14,6 +14,11 @@ a {
     box-sizing: border-box;
 }
 
+h1,
+h2 {
+    text-align: center;
+}
+
 .dont-drag-image {}
 
 .basic-button {
@@ -51,13 +56,7 @@ a {
 
 .select-wrapper {
     z-index: 100;
-    width: 500px;
     max-width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    justify-items: center;
     position: relative;
 }
 
@@ -149,4 +148,51 @@ a {
     100% {
         transform: rotate(360deg);
     }
+}
+
+.chaintrix-heading {
+    text-align: center;
+    padding: 5px;
+    margin: 5px;
+    font-weight: bold;
+    font-size: xx-large;
+    background: -webkit-linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgb(0, 128, 154) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.bc-select-generic {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px;
+    margin: 5px;
+    border-radius: 10px;
+}
+
+.bc-select-nbc {
+    background: linear-gradient(to right, rgb(245, 252, 168), rgb(250, 248, 240));
+}
+
+.bc-select-solana {
+    background: linear-gradient(to right, #dbc3f8, #c0e4d5);
+}
+
+.bc-select-hedera {
+    background: linear-gradient(to right, #8a8a8a, #dedede);
+}
+
+.history-link-text {
+    /* color: white;
+    background: rgba(0, 0, 0, 0.85); */
+    color: black;
+    background: white;
+    border: black 1px solid;
+    box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.85);
+    border-radius: 10px;
+    margin-top: -100px;
+    margin-bottom: 100px;
+    padding: 10px;
+    font-size: xx-large;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
     selectGameRunningState, selectLengths, GameRunningState,
     selectError, selectGameState, selectSeconds, setSeconds
@@ -78,20 +79,29 @@ const GameWrapper = () => {
     )
 
     return (
-        <div>
+        <div style={{ maxWidth: `500px` }}>
             <div className='parallax-wrapper'>
                 <ParallaxProvider>
                     <Background />
                 </ParallaxProvider>
             </div>
-            <div className='select-wrapper glass'>
+            <div className='flex-column center-items select-wrapper glass'>
+                <div style={{ height: 100 }}></div>
+                <div className='chaintrix-heading'>chaintrix</div>
                 <div style={{ height: 100 }}></div>
                 <GameSelect />
+                <div style={{ height: 100 }}></div>
+                <Link to='/games' style={{ textDecoration: 'none' }}>
+                    <div className='flex-column center-items'>
+                        <img style={{ width: 300, }} src='/others/history.png' />
+                        <div className='history-link-text'>history of matches</div>
+                    </div>
+                </Link>
                 <div style={{ height: 100 }}></div>
                 <Description />
                 <div style={{ height: 100 }}></div>
             </div>
-        </div>
+        </div >
     )
 }
 

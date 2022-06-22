@@ -145,7 +145,6 @@ const GameSelect = () => {
     if (gameRunningState == GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION) {
         return (
             <div className='flex-column center-items'>
-                <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
                 <div>Please confirm your bet with your wallet and wait for the confirmation. DO NOT leave this page!</div>
                 <div className='lds-ring lds-ring-blue-color'><div></div><div></div><div></div><div></div></div>
             </div>
@@ -155,31 +154,31 @@ const GameSelect = () => {
     if (gameRunningState == GameRunningState.BET_CONFIRMED_NOW_WAITING) {
         return (
             <div className='flex-column center-items'>
-                <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
                 <div>Bet confirmed, waiting for oponents. DO NOT leave this page!</div>
                 <div className='lds-ring lds-ring-red-color'><div></div><div></div><div></div><div></div></div>
             </div>
         )
     }
 
+    const logoSize = 60
     return (
-        <div>
-            {/* //  style={{ display: 'flex', flexDirection: 'column', width: `400px`, justifyContent: 'center' }} */}
-
-            <h1 style={{ textAlign: 'center' }}>chaintrix</h1>
+        <div className='flex-column center-items' style={{ width: `100%` }}>
             <div>Begin with selecting your blockchain:</div>
-            <div>
+            <div className='bc-select-generic bc-select-nbc'>
+                <img height={logoSize} src='/noBlockchainLogo.png' />
                 <button className='basic-button' onClick={() => onPlayNoBCCLick()}>Play with no blockchain</button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
-                <WalletMultiButton />
+            <div className='bc-select-generic bc-select-solana'>
+                <img height={logoSize} width={logoSize} src='/solanaLogo.svg' />
+                <div style={{ margin: `10px` }}><WalletMultiButton /></div>
                 {wallet && anchorWallet ? <button onClick={() => onPlaySolanaClick()} className='basic-button'>Play with Solana</button> : <></>}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
+            <div className='bc-select-generic bc-select-hedera'>
+                <img height={logoSize} src='/hederaLogo.svg' />
                 <button onClick={() => { connectToHederaWallet() }} className='basic-button'>Connect to Hedera wallet</button>
                 {hederaStatus == HashConnectStatus.PAIRED ? <button onClick={() => { onPlayHederaCLick() }} className='basic-button'>Play with Hedera</button> : <></>}
             </div>
-        </div>
+        </div >
 
     )
 }
