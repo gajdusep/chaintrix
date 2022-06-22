@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { ACCEPTED_BETS_ACCOUNT_SIZE, BET_ACCOUNT_SIZE, BET_AMOUNT, TREASURY_AMOUNT } from "./constants";
+import { ACCEPTED_BETS_ACCOUNT_SIZE, BET_ACCOUNT_SIZE, BET_AMOUNT, GAME_CLOSED_SIZE, TREASURY_AMOUNT } from "./constants";
 chai.use(chaiAsPromised);
 
 export const printAccountBalance = async (connection: Connection, publicKey: PublicKey) => {
@@ -34,7 +34,6 @@ export const playerCanBet = async (
         [Buffer.from("seed"), seed],
         program.programId
     );
-    console.log(`bet accounts: ${betAccountPDA} ${betAccountPDABump}`)
 
     const tx = await program.methods.bet(betAccountPDABump, seed)
         .accounts({
@@ -119,7 +118,6 @@ export const acceptBetsTest = async (
 
     let signerBalanceAfterTx = await connection.getBalance(signerKeyPair.publicKey);
     assertBeforeAfterDiff(signerBalanceBeforeTx, signerBalanceAfterTx, -transactionFee)
-    console.log(LAMPORTS_PER_SOL / transactionFee)
 
     const pdaAccount = await program.account.acceptedBetsAccount.fetch(acceptedBetsPDA);
     assert.equal(pdaAccount.player0.toBase58(), player0.toBase58())
@@ -129,7 +127,6 @@ export const acceptBetsTest = async (
 
     const minRent = await connection.getMinimumBalanceForRentExemption(ACCEPTED_BETS_ACCOUNT_SIZE)
     const betMinRent = await connection.getMinimumBalanceForRentExemption(BET_ACCOUNT_SIZE)
-    // console.log(`hmm: ${betMinRent}`)
     assert.equal(PDAbalance, 2 * BET_AMOUNT + 2 * betMinRent)
 
     return acceptedBetsPDA
@@ -150,16 +147,17 @@ export const closeGame = async (
     const player0BalanceBeforeTx = await connection.getBalance(player0);
     const player1BalanceBeforeTx = await connection.getBalance(player1);
     const treasuryBalanceBeforeTx = await connection.getBalance(treasury);
-    const accepteedAccountBalance = await connection.getBalance(acceptedBetsPDA);
+    let acceptedAccountBalance = await connection.getBalance(acceptedBetsPDA);
+    const signerBalanceBeforeTx = await connection.getBalance(signerKeyPair.publicKey);
+
+    const minRent = await connection.getMinimumBalanceForRentExemption(GAME_CLOSED_SIZE)
+    acceptedAccountBalance -= minRent
 
     const seed = randomBytes(32);
     const [closedGamePDA, closedGamePDABump] = await anchor.web3.PublicKey.findProgramAddress(
         [Buffer.from("closed"), seed],
         program.programId
     );
-
-    let transactionFee = 0;
-    await printAccountBalance(connection, signerKeyPair.publicKey);
 
     const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, winnerIndex, arweaveId)
         .accounts({
@@ -174,7 +172,9 @@ export const closeGame = async (
         .signers([signerKeyPair])
         .rpc({ commitment: 'confirmed' })
 
-    transactionFee = (await connection.getParsedTransaction(tx, 'confirmed')).meta.fee;
+    const transactionFee = (await connection.getParsedTransaction(tx, 'confirmed')).meta.fee;
+    const signerBalanceAfterTx = await connection.getBalance(signerKeyPair.publicKey);
+    assertBeforeAfterDiff(signerBalanceBeforeTx, signerBalanceAfterTx, -transactionFee)
 
     const pdaAccount = await program.account.gameClosedAccount.fetch(closedGamePDA);
     assert.equal(pdaAccount.player0.toBase58(), player0.toBase58())
@@ -185,25 +185,18 @@ export const closeGame = async (
     const player1BalanceAfterTx = await connection.getBalance(player1);
     const treasuryBalanceAfterTx = await connection.getBalance(treasury);
     if (winnerIndex == 0) {
-        assertBeforeAfterDiff(player0BalanceBeforeTx, player0BalanceAfterTx, accepteedAccountBalance - TREASURY_AMOUNT)
+        assertBeforeAfterDiff(player0BalanceBeforeTx, player0BalanceAfterTx, acceptedAccountBalance - TREASURY_AMOUNT)
         assertBeforeAfterDiff(player1BalanceBeforeTx, player1BalanceAfterTx, 0)
         assertBeforeAfterDiff(treasuryBalanceBeforeTx, treasuryBalanceAfterTx, TREASURY_AMOUNT)
     }
     else if (winnerIndex == 1) {
         assertBeforeAfterDiff(player0BalanceBeforeTx, player0BalanceAfterTx, 0)
-        assertBeforeAfterDiff(player1BalanceBeforeTx, player1BalanceAfterTx, accepteedAccountBalance - TREASURY_AMOUNT)
+        assertBeforeAfterDiff(player1BalanceBeforeTx, player1BalanceAfterTx, acceptedAccountBalance - TREASURY_AMOUNT)
         assertBeforeAfterDiff(treasuryBalanceBeforeTx, treasuryBalanceAfterTx, TREASURY_AMOUNT)
 
     } else if (winnerIndex == 255) {
-        assertBeforeAfterDiff(player0BalanceBeforeTx, player0BalanceAfterTx, accepteedAccountBalance / 2)
-        assertBeforeAfterDiff(player1BalanceBeforeTx, player1BalanceAfterTx, accepteedAccountBalance / 2)
+        assertBeforeAfterDiff(player0BalanceBeforeTx, player0BalanceAfterTx, acceptedAccountBalance / 2)
+        assertBeforeAfterDiff(player1BalanceBeforeTx, player1BalanceAfterTx, acceptedAccountBalance / 2)
         assertBeforeAfterDiff(treasuryBalanceBeforeTx, treasuryBalanceAfterTx, 0)
     }
-
-    await printAccountBalance(connection, signerKeyPair.publicKey);
-
-    // TODO: calculate how much should the winner have
-    await printAccountBalance(connection, player0);
-    await printAccountBalance(connection, player1);
-    // let serverBalanceAfterTx = await connection.getBalance(player0.publicKey);
 }
