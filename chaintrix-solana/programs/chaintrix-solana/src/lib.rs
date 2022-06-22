@@ -116,12 +116,19 @@ pub mod chaintrix_solana {
         let game_closed_account = &mut ctx.accounts.game_closed_account;
         let treasury = &mut ctx.accounts.treasury;
 
-        let lamports_to_split = accepted_bets_account.to_account_info().lamports();
+        let rent = Rent::default();
+        let server_fee = Rent::minimum_balance(&rent, GameClosedAccount::LEN);
+        let lamports_to_split = accepted_bets_account.to_account_info().lamports() - server_fee;
         let lamports_winner = lamports_to_split - TREASURY_AMOUNT;
         **accepted_bets_account
             .to_account_info()
             .lamports
             .borrow_mut() = 0;
+
+        **(&mut ctx.accounts.server)
+            .to_account_info()
+            .lamports
+            .borrow_mut() += server_fee;
 
         if winner == 0 {
             **player0.to_account_info().lamports.borrow_mut() += lamports_winner;
