@@ -61,7 +61,7 @@ const GameWrapper = () => {
                 {isGameRunning() && <MovePhaseBanner />}
                 <div className='game-board-wrapper'>
                     <div className='flex-column' style={{ width: 150, backgroundColor: 'white', border: `3px solid black` }}>
-                        {colors.map((color) => <div>{color}: {pathLengths[color]}</div>)}
+                        {colors.map((color) => <div key={color}>{color}: {pathLengths[color]}</div>)}
                         <div>Cards in the deck: {gameState.deck.length}</div>
                         <div>SECONDS: <b>{seconds}</b></div>
                         <div>BC TYPE: <b>{blockchainState.blockchainType}</b></div>

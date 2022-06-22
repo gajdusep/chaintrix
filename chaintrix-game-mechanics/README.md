@@ -17,7 +17,7 @@ npm run prepare
 
 ### Public
 
-Increase version in `package.json`
+**Increase version** in `package.json`
 
 ```bash
 npm publish --access public

@@ -19,8 +19,8 @@ export interface SocketState {
     socketClient: Socket
 }
 
-const socketClient = socketIOClient(LOCALHOST_SOCKET_ENDPOINT);
-// const socketClient = socketIOClient(PRODUCTION_SOCKET_ENDPOINT);
+// const socketClient = socketIOClient(LOCALHOST_SOCKET_ENDPOINT);
+const socketClient = socketIOClient(PRODUCTION_SOCKET_ENDPOINT);
 
 socketClient.on(PLAYER_PLAYED, (payload: PlayerPlayedPayload) => {
     console.log(`player played!!!: ${JSON.stringify(payload)}`)

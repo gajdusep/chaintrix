@@ -26,7 +26,7 @@ const GameFinished = () => {
                             <div>You lost...</div>
                         }
                         {blockchainState.gameResult.winnerIndex == ITS_A_DRAW_CONSTANT &&
-                            <div>It's a draw!</div>
+                            <div>It is a draw!</div>
                         }
                     </div>
                 }

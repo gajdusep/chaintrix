@@ -11,7 +11,7 @@ const Description = () => {
             <div>Chaintrix is online blockchain version of the <a href='https://en.wikipedia.org/wiki/Tantrix' target="_blank" rel="noopener noreferrer">Tantrix</a> board game.</div>
             <h2>How does it work?</h2>
             <div>Play Tantrix with other online players.</div>
-            <div>For learning, play without any bets. When you're confident enough, you can bet using Solana or Hedera tokens.</div>
+            <div>For learning, play without any bets. When you&apos;re confident enough, you can bet using Solana or Hedera tokens.</div>
             <h2>How does the betting work?</h2>
             <div>
                 First, connect the wallet of the blockchain you want to use. For Solana, we recommed <a href='https://phantom.app/' target="_blank" rel="noopener noreferrer">Phantom</a>.

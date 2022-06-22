@@ -147,7 +147,7 @@ const GamesHistory = () => {
                 {wallet && anchorWallet ? <button onClick={() => onLoadAllSolana()} className='basic-button'>Load and write to console</button> : <></>}
                 <div>
                     {closedAccounts.map((closedAccount) => {
-                        return <ClosedGameView
+                        return <ClosedGameView key={closedAccount.account.arweave}
                             arweave={closedAccount.account.arweave}
                             winnerIndex={closedAccount.account.winnerIndex}
                             player0={closedAccount.account.player0}
