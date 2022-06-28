@@ -9,7 +9,8 @@ import { getNumberOfObligatoryCards, getNumberOfPlayableCards, getObligatoryPlay
 
 export type PlayerState = {
     color: string,
-    cards: Array<CardNullable>
+    cards: Array<CardNullable>,
+    initialCards: Array<string>
 }
 
 export enum MovePhase {
@@ -25,39 +26,6 @@ export interface Move {
     newCardID: string
 }
 
-export const serializeMove = (move: Move): object => {
-    return {
-        p: {
-            id: move.playedCard.cardID,
-            or: move.playedCard.orientation
-        },
-        x: move.x,
-        y: move.y,
-        n: move.newCardID
-    }
-}
-
-export const serializeMoves = (moves: Array<Move>): string => {
-    return JSON.stringify(moves.map(item => serializeMove(item)));
-}
-
-export const deserializeMoves = (s: string): Array<Move> => {
-    const parsed = JSON.parse(s)
-    const moves: Array<Move> = []
-    for (let i = 0; i < parsed.length; i++) {
-        const item = parsed[i]
-        moves.push({
-            playedCard: {
-                cardID: item.p.id,
-                orientation: item.p.or,
-            },
-            x: item.x,
-            y: item.y,
-            newCardID: item.n
-        })
-    }
-    return moves;
-}
 
 export interface GameState {
     playersStates: Array<PlayerState>
@@ -168,11 +136,13 @@ export const getNewGameState = (): GameState => {
         playersStates: [
             {
                 color: twoRandomColors.color0,
-                cards: player0Cards
+                cards: player0Cards,
+                initialCards: player0Cards.map(card => card.cardID)
             },
             {
                 color: twoRandomColors.color1,
-                cards: player1Cards
+                cards: player1Cards,
+                initialCards: player1Cards.map(card => card.cardID)
             }
         ],
         startingPlayer: 0,

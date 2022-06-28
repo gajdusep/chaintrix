@@ -9,13 +9,12 @@ import {
 } from '@solana/wallet-adapter-wallets';
 import { Provider } from 'react-redux';
 import { store } from '../store/store';
-import { LOCALHOST_SOLANA_ENDPOINT, PRODUCTION_SOLANA_ENDPOINT } from '../helpers/Constants';
+import { SOLANA_ENDPOINT } from '../helpers/Constants';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
 
 const AppWrapper = ({ Component, pageProps }: AppProps) => {
-  // const endpoint = useMemo(() => PRODUCTION_SOLANA_ENDPOINT, []);
-  const endpoint = useMemo(() => LOCALHOST_SOLANA_ENDPOINT, []);
+  const endpoint = useMemo(() => SOLANA_ENDPOINT, []);
 
   const wallets = useMemo(
     () => [

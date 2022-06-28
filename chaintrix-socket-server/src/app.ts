@@ -50,12 +50,5 @@ io.on("connection", (socket) => {
     });
 });
 
-const getApiAndEmit = socket => {
-    const response = new Date();
-    // Emitting a new message. Will be consumed by the client
-    socket.emit("FromAPI", response);
-};
-
-// const port = 4001
 const port = 8080
 httpServer.listen(port, () => console.log(`Listening on port ${port}`));

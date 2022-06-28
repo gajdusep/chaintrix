@@ -47,12 +47,10 @@ export const addNewBoardFieldTypesToBoard = (board: Board, newBoardFieldTypes: B
 }
 
 export const getBoardHeight = (board: Board): number => {
-    // TODO: out of range checks
     return board.boardCards.length;
 }
 
 export const getBoardWidth = (board: Board): number => {
-    // TODO: out of range checks
     return board.boardCards[0].length;
 }
 

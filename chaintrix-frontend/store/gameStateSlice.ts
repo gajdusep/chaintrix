@@ -115,7 +115,6 @@ export const gameStateSlice = createSlice({
             // state.gameState = getStateAfterMove(state.gameState)
             state.playersCardsView = getNewCardView(state)
 
-            // TODO: make this visible in client
             state.lengths['R'] = calculateLongestPathForColor(state.gameState.board, 'R')
             state.lengths['G'] = calculateLongestPathForColor(state.gameState.board, 'G')
             state.lengths['B'] = calculateLongestPathForColor(state.gameState.board, 'B')

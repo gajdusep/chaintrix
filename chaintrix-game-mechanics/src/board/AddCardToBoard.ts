@@ -105,10 +105,6 @@ export const isMoveValidWithMovePhase = (
 export const addCardToBoard = (
     board: Board, card: CardNullable, posX: number, posY: number
 ): Board => {
-    // TODO: check if out of bounds
-    // const newBoard: Board = { ...board };
-    // TODO: CHECK IF THE PLAYER CAN REALLY PLAY THAT CARD (is in his cards)
-
     let addTop: boolean = false;
     let addLeft: boolean = false;
     let addBottom: boolean = false;
@@ -122,13 +118,7 @@ export const addCardToBoard = (
     if (posY == 0) addLeft = true;
     if (posY == width - 1) addRight = true;
 
-    // console.log(`pose: ${JSON.stringify(card)}`)
-    // console.log(`pose2: ${JSON.stringify(board.boardCards[posX][posY])}`)
-    // console.log(`pose3: ${JSON.stringify(board.boardCards)}`)
     board.boardCards[posX][posY] = card
-
-
-    // return;
     if (addTop) {
         board.parity = mod(board.parity + 1, 2);
         const newArray = new Array(width).fill(null);
@@ -158,7 +148,6 @@ export const addCardToBoard = (
     const newBoardFieldTypes = calculateBoardFieldsTypes(board, false)
     const boardResult = addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
     return boardResult;
-    // return boardResult
 }
 
 export const getAllObligatoryPositionsCoords = (board: Board): Array<Coords> => {

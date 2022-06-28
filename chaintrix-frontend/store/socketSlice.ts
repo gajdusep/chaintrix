@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, store } from './store';
 import socketIOClient, { Socket } from "socket.io-client";
-import { LOCALHOST_SOCKET_ENDPOINT, PRODUCTION_SOCKET_ENDPOINT } from '../helpers/Constants';
+import { SOCKET_ENDPOINT } from '../helpers/Constants';
 import {
     GameFinishedGenericPayload, GameFinishedHederaPayload, GameFinishedNoBlockchainPayload,
     GameFinishedSolanaPayload, GameStartedPayload,
@@ -19,8 +19,7 @@ export interface SocketState {
     socketClient: Socket
 }
 
-const socketClient = socketIOClient(LOCALHOST_SOCKET_ENDPOINT);
-// const socketClient = socketIOClient(PRODUCTION_SOCKET_ENDPOINT);
+const socketClient = socketIOClient(SOCKET_ENDPOINT);
 
 socketClient.on(PLAYER_PLAYED, (payload: PlayerPlayedPayload) => {
     console.log(`player played!!!: ${JSON.stringify(payload)}`)

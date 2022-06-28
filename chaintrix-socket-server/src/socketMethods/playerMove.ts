@@ -84,14 +84,6 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
     newCardId: string | null,
     movedType: MovedType
 } => {
-    // TODO: check:
-    // - is the card valid in the position
-    // - is the game phase correct
-    // - if the number of cards is 0 (or what exact rule applies), return false/null etc
-
-
-    // checkValidityWithMovePhase()
-
     const newBoard = addCardToBoard(room.gameState.board, moveInfo.card, moveInfo.x, moveInfo.y)
     room.gameState.board = newBoard
 
@@ -120,5 +112,3 @@ export const playerMove = (room: GameRoom, moveInfo: PlayerPlaysPayload): {
         movedType: movedType
     }
 }
-
-

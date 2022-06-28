@@ -38,6 +38,19 @@ export const scCallBet = async (
     console.log(`- Contract function call status: ${contractExecuteRx.status}`);
 }
 
+export const closeBet = async (
+    serverClient: NodeClient, playerID: AccountId, contractId: ContractId
+) => {
+    const contractExecuteTx = new ContractExecuteTransaction()
+        .setContractId(contractId)
+        .setGas(MAX_GAS)
+        .setFunction("closeBet", new ContractFunctionParameters().addAddress(playerID.toSolidityAddress()));
+
+    const contractExecuteSubmit = await contractExecuteTx.execute(serverClient);
+    const contractExecuteRx = await contractExecuteSubmit.getReceipt(serverClient);
+    console.log(`- Contract function call status: ${contractExecuteRx.status}`);
+}
+
 export const getContractBalance = async (contractId: ContractId, client: Client): Promise<BigNumber> => {
     const contractQueryTx = new ContractCallQuery()
         .setContractId(contractId)
@@ -114,7 +127,7 @@ export const closeGame = async (
     const contractParams = new ContractFunctionParameters()
         .addAddress(player0Id.toSolidityAddress())
         .addAddress(player1Id.toSolidityAddress())
-        .addUint256(winnerIndex)
+        .addUint8(winnerIndex)
         .addAddress(fileId);
     const contractExecuteTx = new ContractExecuteTransaction()
         .setContractId(contractId)

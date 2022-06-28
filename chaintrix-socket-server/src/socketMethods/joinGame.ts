@@ -113,13 +113,12 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     const waitingPlayer = waitingPlayers[waitingPlayerSocketID];
     delete waitingPlayers[waitingPlayerSocketID];
 
-    // TODO: based on blockchain, accept bets and create a new room object
     let acceptedBetInfo: AcceptedBetInfo = null
     switch (blockchainType) {
         case BlockchainType.NO_BLOCKCHAIN:
             break;
         case BlockchainType.SOLANA:
-            // TODO: if accept bets fail, what will happen?
+            // TODO: if accept bets fail, what will happen? try catch here
             const acceptedBetsPDA = await acceptBetsSolana(
                 (waitingPlayer as SolanaPlayer).betPDA,
                 (joiningPlayer as SolanaPlayer).betPDA
@@ -130,6 +129,7 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
             }
             break;
         case BlockchainType.HEDERA:
+            // TODO: if accept bets fail, what will happen? try catch here
             const result = await acceptBetsHedera(
                 getHederaConfig(),
                 toSolidity((waitingPlayer as HederaPlayer).address),

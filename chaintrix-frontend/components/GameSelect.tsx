@@ -10,7 +10,7 @@ import { randomBytes } from 'crypto';
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { Connection } from '@solana/web3.js';
-import { HEDERA_CONTRACT_ID, LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from '../helpers/Constants';
+import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT } from '../helpers/Constants';
 import {
     selectGameRunningState, GameRunningState, setGameRunningState
 } from '../store/gameStateSlice';
@@ -19,7 +19,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import React from 'react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId } from "@hashgraph/sdk";
-import { connectToExtension, HashConnectStatus } from '../helpers/HashConnectService'
+import { connectToExtension, HashConnectStatus } from '../store/hederaSlice'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { setBlockchainType } from '../store/blockchainStateSlice';
 import { ToastContainer, toast } from 'react-toastify';
@@ -35,7 +35,7 @@ const GameSelect = () => {
     // SOLANA VARS
     const wallet = useWallet();
     const anchorWallet = useAnchorWallet();
-    const [connection, setConnection] = useState<Connection>(() => { return new Connection(LOCALHOST_SOLANA_ENDPOINT) })
+    const [connection, setConnection] = useState<Connection>(() => { return new Connection(SOLANA_ENDPOINT) })
 
     // HEDERA VARS
     const hashConnectService = useAppSelector(selectHederaConnectService)
@@ -53,7 +53,7 @@ const GameSelect = () => {
         if (!wallet || !wallet.publicKey || !anchorWallet) return;
 
         const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
-        const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
+        const program = new Program(IDL, SOLANA_PROGRAM_ID, provider);
 
         console.log(`betting started ${wallet.publicKey}`)
         const seed = randomBytes(32);
@@ -63,8 +63,6 @@ const GameSelect = () => {
         );
         console.log(`bet accounts: ${betAccountPDA} ${betAccountPDABump}`)
 
-        const player0 = anchor.web3.Keypair.generate();
-
         dispatch(setGameRunningState(GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION))
 
         try {
@@ -72,14 +70,13 @@ const GameSelect = () => {
                 .accounts({
                     betAccount: betAccountPDA,
                     player: wallet.publicKey,
-                    // player: player0.publicKey,
                     systemProgram: anchor.web3.SystemProgram.programId,
                 })
                 .signers([])
                 .rpc({ commitment: 'finalized' });
 
             const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
-            console.log(`pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
+            console.log(`tx: ${tx}, pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
         } catch (error) {
             console.log(error)
             toastError(CANNOT_BET_ERROR_MESSAGE)
@@ -87,6 +84,7 @@ const GameSelect = () => {
             return;
         }
 
+        // TODO: SIGN MESSAGE TO BE VERIFIED BY THE SERVER, THAT IT WAS REALLY SENT FROM PLAYERS ACCOUNT
         const payload: PlayerWantsToPlaySolanaPayload = {
             betPDA: betAccountPDA.toBase58(),
             playerAddress: wallet.publicKey.toBase58()
@@ -163,7 +161,7 @@ const GameSelect = () => {
     const logoSize = 60
     return (
         <div className='flex-column center-items' style={{ width: `100%` }}>
-            <div>Begin with selecting your blockchain:</div>
+            <div style={{ fontWeight: 'bold' }}>Begin with selecting your blockchain:</div>
             <div className='bc-select-generic bc-select-nbc'>
                 <img height={logoSize} src='/noBlockchainLogo.png' />
                 <button className='basic-button' onClick={() => onPlayNoBCCLick()}>Play with no blockchain</button>

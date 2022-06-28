@@ -10,6 +10,9 @@ contract ChaintrixContract {
     }
 
     struct Game {
+        address player0;
+        address player1;
+        uint8 winnerIndex;
         address fileID;
     }
 
@@ -47,6 +50,15 @@ contract ChaintrixContract {
         playerBets[sender].isSet = true;
     }
 
+    function closeBet(address payable playerAddress) public isServer {
+        require(
+            hasPlayerPlacedBet(playerAddress),
+            "cannot close already closed bet"
+        );
+        playerBets[playerAddress] = Bet(address(0), false);
+        playerAddress.transfer(betAmount);
+    }
+
     function hasPlayerPlacedBet(address playerAddress)
         public
         view
@@ -74,8 +86,6 @@ contract ChaintrixContract {
             playerBets[player].isSet == true &&
             playerBets[player].opponentAddress == opponent;
     }
-
-    // TODO: close bet without playing
 
     function getBalance() public view returns (uint256) {
         return address(this).balance;
@@ -114,7 +124,7 @@ contract ChaintrixContract {
     function closeGame(
         address payable player0,
         address payable player1,
-        uint256 winnerIndex,
+        uint8 winnerIndex,
         address gameFileId
     ) external isServer {
         require(player0 != player1, "players cannot be the same");
@@ -146,7 +156,7 @@ contract ChaintrixContract {
             player1.transfer(betAmount);
         }
 
-        games.push(Game(gameFileId));
+        games.push(Game(player0, player1, winnerIndex, gameFileId));
     }
 
     function getOneGame() external view returns (address) {

@@ -3,7 +3,7 @@ import { Program } from "@project-serum/anchor";
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { SolanaPlayer, GameRoom, SolanaAcceptedBetInfo } from "../types";
 import { randomBytes } from "crypto";
-import { LOCALHOST_PROGRAM_ID, LOCALHOST_SOLANA_ENDPOINT } from "../constants";
+import { SOLANA_ENDPOINT, SOLANA_PROGRAM_ID } from "../constants";
 import {
     ChaintrixSolana, IDL, PlayerWantsToPlaySolanaPayload, serializeMoves
 } from 'chaintrix-game-mechanics';
@@ -14,6 +14,13 @@ const BET_ACCOUNT_SIZE = 41
 const ACCEPTED_BETS_ACCOUNT_SIZE = 73
 const BET_AMOUNT = LAMPORTS_PER_SOL / 10;
 const PLAYER_INITIAL_SOL = LAMPORTS_PER_SOL;
+
+const getProviderProgramWallet = () => {
+    const provider = anchor.AnchorProvider.local(SOLANA_ENDPOINT);
+    const program = new Program(IDL, SOLANA_PROGRAM_ID, provider);
+    const localWallet = anchor.Wallet.local();
+    return { provider, program, localWallet };
+}
 
 const hasPlayerBet = async (program: Program<ChaintrixSolana>, solanaPayload: PlayerWantsToPlaySolanaPayload): Promise<boolean> => {
     const connection = program.provider.connection;
@@ -31,8 +38,7 @@ const hasPlayerBet = async (program: Program<ChaintrixSolana>, solanaPayload: Pl
 }
 
 export const checkBetAccount = async (solanaPayload: PlayerWantsToPlaySolanaPayload): Promise<boolean> => {
-    const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
-    const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
+    const { provider, program, localWallet } = getProviderProgramWallet();
     try {
         const result = await hasPlayerBet(program, solanaPayload)
         return result;
@@ -43,10 +49,7 @@ export const checkBetAccount = async (solanaPayload: PlayerWantsToPlaySolanaPayl
 }
 
 export const acceptBetsSolana = async (player0Address, player1Address): Promise<PublicKey> => {
-    const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
-    const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
-    const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
-    const localWallet = anchor.Wallet.local();
+    const { provider, program, localWallet } = getProviderProgramWallet();
 
     const seed = randomBytes(32);
     const [acceptedBetsPDA, acceptedBetsPDABump] = await anchor.web3.PublicKey.findProgramAddress(
@@ -68,25 +71,25 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
             .rpc({ commitment: 'confirmed' })
     } catch (e) {
         console.log(e);
-        // TODO: return or retry but don't continue
+        // TODO: 
     }
     return acceptedBetsPDA;
 }
 
-export const solanaCloseGame = async (room: GameRoom, winnerIndex: number) => {
+export const solanaCloseGame = async (
+    room: GameRoom, winnerIndex: number,
+    serializedGameState: string
+) => {
     // upload game to arweave
     const arweaveConfig = getArweaveConfig()
     // TODO: TRY CATCH HERE!!!!
     const arweaveFileID = await uploadGameMovesToArweave(
-        arweaveConfig, Buffer.from(serializeMoves(room.gameState.moves), 'utf-8')
+        arweaveConfig, Buffer.from(serializedGameState, 'utf-8')
     )
     console.log(`arweave file uploaded: ${arweaveFileID}`);
 
     // call program - close game
-    const connection = new Connection(LOCALHOST_SOLANA_ENDPOINT)
-    const provider = anchor.AnchorProvider.local(LOCALHOST_SOLANA_ENDPOINT);
-    const program = new Program(IDL, LOCALHOST_PROGRAM_ID, provider);
-    const localWallet = anchor.Wallet.local();
+    const { provider, program, localWallet } = getProviderProgramWallet();
 
     const seed = randomBytes(32);
     const treasuryWallet = anchor.web3.Keypair.fromSeed(Buffer.from(Array(32).fill(0)));

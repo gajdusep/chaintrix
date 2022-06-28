@@ -38,7 +38,6 @@ export const uploadGameMovesToArweave = async (arweaveConfig: ArweaveConfig, mov
         data: movesBuffer
     }, arweaveConfig.key);
 
-    // TODO: should be JSON
     transaction.addTag("Content-Type", "application/json");
     await arweaveConfig.arweave.transactions.sign(transaction, arweaveConfig.key);
     const response = await arweaveConfig.arweave.transactions.post(transaction);

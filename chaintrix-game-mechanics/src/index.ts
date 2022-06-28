@@ -9,4 +9,5 @@ export * from './Game.js';
 export * from './methods.js';
 export * from './API.js';
 export * from './PathCalculations.js';
+export * from './Serializer.js';
 export * from './solana/chaintrix_solana.js'

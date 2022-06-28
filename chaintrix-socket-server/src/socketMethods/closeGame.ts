@@ -2,11 +2,12 @@ import { Server, Socket } from "socket.io";
 import { GameRoom, HederaPlayer } from "../types";
 import {
     GAME_FINISHED_NO_BLOCKCHAIN, GameFinishedNoBlockchainPayload, GameFinishedSolanaPayload,
-    GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA, serializeMoves,
+    GAME_FINISHED_SOLANA, GameFinishedHederaPayload, GAME_FINISHED_HEDERA,
     BlockchainType, GAME_FINISHED_AND_WAITING_FOR_FINALIZATION,
-    GameFinishedGenericPayload, GameClosedReason, mod, calculateLongestPathForColor
+    GameFinishedGenericPayload, GameClosedReason, mod, calculateLongestPathForColor,
+    serializeGame,
+    ITS_A_DRAW_CONSTANT
 } from 'chaintrix-game-mechanics';
-// } from '../../../chaintrix-game-mechanics';
 import { solanaCloseGame } from "../blockchainMethods/solanaMethods";
 import { getHederaConfig, hederaCloseGame, toSolidity } from "../blockchainMethods/hederaMethods";
 
@@ -34,7 +35,8 @@ const closeGameSolanaSocket = async (
     sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
 
     // finalize solana transactions
-    await solanaCloseGame(room, winnerIndex)
+    const serializedGameState = serializeGame(room.gameState, gameClosedReason)
+    await solanaCloseGame(room, winnerIndex, serializedGameState)
     const responsePayload: GameFinishedSolanaPayload = {
         winnerIndex: winnerIndex,
         gameClosedReason: gameClosedReason,
@@ -81,16 +83,15 @@ export const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID:
     else if (gameClosedReason == GameClosedReason.ALL_CARDS_USED) {
         const player0Length = calculateLongestPathForColor(room.gameState.board, room.gameState.playersStates[0].color)
         const player1Length = calculateLongestPathForColor(room.gameState.board, room.gameState.playersStates[1].color)
-        // TODO: draw
 
         if (player0Length == player1Length) {
-
+            winnerIndex = ITS_A_DRAW_CONSTANT
         } else {
             winnerIndex = player0Length > player1Length ? 0 : 1;
         }
     }
 
-    console.log(`GAME OVER, MOVES: ${serializeMoves(room.gameState.moves)}`)
+    console.log(`GAME OVER, MOVES: ${serializeGame(room.gameState, gameClosedReason)}`)
     switch (room.blockchainType) {
         case BlockchainType.NO_BLOCKCHAIN:
             await closeGameNoBlockchainSocket(winnerIndex, sio, gameRoomID, gameClosedReason)

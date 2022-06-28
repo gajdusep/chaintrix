@@ -23,7 +23,7 @@
         "@solana/wallet-adapter-wallets": "^0.15.5",
         "@solana/web3.js": "^1.37.2",
         "@types/react-redux": "^7.1.24",
-        "chaintrix-game-mechanics": "^1.0.16",
+        "chaintrix-game-mechanics": "^1.0.17",
         "hashconnect": "^0.1.9",
         "next": "12.1.6",
         "next-transpile-modules": "^9.0.0",

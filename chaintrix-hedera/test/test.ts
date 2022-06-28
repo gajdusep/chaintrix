@@ -3,7 +3,7 @@ import { getConfig } from "./config";
 import { ContractId, Hbar, HbarUnit } from "@hashgraph/sdk";
 import {
     scCallBet, getContractBalance, scCallAcceptBets, closeGame,
-    getHasPlayerPlacedBet, getOpponentAddress, getServerAddress, getPlayerBalance, getGames
+    getHasPlayerPlacedBet, getOpponentAddress, getServerAddress, getPlayerBalance, getGames, closeBet
 } from "./hederaMethods";
 import { BigNumber } from "@hashgraph/sdk/lib/Transfer";
 import * as assert from "assert";
@@ -27,12 +27,9 @@ const assertHbarDiff = (bigger: Hbar, smaller: Hbar, expected: number) => {
     assert.equal(div, expected)
 }
 
-
-// it("Can load games", async () => {
-//     const gameFileIds = await getGames(config, contractId)
-//     console.log(gameFileIds)
-//     // assert.equal(gameFileIds[0].toSolidityAddress(), fileId.toSolidityAddress())
-// })
+const assertContractBalance = async (expectedBalance: number) => {
+    assert.equal(await getContractBalance(contractId, config.serverClient), expectedBalance)
+}
 
 it("Contract can be deployed", async () => {
     if (contractId == null) {
@@ -53,11 +50,28 @@ it("Player can place bet", async () => {
     assert.equal(await getHasPlayerPlacedBet(config, contractId, config.player0Id), false)
     await scCallBet(config.player0Client, config.player0Id, contractId, BET_AMOUNT)
     assert.equal(await getHasPlayerPlacedBet(config, contractId, config.player0Id), true)
-    assert.equal(await getContractBalance(contractId, config.serverClient), BET_AMOUNT)
+    await assertContractBalance(BET_AMOUNT)
 
     await scCallBet(config.player1Client, config.player1Id, contractId, BET_AMOUNT)
     assert.equal(await getHasPlayerPlacedBet(config, contractId, config.player1Id), true)
-    assert.equal(await getContractBalance(contractId, config.serverClient), BET_AMOUNT * 2)
+    await assertContractBalance(BET_AMOUNT * 2)
+})
+
+it("Server can close player's bet", async () => {
+    await closeBet(config.serverClient, config.player0Id, contractId)
+    await assertContractBalance(BET_AMOUNT)
+})
+
+it("Server cannot close bet that was closed", async () => {
+    await expect(
+        closeBet(config.serverClient, config.player0Id, contractId)
+    ).rejects.toThrow('CONTRACT_REVERT_EXECUTED')
+    await assertContractBalance(BET_AMOUNT)
+})
+
+it("Player can bet again after account was closed", async () => {
+    await scCallBet(config.player0Client, config.player0Id, contractId, BET_AMOUNT)
+    await assertContractBalance(BET_AMOUNT * 2)
 })
 
 it("Player cannot place bet twice", async () => {
@@ -159,4 +173,3 @@ it("Nobody can close the game that is already closed", async () => {
 
 
 // TODO: test draw - close game 255
-// TODO: test close bet without playing
