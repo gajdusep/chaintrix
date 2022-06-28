@@ -1,13 +1,17 @@
 [features]
 seeds = false
+
 [programs.localnet]
+chaintrix_solana = "Agi74KZH6XY5fKPycWtg9X5g4RgfPZpNNmKodLCXDA7q"
+
+[programs.devnet]
 chaintrix_solana = "Agi74KZH6XY5fKPycWtg9X5g4RgfPZpNNmKodLCXDA7q"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "./id.json"
 
 [scripts]

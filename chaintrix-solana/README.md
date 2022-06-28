@@ -29,3 +29,14 @@ anchor run test
 # to test arweave
 
 ```npx ts-node ./arweave-tests/arweave-test.ts```
+
+
+# deployment
+
+https://lorisleiva.com/create-a-solana-dapp-from-scratch/deploying-to-devnet
+
+change: `cluster = "localnet"` to `cluster = "devnet"` or opposite
+
+```bash
+solana config set --url devnet
+```
