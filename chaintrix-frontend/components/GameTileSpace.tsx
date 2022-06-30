@@ -1,6 +1,4 @@
-import {
-    BoardFieldType, CardNullable
-} from 'chaintrix-game-mechanics';
+import { BoardFieldType, CardNullable } from 'chaintrix-game-mechanics';
 
 type GameTileSpaceProps = {
     width: number,
@@ -28,15 +26,6 @@ const GameTileSpace = (
                 draggable='false'
                 style={{ transform: `rotate(${(props.card.orientation % 6) * 60}deg)` }}
             />
-            {/* <p style={{
-            position: 'absolute', color: 'black',
-            padding: 0, margin: 0,
-            marginTop: -props.height / 2 - 20,
-            marginLeft: props.width / 2 - 20,
-            backgroundColor: 'pink'
-        }}>
-            {props.card.cardID}, {props.card.orientation}
-        </p> */}
         </div>
     }
 
@@ -64,15 +53,10 @@ const GameTileSpace = (
             break;
     }
 
-
-
     return <img
         className='dont-drag-image'
         draggable='false'
         src={`/emptyTiles${emptyFieldImg}`} width={props.width} height={props.height} />
-
-
-
 }
 
 export default GameTileSpace;

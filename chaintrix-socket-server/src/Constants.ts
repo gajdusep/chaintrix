@@ -3,7 +3,8 @@ import { ContractId } from "@hashgraph/sdk";
 /**
  * GAME RELATED CONSTANTS
  */
-export const INITIAL_TIME = 50
+// export const INITIAL_TIME = 50
+export const INITIAL_TIME = 150
 export const SERVER_INITIAL_TIME = INITIAL_TIME + 1
 
 /**

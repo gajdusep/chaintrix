@@ -44,6 +44,10 @@ h2 {
     cursor: pointer;
 }
 
+.font-x-large {
+    font-size: x-large;
+}
+
 .glass {
     padding: 10px;
     margin: 10px;
@@ -225,4 +229,22 @@ h2 {
 
 .consolas {
     font-family: consolas;
+}
+
+.opponent-wrapper {
+    border-radius: 10px;
+    border: black 3px solid;
+    display: flex;
+    margin: 0 5px 0 5px;
+    flex-direction: column;
+    align-items: centers;
+}
+
+.opponent-card-div {
+    z-index: 1000;
+    cursor: pointer;
+    flex: 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

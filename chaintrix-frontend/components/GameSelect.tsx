@@ -1,28 +1,26 @@
+import React from 'react'
 import { useState } from 'react';
+import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
+import * as anchor from "@project-serum/anchor";
+import { Program } from "@project-serum/anchor";
+import { Connection } from '@solana/web3.js';
+import { randomBytes } from 'crypto';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId } from "@hashgraph/sdk";
 import {
     PLAYER_WANTS_TO_PLAY_NO_BLOCKCHAIN, PLAYER_WANTS_TO_PLAY_SOLANA, PlayerWantsToPlaySolanaPayload,
     PlayerWantsToPlayHederaPayload, PLAYER_WANTS_TO_PLAY_HEDERA,
     IDL,
     BlockchainType
 } from 'chaintrix-game-mechanics';
-import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
-import { randomBytes } from 'crypto';
-import * as anchor from "@project-serum/anchor";
-import { Program } from "@project-serum/anchor";
-import { Connection } from '@solana/web3.js';
-import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT } from '../helpers/Constants';
-import {
-    selectGameRunningState, GameRunningState, setGameRunningState
-} from '../store/gameStateSlice';
+
+import { selectGameRunningState, GameRunningState, setGameRunningState } from '../store/gameStateSlice';
 import { selectSocketClient } from '../store/socketSlice';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import React from 'react'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { Hbar, ContractFunctionParameters, ContractExecuteTransaction, AccountId } from "@hashgraph/sdk";
 import { connectToExtension, HashConnectStatus } from '../store/hederaSlice'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { setBlockchainType } from '../store/blockchainStateSlice';
-import { ToastContainer, toast } from 'react-toastify';
+import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT } from '../helpers/Constants';
 import { toastError } from '../helpers/ToastHelper';
 
 const CANNOT_BET_ERROR_MESSAGE = 'We are unable to make your bet work.'

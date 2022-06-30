@@ -171,7 +171,7 @@ const GameBoard = () => {
                     </div>
                 })
             })}
-            <div className={styles.currentPlayersCardsWrapper + " " + classByColorMapping[gameState.playersStates[playerID].color]}
+            <div className={`${styles.currentPlayersCardsWrapper} ${classByColorMapping[gameState.playersStates[playerID].color]}`}
                 // style={{ height: `${sizes.size * 2}px` }}
                 style={{ height: `${sizes.cardViewHeight}px` }}
             />

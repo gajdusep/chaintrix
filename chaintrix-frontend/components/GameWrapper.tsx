@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
     selectGameRunningState, selectLengths, GameRunningState,
@@ -12,19 +12,16 @@ import GameSelect from './GameSelect';
 import Description from './Description';
 import { ParallaxProvider } from 'react-scroll-parallax';
 import Background from './Background';
-import ErrorComponent from './ErrorComponent';
 import MovePhaseBanner from './MovePhaseBanner';
 import { selectBCState } from '../store/blockchainStateSlice';
 import GameFinished from './GameFinished';
 import { toastError } from '../helpers/ToastHelper';
+import GameInfoBanner from './GameInfoBanner';
 
 const GameWrapper = () => {
     const dispatch = useAppDispatch();
-    const gameState = useAppSelector(selectGameState);
     const gameRunningState = useAppSelector(selectGameRunningState)
-    const pathLengths = useAppSelector(selectLengths)
     const error = useAppSelector(selectError);
-    const blockchainState = useAppSelector(selectBCState);
 
     // TIMER
     const seconds = useAppSelector(selectSeconds)
@@ -48,8 +45,6 @@ const GameWrapper = () => {
         }
     }, [error])
 
-    const colors = ['R', 'B', 'G', 'Y']
-
     const isGameFinished = (): boolean => {
         return gameRunningState == GameRunningState.FINISHED ||
             gameRunningState == GameRunningState.FINISHED_AND_WAITING_FOR_FINALIZATION;
@@ -61,18 +56,9 @@ const GameWrapper = () => {
             <div className='glass flex-column' style={{ position: 'relative' }}>
                 {isGameRunning() && <MovePhaseBanner />}
                 <div className='game-board-wrapper'>
-                    <div className='flex-column' style={{ width: 150, backgroundColor: 'white', border: `3px solid black` }}>
-                        {colors.map((color) => <div key={color}>{color}: {pathLengths[color]}</div>)}
-                        <div>Cards in the deck: {gameState.deck.length}</div>
-                        <div>SECONDS: <b>{seconds}</b></div>
-                        <div>BC TYPE: <b>{blockchainState.blockchainType}</b></div>
-                    </div>
-                    <div>
-                        <GameBoard />
-                    </div>
-                    <div>
-                        <OponentsBanner />
-                    </div>
+                    <GameInfoBanner />
+                    <GameBoard />
+                    <OponentsBanner />
                 </div>
             </div>
         </div>

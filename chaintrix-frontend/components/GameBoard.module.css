@@ -9,7 +9,7 @@
 .currentPlayersCardsWrapper {
     position: absolute;
     bottom: 0px;
-    /* background-color: #ffaaaa; */
+    border-radius: 10px;
     width: 100%;
 }
 

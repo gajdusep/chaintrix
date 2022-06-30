@@ -15,6 +15,7 @@ import { connectToExtension, HashConnectStatus, sendTransaction } from '../store
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { Link } from 'react-router-dom';
 import ClosedGameView from './ClosedGameView';
+import { toastInfo } from '../helpers/ToastHelper';
 const abiCoder = require("web3-eth-abi");
 
 export interface SolanaClosedGame {
@@ -113,34 +114,9 @@ const GamesHistory = () => {
         console.log(result)
     }
 
-    const load3 = async () => {
-        if (!hashConnectService) return;
-        const playerHederaIdStr = hashConnectService.savedData.pairedAccounts[0]
-        const topic = hashConnectService.savedData.topic
-        const playerHederaId = AccountId.fromString(playerHederaIdStr)
-        console.log(`playerID: ${playerHederaIdStr}`)
-        const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
-        const signer = hashConnectService.hashconnect.getSigner(provider)
-
-        // LOGIC
-        const contractQueryTx = new ContractCallQuery()
-            .setContractId("0.0.30863001")
-            // .setGas(1_000_000)
-            .setGas((new Hbar(0.01)).toTinybars())
-            .setFunction("getMobileNumber", new ContractFunctionParameters().addString("Alice"))
-            .setMaxQueryPayment(new Hbar(0.00000001));
-        // .setMaxQueryPayment(new Hbar(1));
-    }
-
     const onLoadHederaGames = async () => {
-        // await load1()
-        await load2()
-        // await load3()
-
+        toastInfo("It is impossible to load Hedera history with HashConnect. Please, wait until a better wallet is implemented.")
         return
-        const result = []
-        const toReturn = result["0"].map((item: any) => FileId.fromSolidityAddress(item))
-        setHederaClosedGames(toReturn)
     }
 
     const connectToHederaWallet = async () => {

@@ -6,9 +6,6 @@ import React from 'react'
 const MovePhaseBanner = () => {
     const dispatch = useAppDispatch();
     const gameState = useAppSelector(selectGameState);
-    const sizes = useAppSelector(selectSizes);
-    const playerID = useAppSelector(selectPlayerID)
-    const containerRef = React.useRef(null)
     const isCurrentlyPlaying = useAppSelector(selectIsCurrentlyPlaying);
     const [info, setInfo] = useState<String>("");
     const [infoWho, setInfoWho] = useState<String>("");
