@@ -88,15 +88,16 @@ export const hederaCloseGame = async (
     config: HederaConfig,
     player0Address: string,
     player1Address: string,
-    winnerAddress: string
+    winnerIndex: number
 ) => {
     const movesContents = serializeMoves(room.gameState.moves)
-    const fileId = uploadFileHedera(config, movesContents)
+    const fileId = await uploadFileHedera(config, movesContents)
 
     const contractParams = new ContractFunctionParameters()
         .addAddress(player0Address)
         .addAddress(player1Address)
-        .addAddress(winnerAddress);
+        .addUint8(winnerIndex)
+        .addAddress(fileId.toSolidityAddress());
     const contractExecuteTx = new ContractExecuteTransaction()
         .setContractId(HEDERA_CONTRACT_ID)
         .setGas(1000000)

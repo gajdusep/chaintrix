@@ -7,10 +7,10 @@ import {
     getNewGameState, GAME_STARTED, PlayerWantsToPlaySolanaPayload,
     SOCKET_ERROR, ALREADY_IN_ROOM_ERROR_MSG, SOCKET_CREATED_ROOM_AND_WAITING,
     SOLANA_BET_ACCOUNT_ERROR_MSG, HEDERA_BET_ERROR_MSG,
-    PlayerWantsToPlayHederaPayload, GameStartedPayload, BlockchainType, GameClosedReason
+    PlayerWantsToPlayHederaPayload, GameStartedPayload, BlockchainType, GameClosedReason, ACCEPT_BETS_ERROR
 } from 'chaintrix-game-mechanics';
 // } from '../../../chaintrix-game-mechanics';
-import { acceptBetsSolana, checkBetAccount } from "../blockchainMethods/solanaMethods";
+import { acceptBetsSolana, checkBetAccount, closeBetWithoutPlaying } from "../blockchainMethods/solanaMethods";
 import { acceptBetsHedera, checkPlayerBet, getHederaConfig, toSolidity } from "../blockchainMethods/hederaMethods";
 import { INITIAL_TIME, SERVER_INITIAL_TIME } from "../constants";
 import { getNewTimer, RoomObjects } from "../gameRoom";
@@ -118,24 +118,33 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
         case BlockchainType.NO_BLOCKCHAIN:
             break;
         case BlockchainType.SOLANA:
-            // TODO: if accept bets fail, what will happen? try catch here
             const acceptedBetsPDA = await acceptBetsSolana(
                 (waitingPlayer as SolanaPlayer).betPDA,
                 (joiningPlayer as SolanaPlayer).betPDA
             )
-            // TODO: if acceptedbetsPDA is null, emit error and return
+            if (acceptedBetsPDA == null) {
+                closeBetWithoutPlaying((waitingPlayer as SolanaPlayer).betPDA, (waitingPlayer as SolanaPlayer).address)
+                closeBetWithoutPlaying((joiningPlayer as SolanaPlayer).betPDA, (joiningPlayer as SolanaPlayer).address)
+                sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
+                return;
+            }
+
             acceptedBetInfo = {
                 acceptedBetAccount: acceptedBetsPDA.toBase58()
             }
             break;
         case BlockchainType.HEDERA:
-            // TODO: if accept bets fail, what will happen? try catch here
-            const result = await acceptBetsHedera(
-                getHederaConfig(),
-                toSolidity((waitingPlayer as HederaPlayer).address),
-                toSolidity((joiningPlayer as HederaPlayer).address)
-            )
-            acceptedBetInfo = {}
+            try {
+                const result = await acceptBetsHedera(
+                    getHederaConfig(),
+                    toSolidity((waitingPlayer as HederaPlayer).address),
+                    toSolidity((joiningPlayer as HederaPlayer).address)
+                )
+                acceptedBetInfo = {}
+            } catch (error) {
+                sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
+                return;
+            }
             break;
     }
 

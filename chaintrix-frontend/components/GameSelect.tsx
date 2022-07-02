@@ -45,9 +45,7 @@ const GameSelect = () => {
     }
 
     const onPlaySolanaClick = async () => {
-        // TODO: error text
         if (!socketClient) return;
-        // TODO: error text
         if (!wallet || !wallet.publicKey || !anchorWallet) return;
 
         const provider = new anchor.AnchorProvider(connection, anchorWallet, {})
@@ -118,12 +116,12 @@ const GameSelect = () => {
         }
 
         // TODO: catch error
-        console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
-        const sec = response.transactionId.validStart?.seconds.low;
-        const nano = response.transactionId.validStart?.nanos.low;
-        const txId = `${playerHederaIdStr}@${sec}.${nano}`;
-        const receipt = await provider.getTransactionReceipt(txId);
-        console.log(`receipt: ${receipt.status}`)
+        // console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
+        // const sec = response.transactionId.validStart?.seconds.low;
+        // const nano = response.transactionId.validStart?.nanos.low;
+        // const txId = `${playerHederaIdStr}@${sec}.${nano}`;
+        // const receipt = await provider.getTransactionReceipt(txId);
+        // console.log(`receipt: ${receipt.status}`)
 
         const payload: PlayerWantsToPlayHederaPayload = {
             playerAddress: playerHederaIdStr

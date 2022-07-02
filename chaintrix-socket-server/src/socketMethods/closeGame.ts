@@ -6,7 +6,8 @@ import {
     BlockchainType, GAME_FINISHED_AND_WAITING_FOR_FINALIZATION,
     GameFinishedGenericPayload, GameClosedReason, mod, calculateLongestPathForColor,
     serializeGame,
-    ITS_A_DRAW_CONSTANT
+    ITS_A_DRAW_CONSTANT,
+    SOCKET_ERROR
 } from 'chaintrix-game-mechanics';
 import { solanaCloseGame } from "../blockchainMethods/solanaMethods";
 import { getHederaConfig, hederaCloseGame, toSolidity } from "../blockchainMethods/hederaMethods";
@@ -36,7 +37,14 @@ const closeGameSolanaSocket = async (
 
     // finalize solana transactions
     const serializedGameState = serializeGame(room.gameState, gameClosedReason)
-    await solanaCloseGame(room, winnerIndex, serializedGameState)
+
+    try {
+        await solanaCloseGame(room, winnerIndex, serializedGameState)
+    } catch (error) {
+        sio.to(gameRoomID).emit(SOCKET_ERROR, "We were unable to properly close the game.")
+        return;
+    }
+
     const responsePayload: GameFinishedSolanaPayload = {
         winnerIndex: winnerIndex,
         gameClosedReason: gameClosedReason,
@@ -56,18 +64,18 @@ const closeGameHederaSocket = async (
     }
     sio.to(gameRoomID).emit(GAME_FINISHED_AND_WAITING_FOR_FINALIZATION, finishedAndWaitingPayload)
 
-    // finalize hedera transactions
-    let winnerAddress = (gameRoom.players[0] as HederaPlayer).address
-    if (winnerIndex == 1) {
-        winnerAddress = (gameRoom.players[1] as HederaPlayer).address
+    try {
+        await hederaCloseGame(
+            gameRoom,
+            getHederaConfig(),
+            toSolidity((gameRoom.players[0] as HederaPlayer).address),
+            toSolidity((gameRoom.players[1] as HederaPlayer).address),
+            winnerIndex
+        )
+    } catch (error) {
+        sio.to(gameRoomID).emit(SOCKET_ERROR, "We were unable to properly close the game.")
+        return;
     }
-    await hederaCloseGame(
-        gameRoom,
-        getHederaConfig(),
-        toSolidity((gameRoom.players[0] as HederaPlayer).address),
-        toSolidity((gameRoom.players[1] as HederaPlayer).address),
-        winnerAddress
-    )
     const responsePayload: GameFinishedHederaPayload = {
         winnerIndex: winnerIndex,
         gameClosedReason: gameClosedReason
@@ -100,7 +108,11 @@ export const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID:
             await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
             break;
         case BlockchainType.HEDERA:
-            await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
+            try {
+                await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
+            } catch (error) {
+                sio.to(gameRoomID).emit(SOCKET_ERROR, "We were unable to properly close the game.")
+            }
             break;
         default:
             break;

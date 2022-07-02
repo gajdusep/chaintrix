@@ -48,7 +48,30 @@ export const checkBetAccount = async (solanaPayload: PlayerWantsToPlaySolanaPayl
     }
 }
 
-export const acceptBetsSolana = async (player0Address, player1Address): Promise<PublicKey> => {
+export const closeBetWithoutPlaying = async (betAccountPDA, player,) => {
+    try {
+        const { provider, program, localWallet } = getProviderProgramWallet();
+        const tx = await program.methods.closeBetWithoutPlaying()
+            .accounts({
+                betAccount: betAccountPDA,
+                player: player,
+                server: localWallet.publicKey,
+                systemProgram: anchor.web3.SystemProgram.programId,
+            })
+            .signers([])
+            .rpc({ commitment: 'confirmed' })
+    } catch (error) {
+
+    }
+}
+
+/**
+ * 
+ * @param player0Address 
+ * @param player1Address 
+ * @returns null if error occurs
+ */
+export const acceptBetsSolana = async (player0Address, player1Address): Promise<PublicKey | null> => {
     const { provider, program, localWallet } = getProviderProgramWallet();
 
     const seed = randomBytes(32);
@@ -58,7 +81,6 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
     );
     console.log(`accepted bet accounts: ${acceptedBetsPDA} ${acceptedBetsPDABump}`)
     try {
-        // TODO: commitment (should be max?)
         const tx = await program.methods.acceptBets(acceptedBetsPDABump, seed)
             .accounts({
                 acceptedBetsAccount: acceptedBetsPDA,
@@ -70,8 +92,8 @@ export const acceptBetsSolana = async (player0Address, player1Address): Promise<
             .signers([])
             .rpc({ commitment: 'confirmed' })
     } catch (e) {
-        console.log(e);
-        // TODO: 
+        console.log(`Failed to accept bets for ${player0Address}, ${player1Address}`);
+        return null;
     }
     return acceptedBetsPDA;
 }
@@ -82,11 +104,15 @@ export const solanaCloseGame = async (
 ) => {
     // upload game to arweave
     const arweaveConfig = getArweaveConfig()
-    // TODO: TRY CATCH HERE!!!!
-    const arweaveFileID = await uploadGameMovesToArweave(
-        arweaveConfig, Buffer.from(serializedGameState, 'utf-8')
-    )
-    console.log(`arweave file uploaded: ${arweaveFileID}`);
+    let arweaveFileID = '0000000000000000000000000000000000000000000'
+    try {
+        arweaveFileID = await uploadGameMovesToArweave(
+            arweaveConfig, Buffer.from(serializedGameState, 'utf-8')
+        )
+        console.log(`arweave file uploaded: ${arweaveFileID}`);
+    } catch (error) {
+        console.log('Arweave upload failed')
+    }
 
     // call program - close game
     const { provider, program, localWallet } = getProviderProgramWallet();
@@ -106,22 +132,17 @@ export const solanaCloseGame = async (
 
     console.log(`in solana close: ${acceptedBetAccount}, ${player0Address}, ${player1Address}, ${localWallet.publicKey.toBase58()}`)
 
-    try {
-        const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, winnerIndex, arweaveFileID)
-            .accounts({
-                acceptedBetsAccount: acceptedBetAccount,
-                player0: player0Address,
-                player1: player1Address,
-                server: localWallet.publicKey,
-                gameClosedAccount: closedGamePDA,
-                treasury: treasuryWallet.publicKey,
-                systemProgram: anchor.web3.SystemProgram.programId,
-            })
-            .signers([])
-            .rpc({ commitment: 'confirmed' })
-        console.log(`solana game closed`)
-    } catch (error) {
-        // TODO: what to do with an error!!!
-        console.log(`SOLANA ERROR: ${error}`)
-    }
+    const tx = await program.methods.closeGameWithWinner(closedGamePDABump, seed, winnerIndex, arweaveFileID)
+        .accounts({
+            acceptedBetsAccount: acceptedBetAccount,
+            player0: player0Address,
+            player1: player1Address,
+            server: localWallet.publicKey,
+            gameClosedAccount: closedGamePDA,
+            treasury: treasuryWallet.publicKey,
+            systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([])
+        .rpc({ commitment: 'confirmed' })
+    console.log(`solana game closed`)
 }

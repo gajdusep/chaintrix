@@ -4,7 +4,7 @@ import { ContractId } from "@hashgraph/sdk";
  * GAME RELATED CONSTANTS
  */
 // export const INITIAL_TIME = 50
-export const INITIAL_TIME = 150
+export const INITIAL_TIME = 60
 export const SERVER_INITIAL_TIME = INITIAL_TIME + 1
 
 /**
@@ -22,12 +22,4 @@ export const SOLANA_ENDPOINT = DEVNET_SOLANA_ENDPOINT;
 /**
  * HEDERA CONSTANTS
  */
-export const HEDERA_CONTRACT_ID = new ContractId(46033478);
-
-/**
- * SOCKET CONSTANTS
- */
-const PRODUCTION_SOCKET_ENDPOINT = 'https://chaintrix-socket.azurewebsites.net';
-const LOCALHOST_SOCKET_ENDPOINT = 'http://127.0.0.1:8080';
-
-export const SOCKET_ENDPOINT = LOCALHOST_SOCKET_ENDPOINT;
+export const HEDERA_CONTRACT_ID = new ContractId(46857102);

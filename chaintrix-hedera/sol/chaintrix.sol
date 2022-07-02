@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity >=0.7.0 <0.9.0;
 
-// TODO: public vs external
-
 contract ChaintrixContract {
     struct Bet {
         address opponentAddress;
@@ -179,9 +177,6 @@ contract ChaintrixContract {
 
         return (addrs, indexes);
     }
-
-    // TODO: write a function that will allow server to close bets for single player
-    // (this method will be a check that no hbar will be stuck in the contract)
 
     function getAll() external view returns (address[] memory) {
         address[] memory addrs = new address[](games.length);

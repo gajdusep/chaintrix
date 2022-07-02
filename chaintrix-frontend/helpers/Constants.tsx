@@ -15,7 +15,7 @@ export const SOLANA_ENDPOINT = DEVNET_SOLANA_ENDPOINT;
 /**
  * HEDERA CONSTANTS
  */
-export const HEDERA_CONTRACT_ID = new ContractId(46033478);
+export const HEDERA_CONTRACT_ID = new ContractId(46857102);
 
 /**
  * SOCKET CONSTANTS
@@ -29,5 +29,4 @@ export const SOCKET_ENDPOINT = PRODUCTION_SOCKET_ENDPOINT;
 /**
  * FRONTEND CONSTANTS
  */
-
 export const COLORS_LIST = ['R', 'B', 'G', 'Y'] 

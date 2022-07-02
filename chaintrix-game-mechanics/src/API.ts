@@ -87,4 +87,6 @@ export const WRONG_MOVE_ERROR_MSG = 'Wrong move.'
 export const SOLANA_BET_ACCOUNT_ERROR_MSG = 'We were unable to verify the bet on Solana blockchain.'
 export const HEDERA_BET_ERROR_MSG = 'The bet was not placed correctly.'
 
+export const ACCEPT_BETS_ERROR = 'We were unable to yours and your opponents bets. Funds will be returned to your account.'
+
 export const ITS_A_DRAW_CONSTANT = 255;

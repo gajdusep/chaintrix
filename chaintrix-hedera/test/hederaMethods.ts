@@ -148,8 +148,7 @@ export const getGames = async (
         .setContractId(contractId)
         .setGas((new Hbar(0.01)).toTinybars())
         .setFunction("getAllGames", new ContractFunctionParameters())
-        .setQueryPayment(new Hbar(0.05)); // TODO: how many Hbars exactly needed to be paid
-    // const contractQuerySubmit = await contractQueryTx.execute(client);
+        .setQueryPayment(new Hbar(0.05));
     const wallet = new Wallet(
         config.serverId,
         config.serverPrivateKey,

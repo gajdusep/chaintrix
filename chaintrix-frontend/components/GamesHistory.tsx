@@ -104,7 +104,7 @@ const GamesHistory = () => {
             .setQueryPayment(new Hbar(0.05))
         // .setMaxQueryPayment(new Hbar(1));
         // .setMaxQueryPayment(new Hbar(1));
-        // .setQueryPayment(new Hbar(10)); // TODO: how many Hbars exactly needed to be paid
+        // .setQueryPayment(new Hbar(10));
         const contractQuerySubmit = await contractQueryTx.executeWithSigner(signer);
 
         const contractQueryResult = contractQuerySubmit.asBytes();
