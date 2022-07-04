@@ -45,8 +45,7 @@ io.on("connection", (socket) => {
         playerPlays(io, socket, roomObjects, payload)
     });
     socket.on('disconnect', () => {
-        // TODO: User disconneted!!!
-        console.log('User disconnected')
+        console.log(`User disconnected ${socket.id}`)
     });
 });
 

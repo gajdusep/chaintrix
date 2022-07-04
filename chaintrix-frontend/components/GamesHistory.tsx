@@ -6,7 +6,7 @@ import { useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import { Connection } from '@solana/web3.js';
-import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT } from '../helpers/Constants';
+import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT, HEDERA_NETWORK } from '../helpers/Constants';
 import { useAppSelector } from '../store/hooks';
 import React from 'react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -64,7 +64,7 @@ const GamesHistory = () => {
         const topic = hashConnectService.savedData.topic
         const playerHederaId = AccountId.fromString(playerHederaIdStr)
         console.log(`playerID: ${playerHederaIdStr}`)
-        const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
+        const provider = hashConnectService.hashconnect.getProvider(HEDERA_NETWORK, topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
         // LOGIC
@@ -92,7 +92,7 @@ const GamesHistory = () => {
         const topic = hashConnectService.savedData.topic
         const playerHederaId = AccountId.fromString(playerHederaIdStr)
         console.log(`playerID: ${playerHederaIdStr}`)
-        const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
+        const provider = hashConnectService.hashconnect.getProvider(HEDERA_NETWORK, topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
         // LOGIC

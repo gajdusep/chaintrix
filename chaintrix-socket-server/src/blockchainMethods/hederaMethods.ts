@@ -6,7 +6,7 @@ import {
     PlayerWantsToPlayHederaPayload, serializeMoves
 } from 'chaintrix-game-mechanics';
 // } from '../../../chaintrix-game-mechanics/dist';
-import { HEDERA_CONTRACT_ID } from "../constants";
+import { HEDERA_CONTRACT_ID, HEDERA_NETWORK } from "../constants";
 import { GameRoom } from "../types";
 
 require("dotenv").config();
@@ -21,10 +21,20 @@ export const toSolidity = (address: string): string => {
     return AccountId.fromString(address).toSolidityAddress()
 }
 
+export const getClient = (network: string, id: AccountId, privateKey: PrivateKey): Client => {
+    if (network == 'testnet') {
+        return Client.forTestnet().setOperator(id, privateKey)
+    }
+    else if (network == 'mainnet') {
+        return Client.forMainnet().setOperator(id, privateKey)
+    }
+    return null
+}
+
 export const getHederaConfig = (): HederaConfig => {
     const serverId = AccountId.fromString(process.env.SERVER_ID);
     const serverPrivateKey = PrivateKey.fromString(process.env.SERVER_PRIVATE_KEY)
-    const serverClient = Client.forTestnet().setOperator(serverId, serverPrivateKey)
+    const serverClient = getClient(HEDERA_NETWORK, serverId, serverPrivateKey)
 
     serverClient.setMaxQueryPayment(new Hbar(1))
 
@@ -48,6 +58,21 @@ export const getHasPlayerPlacedBet = async (config: HederaConfig, playerId: Acco
     const contractQuerySubmit = await contractQueryTx.execute(config.serverClient);
     const contractQueryResult = contractQuerySubmit.getBool(0);
     return contractQueryResult
+}
+
+export const hederaCloseBetWithoutPlaying = async (config: HederaConfig, playerID: string) => {
+    try {
+        const contractExecuteTx = new ContractExecuteTransaction()
+            .setContractId(HEDERA_CONTRACT_ID)
+            .setGas(100000)
+            .setFunction("closeBet", new ContractFunctionParameters().addAddress(playerID));
+
+        const contractExecuteSubmit = await contractExecuteTx.execute(config.serverClient);
+        const contractExecuteRx = await contractExecuteSubmit.getReceipt(config.serverClient);
+        console.log(`- Contract function call status: ${contractExecuteRx.status}`);
+    } catch (error) {
+
+    }
 }
 
 export const acceptBetsHedera = async (

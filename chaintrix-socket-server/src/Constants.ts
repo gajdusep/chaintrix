@@ -23,3 +23,5 @@ export const SOLANA_ENDPOINT = DEVNET_SOLANA_ENDPOINT;
  * HEDERA CONSTANTS
  */
 export const HEDERA_CONTRACT_ID = new ContractId(46857102);
+export const HEDERA_NETWORK = 'testnet'
+// export const HEDERA_NETWORK = 'mainnet'

@@ -48,7 +48,7 @@ export const checkBetAccount = async (solanaPayload: PlayerWantsToPlaySolanaPayl
     }
 }
 
-export const closeBetWithoutPlaying = async (betAccountPDA, player,) => {
+export const solanaCloseBetWithoutPlaying = async (betAccountPDA, player,) => {
     try {
         const { provider, program, localWallet } = getProviderProgramWallet();
         const tx = await program.methods.closeBetWithoutPlaying()
@@ -124,7 +124,6 @@ export const solanaCloseGame = async (
         [Buffer.from("closed"), seed],
         program.programId
     );
-    // TODO: add some checks if the room objects is alright
 
     const acceptedBetAccount = (room.acceptedBetInfo as SolanaAcceptedBetInfo).acceptedBetAccount
     const player0Address = (room.players[0] as SolanaPlayer).address

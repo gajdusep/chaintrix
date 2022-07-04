@@ -137,14 +137,6 @@ export const gameStateSlice = createSlice({
         setGameRunningState: (state, action: PayloadAction<GameRunningState>) => {
             state.gameRunningState = action.payload;
         },
-        // TODO set finished - solana, hedera, solana
-        // TODO: remove the following two methods..?
-        setGameFinishedNoBlockchain: (state, action: PayloadAction<GameFinishedNoBlockchainPayload>) => {
-            state.gameRunningState = GameRunningState.FINISHED;
-        },
-        setGameFinished: (state) => {
-            state.gameRunningState = GameRunningState.FINISHED;
-        },
         resetAll: (state) => {
             state.gameRunningState = initialState.gameRunningState
             state.gameState = initialState.gameState
@@ -166,10 +158,9 @@ export const gameStateSlice = createSlice({
 
 export const {
     rotateCardInCardView, updateCardView,
-    updateStateAfterMove, setGameState,
+    updateStateAfterMove, setGameState, setGameRunningState,
     onPlayerPlayedSocketEvent, addCardToBoardSocket,
-    setPlayerID, setGameFinishedNoBlockchain, setSocketError, resetAll, setSeconds,
-    setGameRunningState, setGameFinished
+    setPlayerID, setSocketError, resetAll, setSeconds,
 } = gameStateSlice.actions;
 
 export const selectGameState = (state: RootState) => state.gameStateSlice.gameState;

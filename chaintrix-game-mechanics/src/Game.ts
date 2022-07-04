@@ -80,7 +80,6 @@ export const updateGameStateAfterDeckCardSelected = (
     gameState.board = boardResult
 
     if (pl0Index == -1 && pl1Index == -1) {
-        // TODO: throw errror
         return gameState;
     }
     if (pl0Index != -1) {
@@ -226,8 +225,6 @@ export const isFinalPhase = (gameState: GameState): boolean => {
 
 // This method is called after the card was added, it returns a new game state
 export const getStateAfterMove = (gameState: GameState): GameState => {
-    // TODO: what happens according to the rules, if the player cannot play? (very low probability)
-
     const finalPhase = isFinalPhase(gameState);
 
     const currentlyMovingPlayer = gameState.currentlyMovingPlayer;

@@ -23,7 +23,6 @@ const closeGameNoBlockchainSocket = async (
     sio.to(gameRoomID).emit(GAME_FINISHED_NO_BLOCKCHAIN, responsePayload)
 }
 
-
 const closeGameSolanaSocket = async (
     winnerIndex: number, sio: Server, gameRoomID: string, room: GameRoom,
     gameClosedReason: GameClosedReason
@@ -108,11 +107,7 @@ export const closeGameCallback = async (room: GameRoom, sio: Server, gameRoomID:
             await closeGameSolanaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
             break;
         case BlockchainType.HEDERA:
-            try {
-                await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
-            } catch (error) {
-                sio.to(gameRoomID).emit(SOCKET_ERROR, "We were unable to properly close the game.")
-            }
+            await closeGameHederaSocket(winnerIndex, sio, gameRoomID, room, gameClosedReason)
             break;
         default:
             break;

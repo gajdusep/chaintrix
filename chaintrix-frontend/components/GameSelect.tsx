@@ -20,7 +20,7 @@ import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { connectToExtension, HashConnectStatus } from '../store/hederaSlice'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { setBlockchainType } from '../store/blockchainStateSlice';
-import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT } from '../helpers/Constants';
+import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT, HEDERA_NETWORK } from '../helpers/Constants';
 import { toastError } from '../helpers/ToastHelper';
 
 const CANNOT_BET_ERROR_MESSAGE = 'We are unable to make your bet work.'
@@ -95,8 +95,7 @@ const GameSelect = () => {
         const topic = hashConnectService.savedData.topic
         const playerHederaId = AccountId.fromString(playerHederaIdStr)
         console.log(`playerID: ${playerHederaIdStr}`)
-        // TODO: provider correct this.
-        const provider = hashConnectService.hashconnect.getProvider('testnet', topic, playerHederaIdStr);
+        const provider = hashConnectService.hashconnect.getProvider(HEDERA_NETWORK, topic, playerHederaIdStr);
         const signer = hashConnectService.hashconnect.getSigner(provider)
 
         dispatch(setGameRunningState(GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION))
@@ -115,7 +114,6 @@ const GameSelect = () => {
             return;
         }
 
-        // TODO: catch error
         // console.log(`response id: ${JSON.stringify(response.transactionId)} response hash: ${JSON.stringify(response.transactionHash)}`)
         // const sec = response.transactionId.validStart?.seconds.low;
         // const nano = response.transactionId.validStart?.nanos.low;

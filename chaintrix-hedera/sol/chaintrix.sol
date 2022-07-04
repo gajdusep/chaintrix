@@ -4,7 +4,7 @@ pragma solidity >=0.7.0 <0.9.0;
 contract ChaintrixContract {
     struct Bet {
         address opponentAddress;
-        bool isSet; // TODO: rename this...
+        bool wasPlaced;
     }
 
     struct Game {
@@ -41,11 +41,11 @@ contract ChaintrixContract {
         require(sender == msg.sender, "sender is not the same as payer");
         require(msg.value == betAmount, "did not send enough tiny hbar");
         require(
-            playerBets[msg.sender].isSet == false,
+            playerBets[msg.sender].wasPlaced == false,
             "already bet, or is playing"
         );
 
-        playerBets[sender].isSet = true;
+        playerBets[sender].wasPlaced = true;
     }
 
     function closeBet(address payable playerAddress) public isServer {
@@ -63,7 +63,7 @@ contract ChaintrixContract {
         returns (bool)
     {
         return
-            playerBets[playerAddress].isSet == true &&
+            playerBets[playerAddress].wasPlaced == true &&
             playerBets[playerAddress].opponentAddress == address(0);
     }
 
@@ -81,7 +81,7 @@ contract ChaintrixContract {
         returns (bool)
     {
         return
-            playerBets[player].isSet == true &&
+            playerBets[player].wasPlaced == true &&
             playerBets[player].opponentAddress == opponent;
     }
 
@@ -102,8 +102,8 @@ contract ChaintrixContract {
         require(player0 != player1, "players cannot be the same");
         require(!isAddressEmpty(player0));
         require(!isAddressEmpty(player1));
-        require(playerBets[player0].isSet == true, "player0 has not bet");
-        require(playerBets[player1].isSet == true, "player1 has not bet");
+        require(playerBets[player0].wasPlaced == true, "player0 has not bet");
+        require(playerBets[player1].wasPlaced == true, "player1 has not bet");
         require(
             playerBets[player0].opponentAddress == address(0),
             "player0 already playing"

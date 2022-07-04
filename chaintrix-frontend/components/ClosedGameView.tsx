@@ -16,6 +16,7 @@ const HEIGHT = 200
 const ClosedGameView = (props: ClosedGameProps) => {
 
     const [board, setBoard] = useState<Board | null>(() => null);
+    const [errorLoading, setErrorLoading] = useState<string | null>(() => "");
     const [reason, setReason] = useState<string>(() => "");
     const [playerStates, setPlayerStates] = useState<Array<PlayerState>>(() => [])
     const [sizes, setSizes] = useState<Sizes | null>(() => null);
@@ -38,8 +39,7 @@ const ClosedGameView = (props: ClosedGameProps) => {
                 setBoard(newBoard)
                 setSizes(newSizes)
             } catch (error) {
-                // TODO: warn user that this game is invalid...
-                console.log(error)
+                setErrorLoading("Error loading game state from decentralized storage.")
             }
         }
 
@@ -99,6 +99,8 @@ const ClosedGameView = (props: ClosedGameProps) => {
                     </div>
                 </div>
             </div>
+            {/* <b>{errorLoading}</b> */}
+            <div style={{ width: WIDTH, textAlign: 'center' }}>{errorLoading}</div>
             {board && sizes &&
                 <div style={{
                     height: `${HEIGHT}px`,

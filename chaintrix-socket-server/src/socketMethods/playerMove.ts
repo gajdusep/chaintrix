@@ -17,6 +17,11 @@ export const playerPlays = async (
     payload: PlayerPlaysPayload
 ) => {
     const gameRoomID = getGameRoomID(socket);
+    if (gameRoomID == null) {
+        socket.emit(SOCKET_ERROR, "You are not in any room.");
+        return;
+    }
+
     const room = roomObjects[gameRoomID]
     console.log(`${room.blockchainType}: payload: ${JSON.stringify(payload)}`)
 
@@ -59,7 +64,7 @@ const isPlayerCheating = (socket: Socket, room: GameRoom, moveInfo: PlayerPlaysP
         return true;
     }
 
-    // if player tries to play a card that 
+    // if player tries to play a card that they do not have
     const cardIndex = room.gameState.playersStates[currentlyMoving].cards.findIndex((value) => value?.cardID == moveInfo.card.cardID)
     if (cardIndex == -1) {
         socket.emit(SOCKET_ERROR, WRONG_PLAYER_ERROR_MSG);

@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState, AppThunk, store } from './store';
 import { HashConnect, HashConnectTypes, MessageTypes } from 'hashconnect';
+import { HEDERA_NETWORK } from '../helpers/Constants';
 
 export enum HashConnectStatus {
     INITIALIZING = 'initializing',
@@ -92,7 +93,7 @@ export const initHederaAsync = createAsyncThunk(
 
 
         const state = await hashConnectWrapper.hashconnect.connect();
-        const pairingString = hashConnectWrapper.hashconnect.generatePairingString(state, "testnet", true);
+        const pairingString = hashConnectWrapper.hashconnect.generatePairingString(state, HEDERA_NETWORK, true);
         console.log(`pairing string: ${pairingString}`)
         console.log("Received state", state);
 

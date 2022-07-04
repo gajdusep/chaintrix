@@ -144,7 +144,6 @@ export const addCardToBoard = (
         }
     }
 
-    // TODO: this must be called after the deck is updated
     const newBoardFieldTypes = calculateBoardFieldsTypes(board, false)
     const boardResult = addNewBoardFieldTypesToBoard(board, newBoardFieldTypes)
     return boardResult;

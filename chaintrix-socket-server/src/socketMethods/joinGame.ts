@@ -10,15 +10,17 @@ import {
     PlayerWantsToPlayHederaPayload, GameStartedPayload, BlockchainType, GameClosedReason, ACCEPT_BETS_ERROR
 } from 'chaintrix-game-mechanics';
 // } from '../../../chaintrix-game-mechanics';
-import { acceptBetsSolana, checkBetAccount, closeBetWithoutPlaying } from "../blockchainMethods/solanaMethods";
-import { acceptBetsHedera, checkPlayerBet, getHederaConfig, toSolidity } from "../blockchainMethods/hederaMethods";
+import { acceptBetsSolana, checkBetAccount, solanaCloseBetWithoutPlaying } from "../blockchainMethods/solanaMethods";
+import { acceptBetsHedera, checkPlayerBet, getHederaConfig, hederaCloseBetWithoutPlaying, toSolidity } from "../blockchainMethods/hederaMethods";
 import { INITIAL_TIME, SERVER_INITIAL_TIME } from "../constants";
 import { getNewTimer, RoomObjects } from "../gameRoom";
 import { closeGameCallback } from "./closeGame";
+import { v4 as uuidv4 } from 'uuid';
 
 const getNewRoomName = (): string => {
-    // const room = uuid(); // TODO: the room id should be strictly unique!
-    return (Math.floor(Math.random() * 100000)).toString();
+    const room = uuidv4();
+    // const room = (Math.floor(Math.random() * 100000)).toString()
+    return room;
 }
 
 const getJoiningPlayerNoBlockchain = (socket: Socket): NoBlockchainPlayer => {
@@ -123,8 +125,8 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
                 (joiningPlayer as SolanaPlayer).betPDA
             )
             if (acceptedBetsPDA == null) {
-                closeBetWithoutPlaying((waitingPlayer as SolanaPlayer).betPDA, (waitingPlayer as SolanaPlayer).address)
-                closeBetWithoutPlaying((joiningPlayer as SolanaPlayer).betPDA, (joiningPlayer as SolanaPlayer).address)
+                solanaCloseBetWithoutPlaying((waitingPlayer as SolanaPlayer).betPDA, (waitingPlayer as SolanaPlayer).address)
+                solanaCloseBetWithoutPlaying((joiningPlayer as SolanaPlayer).betPDA, (joiningPlayer as SolanaPlayer).address)
                 sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
                 return;
             }
@@ -134,14 +136,17 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
             }
             break;
         case BlockchainType.HEDERA:
+            const hederaConfig = getHederaConfig()
             try {
                 const result = await acceptBetsHedera(
-                    getHederaConfig(),
+                    hederaConfig,
                     toSolidity((waitingPlayer as HederaPlayer).address),
                     toSolidity((joiningPlayer as HederaPlayer).address)
                 )
                 acceptedBetInfo = {}
             } catch (error) {
+                hederaCloseBetWithoutPlaying(hederaConfig, (waitingPlayer as HederaPlayer).address)
+                hederaCloseBetWithoutPlaying(hederaConfig, (joiningPlayer as HederaPlayer).address)
                 sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
                 return;
             }
