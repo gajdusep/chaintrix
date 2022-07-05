@@ -7,7 +7,7 @@ import {
 } from 'chaintrix-game-mechanics';
 // } from '../../../chaintrix-game-mechanics/dist';
 import { HEDERA_CONTRACT_ID, HEDERA_NETWORK } from "../constants";
-import { GameRoom } from "../types";
+import { GameRoom, HederaPlayer } from "../types";
 
 require("dotenv").config();
 
@@ -60,12 +60,12 @@ export const getHasPlayerPlacedBet = async (config: HederaConfig, playerId: Acco
     return contractQueryResult
 }
 
-export const hederaCloseBetWithoutPlaying = async (config: HederaConfig, playerID: string) => {
+export const hederaCloseBetWithoutPlaying = async (config: HederaConfig, hederaPlayer: HederaPlayer) => {
     try {
         const contractExecuteTx = new ContractExecuteTransaction()
             .setContractId(HEDERA_CONTRACT_ID)
             .setGas(100000)
-            .setFunction("closeBet", new ContractFunctionParameters().addAddress(playerID));
+            .setFunction("closeBet", new ContractFunctionParameters().addAddress(hederaPlayer.address));
 
         const contractExecuteSubmit = await contractExecuteTx.execute(config.serverClient);
         const contractExecuteRx = await contractExecuteSubmit.getReceipt(config.serverClient);

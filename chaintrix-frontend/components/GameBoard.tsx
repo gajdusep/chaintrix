@@ -139,8 +139,6 @@ const GameBoard = () => {
         'Y': styles.yellowPlayer,
     }
 
-    // TODO: if the game is finished, forbid moving (if someone disables overlay element)
-
     return (
         <div
             id='draggableContainer'

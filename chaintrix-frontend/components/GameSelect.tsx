@@ -21,7 +21,8 @@ import { connectToExtension, HashConnectStatus } from '../store/hederaSlice'
 import { selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { setBlockchainType } from '../store/blockchainStateSlice';
 import { HEDERA_CONTRACT_ID, SOLANA_PROGRAM_ID, SOLANA_ENDPOINT, HEDERA_NETWORK } from '../helpers/Constants';
-import { toastError } from '../helpers/ToastHelper';
+import { toastError, toastInfo } from '../helpers/ToastHelper';
+import nacl from 'tweetnacl';
 
 const CANNOT_BET_ERROR_MESSAGE = 'We are unable to make your bet work.'
 const GameSelect = () => {
@@ -61,7 +62,9 @@ const GameSelect = () => {
 
         dispatch(setGameRunningState(GameRunningState.BET_WAITING_FOR_BLOCKCHAIN_CONFIRMATION))
 
+        let signedPDA = new Uint8Array()
         try {
+            toastInfo("Confirm bet in your wallet.")
             const tx = await program.methods.bet(betAccountPDABump, seed)
                 .accounts({
                     betAccount: betAccountPDA,
@@ -73,6 +76,17 @@ const GameSelect = () => {
 
             const pdaAccount = await program.account.betAccount.fetch(betAccountPDA);
             console.log(`tx: ${tx}, pda account: ${JSON.stringify(pdaAccount)}, balance: ${await connection.getBalance(betAccountPDA)}`);
+
+            toastInfo("Sign the message to be verified on server")
+            if (wallet.signMessage) {
+                const message = new Uint8Array(Buffer.from(betAccountPDA.toBase58()));
+                signedPDA = await wallet.signMessage(message);
+                console.log(message)
+                console.log(signedPDA)
+                console.log(wallet.publicKey.toBytes())
+                const ver = nacl.sign.detached.verify(message, signedPDA, wallet.publicKey.toBytes())
+                console.log(ver)
+            }
         } catch (error) {
             console.log(error)
             toastError(CANNOT_BET_ERROR_MESSAGE)
@@ -80,10 +94,10 @@ const GameSelect = () => {
             return;
         }
 
-        // TODO: SIGN MESSAGE TO BE VERIFIED BY THE SERVER, THAT IT WAS REALLY SENT FROM PLAYERS ACCOUNT
         const payload: PlayerWantsToPlaySolanaPayload = {
             betPDA: betAccountPDA.toBase58(),
-            playerAddress: wallet.publicKey.toBase58()
+            playerAddress: wallet.publicKey.toBase58(),
+            signedPDA: signedPDA
         }
         dispatch(setBlockchainType(BlockchainType.SOLANA));
         socketClient.emit(PLAYER_WANTS_TO_PLAY_SOLANA, payload);

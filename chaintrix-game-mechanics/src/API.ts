@@ -21,6 +21,7 @@ export const PLAYER_WANTS_TO_PLAY_SOLANA = 'playerWantsToPlaySolana'
 export type PlayerWantsToPlaySolanaPayload = {
     betPDA: string;
     playerAddress: string;
+    signedPDA: Uint8Array;
 }
 
 export const PLAYER_WANTS_TO_PLAY_HEDERA = 'playerWantsToPlayHedera'
@@ -80,6 +81,7 @@ export type GameFinishedHederaPayload = GameFinishedGenericPayload & {
 export const SOCKET_CREATED_ROOM_AND_WAITING = 'You created a room. Waiting for players to join.'
 
 export const SOCKET_ERROR = 'error'
+export const SOCKET_FATAL_GAME_ERROR = 'FatalGameError'
 export const ALREADY_IN_ROOM_ERROR_MSG = 'You are already in a game room.'
 export const WRONG_PLAYER_ERROR_MSG = 'It is not your move now.'
 export const WRONG_CARD_ERROR_MSG = 'Wrong card.'

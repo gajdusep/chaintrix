@@ -32,7 +32,7 @@ const getJoiningPlayerNoBlockchain = (socket: Socket): NoBlockchainPlayer => {
 const getJoiningPlayerSolana = async (
     socket: Socket, solanaPayload: PlayerWantsToPlaySolanaPayload
 ): Promise<SolanaPlayer | null> => {
-    if (!checkBetAccount(solanaPayload)) {
+    if ((await checkBetAccount(solanaPayload)) == false) {
         return null;
     }
 
@@ -47,7 +47,7 @@ const getJoiningPlayerHedera = async (
     socket: Socket, hederaPayload: PlayerWantsToPlayHederaPayload
 ): Promise<HederaPlayer | null> => {
     console.log(`checking hedera play bet for player: ${hederaPayload.playerAddress}`)
-    if (!checkPlayerBet(hederaPayload)) {
+    if ((await checkPlayerBet(hederaPayload)) == false) {
         return null;
     }
 
@@ -109,7 +109,7 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
     freeRooms.shift();
     socket.join(gameRoomID);
 
-    // get the already present player and 
+    // get the already present player and accept bets
     let clients = Array.from(sio.sockets.adapter.rooms.get(gameRoomID));
     const waitingPlayerSocketID = clients[0]
     const waitingPlayer = waitingPlayers[waitingPlayerSocketID];
@@ -120,13 +120,18 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
         case BlockchainType.NO_BLOCKCHAIN:
             break;
         case BlockchainType.SOLANA:
+            if (waitingPlayer == undefined || waitingPlayer == null) {
+                sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
+                await solanaCloseBetWithoutPlaying(joiningPlayer as SolanaPlayer)
+                return;
+            }
             const acceptedBetsPDA = await acceptBetsSolana(
                 (waitingPlayer as SolanaPlayer).betPDA,
                 (joiningPlayer as SolanaPlayer).betPDA
             )
             if (acceptedBetsPDA == null) {
-                solanaCloseBetWithoutPlaying((waitingPlayer as SolanaPlayer).betPDA, (waitingPlayer as SolanaPlayer).address)
-                solanaCloseBetWithoutPlaying((joiningPlayer as SolanaPlayer).betPDA, (joiningPlayer as SolanaPlayer).address)
+                await solanaCloseBetWithoutPlaying(waitingPlayer as SolanaPlayer)
+                await solanaCloseBetWithoutPlaying(joiningPlayer as SolanaPlayer)
                 sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
                 return;
             }
@@ -137,6 +142,11 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
             break;
         case BlockchainType.HEDERA:
             const hederaConfig = getHederaConfig()
+            if (waitingPlayer == undefined || waitingPlayer == null) {
+                hederaCloseBetWithoutPlaying(hederaConfig, joiningPlayer as HederaPlayer)
+                sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
+                return;
+            }
             try {
                 const result = await acceptBetsHedera(
                     hederaConfig,
@@ -145,8 +155,8 @@ export const joinOrCreateRoom = async (sio: Server, socket: Socket,
                 )
                 acceptedBetInfo = {}
             } catch (error) {
-                hederaCloseBetWithoutPlaying(hederaConfig, (waitingPlayer as HederaPlayer).address)
-                hederaCloseBetWithoutPlaying(hederaConfig, (joiningPlayer as HederaPlayer).address)
+                hederaCloseBetWithoutPlaying(hederaConfig, waitingPlayer as HederaPlayer)
+                hederaCloseBetWithoutPlaying(hederaConfig, joiningPlayer as HederaPlayer)
                 sio.to(gameRoomID).emit(SOCKET_ERROR, ACCEPT_BETS_ERROR)
                 return;
             }

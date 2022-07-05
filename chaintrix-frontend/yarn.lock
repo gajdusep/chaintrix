@@ -2427,10 +2427,10 @@ caseless@~0.12.0:
   resolved "https://registry.yarnpkg.com/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"
   integrity sha512-4tYFyifaFfGacoiObjJegolkwSU4xQNGbVgUiNYVUxbQ2x2lUsFvY4hVgVzGiIe6WLOPqycWXA40l+PWsxthUw==
 
-chaintrix-game-mechanics@^1.0.17:
-  version "1.0.17"
-  resolved "https://registry.yarnpkg.com/chaintrix-game-mechanics/-/chaintrix-game-mechanics-1.0.17.tgz#db6f89ba948431d36da16483553d07d5d2f0f9aa"
-  integrity sha512-OL5sxhlUFOrifPB0dLsnGpDS2aN8fKg6UMl4X4Iq7RkJxrw4uuF3DYWh5c2vqEH8tvxD2GLKV1CitqnY97qqRA==
+chaintrix-game-mechanics@^1.0.20:
+  version "1.0.20"
+  resolved "https://registry.yarnpkg.com/chaintrix-game-mechanics/-/chaintrix-game-mechanics-1.0.20.tgz#03ae995ae6a0dbf0781ec401649f517208c29bfd"
+  integrity sha512-55n7h65rJYR/PcL3jsxyA5874qBF+PbmbCum2GEWa+slvswI3x7/EZsUVeQS73kNQGfWETH2F4aB+2n26EIdbg==
 
 chalk@^2.0.0:
   version "2.4.2"

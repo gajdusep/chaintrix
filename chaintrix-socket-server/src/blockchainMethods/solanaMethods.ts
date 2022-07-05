@@ -9,6 +9,7 @@ import {
 } from 'chaintrix-game-mechanics';
 // } from '../../../chaintrix-game-mechanics/dist';
 import { getArweaveConfig, uploadGameMovesToArweave } from "../arweave";
+import nacl from 'tweetnacl';
 
 const BET_ACCOUNT_SIZE = 41
 const ACCEPTED_BETS_ACCOUNT_SIZE = 73
@@ -25,8 +26,15 @@ const getProviderProgramWallet = () => {
 const hasPlayerBet = async (program: Program<ChaintrixSolana>, solanaPayload: PlayerWantsToPlaySolanaPayload): Promise<boolean> => {
     const connection = program.provider.connection;
     const betPDAAccount = new PublicKey(solanaPayload.betPDA)
-    let PDAbalance = await connection.getBalance(betPDAAccount);
+    const signerPublicKey = new PublicKey(solanaPayload.playerAddress)
 
+    const message = new Uint8Array(Buffer.from(betPDAAccount.toBase58()))
+    const ver = nacl.sign.detached.verify(message, solanaPayload.signedPDA, signerPublicKey.toBytes())
+    if (ver == false) {
+        return false;
+    }
+
+    let PDAbalance = await connection.getBalance(betPDAAccount);
     const pdaAccount = await program.account.betAccount.fetch(betPDAAccount);
 
     const isPlayerCorrect = pdaAccount.player.toBase58() == solanaPayload.playerAddress
@@ -48,13 +56,13 @@ export const checkBetAccount = async (solanaPayload: PlayerWantsToPlaySolanaPayl
     }
 }
 
-export const solanaCloseBetWithoutPlaying = async (betAccountPDA, player,) => {
+export const solanaCloseBetWithoutPlaying = async (solanaPlayer: SolanaPlayer) => {
     try {
         const { provider, program, localWallet } = getProviderProgramWallet();
         const tx = await program.methods.closeBetWithoutPlaying()
             .accounts({
-                betAccount: betAccountPDA,
-                player: player,
+                betAccount: solanaPlayer.betPDA,
+                player: solanaPlayer.address,
                 server: localWallet.publicKey,
                 systemProgram: anchor.web3.SystemProgram.programId,
             })
