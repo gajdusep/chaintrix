@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
     selectGameRunningState, selectLengths, GameRunningState,
@@ -39,6 +39,16 @@ const GameWrapper = () => {
         };
     });
 
+    const [onTop, setOnTop] = useState(false);
+    useEffect(() => {
+        const onScroll = (e: any) => {
+            setOnTop(window.pageYOffset < 30)
+        };
+        window.addEventListener("scroll", onScroll);
+
+        return () => window.removeEventListener("scroll", onScroll);
+    }, [onTop]);
+
     useEffect(() => {
         if (error != null) {
             toastError(error)
@@ -71,12 +81,22 @@ const GameWrapper = () => {
                     <Background />
                 </ParallaxProvider>
             </div>
+            {onTop && <div style={{ position: 'absolute', zIndex: 1000, bottom: 0 }}>
+                <img width={100} src='/others/mousescroll.png'></img>
+            </div>}
             <div className='flex-column center-items select-wrapper glass'>
                 <div style={{ height: 100 }}></div>
                 <div className='chaintrix-heading'>chaintrix</div>
+                <div>blockchain version of <a href='https://en.wikipedia.org/wiki/Tantrix' target="_blank" rel="noopener noreferrer">Tantrix</a></div>
                 <div style={{ height: 100 }}></div>
                 <GameSelect />
                 <div style={{ height: 100 }}></div>
+                <Link to='/rules' style={{ textDecoration: 'none' }}>
+                    <div className='flex-column center-items'>
+                        <img style={{ width: 300, }} src='/others/gameRules.png' />
+                        <div className='history-link-text' style={{ marginTop: `-55px` }}>game rules</div>
+                    </div>
+                </Link>
                 <Link to='/games' style={{ textDecoration: 'none' }}>
                     <div className='flex-column center-items'>
                         <img style={{ width: 300, }} src='/others/history.png' />

@@ -13,15 +13,21 @@ const Background = () => {
         rotate: [10, 200],
 
     });
+    const parallax3 = useParallax({
+        translateX: [200, -50],
+        translateY: [10, 200],
+        rotate: [300, 0],
+
+    });
     const parallax4 = useParallax({
         translateX: [-100, 200],
         translateY: [10, 200],
         rotate: [10, 200],
 
     });
-    const parallax3 = useParallax({
-        translateX: [200, -50],
-        translateY: [10, 200],
+    const parallax5 = useParallax({
+        translateX: [100, -100],
+        translateY: [50, 400],
         rotate: [300, 0],
 
     });
@@ -33,11 +39,14 @@ const Background = () => {
             <div style={{ top: 100, position: 'absolute' }} ref={parallax2.ref as React.RefObject<HTMLDivElement>}>
                 <img src={`/tiles/Tantrix_tile_40.svg`} width={200} height={200} />
             </div>
+            <div style={{ top: 70, left: `70%`, position: 'absolute' }} ref={parallax3.ref as React.RefObject<HTMLDivElement>}>
+                <img src={`/tiles/Tantrix_tile_15.svg`} width={150} height={150} />
+            </div>
             <div style={{ top: 20, left: `50%`, position: 'absolute' }} ref={parallax4.ref as React.RefObject<HTMLDivElement>}>
                 <img src={`/tiles/Tantrix_tile_41.svg`} width={300} height={300} />
             </div>
-            <div style={{ top: 70, left: `70%`, position: 'absolute' }} ref={parallax3.ref as React.RefObject<HTMLDivElement>}>
-                <img src={`/tiles/Tantrix_tile_15.svg`} width={150} height={150} />
+            <div style={{ top: 400, left: `0%`, position: 'absolute' }} ref={parallax5.ref as React.RefObject<HTMLDivElement>}>
+                <img src={`/tiles/Tantrix_tile_35.svg`} width={250} height={250} />
             </div>
         </>
     );

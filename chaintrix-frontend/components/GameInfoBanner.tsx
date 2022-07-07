@@ -56,7 +56,7 @@ const GameInfoBanner = () => {
             <div style={{ height: separationDivHeight }}></div>
             <div className='center-items flex-column'>
                 <div>Blockchain type</div>
-                <div className='font-x-large'>{blockchainState.blockchainType}</div>
+                <div className='font-large'>{blockchainState.blockchainType}</div>
             </div>
         </div>
     )

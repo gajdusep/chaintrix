@@ -2,18 +2,24 @@ import React from 'react'
 
 const Description = () => {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div>Chaintrix is online blockchain version of the <a href='https://en.wikipedia.org/wiki/Tantrix' target="_blank" rel="noopener noreferrer">Tantrix</a> board game.</div>
-            <h2>How does it work?</h2>
-            <div>Play Tantrix with other online players.</div>
-            <div>For learning, play without any bets. When you&apos;re confident enough, you can bet using Solana or Hedera tokens.</div>
-            <h2>How does the betting work?</h2>
-            <div>
-                First, connect the wallet of the blockchain you want to use. For Solana, we recommed <a href='https://phantom.app/' target="_blank" rel="noopener noreferrer">Phantom</a>.
-                For Hedera, use <a href='https://www.hashpack.app/' target="_blank" rel="noopener noreferrer">Hashpack</a>.
+        <div className='flex-column margin-padding' style={{}}>
+            <div style={{ display: 'flex', alignItems: 'center', fontSize: 'large', marginBottom: 10 }}>
+                <img style={{ marginRight: 10 }} src={`/tiles/Tantrix_tile_19.svg`} width={20} height={20} />
+                read the rules!
             </div>
-            <h2>Rules of the game</h2>
-            <div>You will be randomly assigned color. Make as long path as you can. If you do a loop, the final score will be multiplied by 2.</div>
+            <div style={{ display: 'flex', alignItems: 'center', fontSize: 'large', marginBottom: 10 }}>
+                <img style={{ marginRight: 10 }} src={`/tiles/Tantrix_tile_20.svg`} width={20} height={20} />
+                test your skills without betting
+                {/* try playing without betting */}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', fontSize: 'large', marginBottom: 10 }}>
+                <img style={{ marginRight: 10 }} src={`/tiles/Tantrix_tile_21.svg`} width={20} height={20} />
+                <div>
+                    bet with Solana (<a href='https://phantom.app/' target="_blank" rel="noopener noreferrer">Phantom</a>) or Hedera (<a href='https://www.hashpack.app/' target="_blank" rel="noopener noreferrer">Hashpack</a>)
+                </div>
+            </div>
+            {/* <div>For Solana, use <a href='https://phantom.app/' target="_blank" rel="noopener noreferrer">Phantom</a>.
+                For Hedera, use <a href='https://www.hashpack.app/' target="_blank" rel="noopener noreferrer">Hashpack</a></div> */}
         </div>
     );
 }

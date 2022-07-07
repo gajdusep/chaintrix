@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { initHederaAsync, selectHederaConnectService, selectHederaStatus } from '../store/hederaSlice';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Rules from '../components/Rules';
 
 const Home: NextPage = () => {
   const dispatch = useAppDispatch();
@@ -29,6 +30,7 @@ const Home: NextPage = () => {
         <ToastContainer />
         <Routes>
           <Route path="/" element={<GameWrapper />} />
+          <Route path="/rules/*" element={<Rules />} />
           <Route path="/games/*" element={<GamesHistory />} />
         </Routes>
       </div>

@@ -169,12 +169,15 @@ const GameSelect = () => {
     const logoSize = 60
     return (
         <div className='flex-column center-items' style={{ width: `100%` }}>
-            <div style={{ fontWeight: 'bold' }}>Begin with selecting your blockchain:</div>
-            <div className='bc-select-generic bc-select-nbc'>
-                <img height={logoSize} src='/noBlockchainLogo.png' />
+            {/* <div style={{ fontWeight: 'bold' }}>Begin with selecting your blockchain:</div> */}
+            {/* <div className='bc-select-generic bc-select-nbc'> */}
+            <div className='bc-select-generic bc-select-hedera'>
+                {/* <img height={logoSize} src='/noBlockchainLogo.png' /> */}
+                <img height={logoSize} src='/tiles/Tantrix_tile_25.svg' />
                 <button className='basic-button' onClick={() => onPlayNoBCCLick()}>Play with no blockchain</button>
             </div>
-            <div className='bc-select-generic bc-select-solana'>
+            {/* <div className='bc-select-generic bc-select-solana'> */}
+            <div className='bc-select-generic bc-select-hedera'>
                 <img height={logoSize} width={logoSize} src='/solanaLogo.svg' />
                 <div style={{ margin: `10px` }}><WalletMultiButton /></div>
                 {wallet && anchorWallet ? <button onClick={() => onPlaySolanaClick()} className='basic-button'>Play with Solana</button> : <></>}
