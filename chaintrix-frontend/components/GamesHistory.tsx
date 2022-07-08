@@ -16,6 +16,7 @@ import { selectHederaConnectService, selectHederaStatus } from '../store/hederaS
 import { Link } from 'react-router-dom';
 import ClosedGameView from './ClosedGameView';
 import { toastInfo } from '../helpers/ToastHelper';
+import HomePageLink from './HomePageLink';
 const abiCoder = require("web3-eth-abi");
 
 export interface SolanaClosedGame {
@@ -127,7 +128,7 @@ const GamesHistory = () => {
     return (
         <div style={{ maxWidth: `500px` }}>
             <div className='flex-column center-items select-wrapper glass'>
-                <Link to='/'>Homepage</Link>
+                <HomePageLink />
                 <div style={{ height: 100 }}></div>
                 <h1 style={{ textAlign: 'center' }}>Game history</h1>
                 <h2>Solana game history</h2>

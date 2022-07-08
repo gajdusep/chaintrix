@@ -75,6 +75,12 @@ h2 {
     flex-direction: column;
 }
 
+.flex-row-center {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 .center-items {
     align-items: center;
 }

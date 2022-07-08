@@ -9,6 +9,7 @@ import { initHederaAsync, selectHederaConnectService, selectHederaStatus } from 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Rules from '../components/Rules';
+import ScrollToTop from '../components/ScrollToTop';
 
 const Home: NextPage = () => {
   const dispatch = useAppDispatch();
@@ -22,6 +23,7 @@ const Home: NextPage = () => {
   return (
     <Router>
       <div className='flex-column center-items'>
+        <ScrollToTop />
         <Head>
           <title>Chaintrix</title>
           <meta name="description" content="Tantrix on blockchains" />
